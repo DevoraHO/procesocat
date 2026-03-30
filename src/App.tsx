@@ -25,6 +25,7 @@ import RegisterPage from "@/pages/RegisterPage";
 import PrivacyPage from "@/pages/PrivacyPage";
 import TermsPage from "@/pages/TermsPage";
 import ReportSharePage from "@/pages/ReportSharePage";
+import PricingPage from "@/pages/PricingPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import GDPRModal from "@/components/GDPRModal";
 import NotFound from "@/pages/NotFound";
