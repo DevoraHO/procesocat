@@ -299,6 +299,23 @@ const MapPage = () => {
     });
   }, [scoredReports, filterTypes, filterDanger, filterTime]);
 
+  // Request GPS for validation
+  const requestGPSForValidation = useCallback(() => {
+    setGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserGPS({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
+        setGpsLoading(false);
+        toast.success(t('mapInteraction.gpsActivated'));
+      },
+      () => {
+        setGpsLoading(false);
+        toast.error(t('errors.location'));
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  }, [t]);
+
   // Render markers & heatmap
   const renderMarkers = useCallback(() => {
     if (!markersLayerRef.current || !heatmapLayerRef.current) return;
