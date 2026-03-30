@@ -409,6 +409,20 @@ const ProfilePage = () => {
 
         {/* TAB 3: ZONAS */}
         <TabsContent value="zones" className="mt-4 space-y-4">
+          {isFree ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <MapPin className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="font-bold text-foreground text-lg mb-2">{t('profile.myZones')}</h3>
+              <p className="text-sm text-muted-foreground mb-6">{t('profile.noZonesText')}</p>
+              <Button onClick={() => setUpgradeOpen(true)} className="gap-2">
+                <Shield className="h-4 w-4" />
+                {t('subscription.upgrade')}
+              </Button>
+            </div>
+          ) : (
+          <>
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-foreground">{t('profile.myZones')}</h3>
             <Button size="sm" onClick={() => setAddZoneOpen(true)}>+ {t('profile.addZone')}</Button>
@@ -496,8 +510,9 @@ const ProfilePage = () => {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          </>
+          )}
         </TabsContent>
-
         {/* TAB 4: RANKING */}
         <TabsContent value="ranking" className="mt-4 space-y-4">
           <div className="flex gap-2 mb-2">
