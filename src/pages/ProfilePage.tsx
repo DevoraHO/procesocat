@@ -626,12 +626,35 @@ const ProfilePage = () => {
           <Card>
             <CardContent className="pt-6 space-y-3">
               <h3 className="font-semibold text-foreground">{t('settingsSections.subscription')}</h3>
-              <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
-                <p className="font-medium text-primary">{t('subscription.familiar')} ✓</p>
-                <p className="text-xs text-muted-foreground">{t('profile.renewal', { date: '28 abril 2026' })}</p>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => toast({ title: t('profile.comingSoon') })}>{t('profile.manageSubscription')}</Button>
-              <Button variant="outline" size="sm" className="text-destructive border-destructive/30" onClick={() => setCancelSubOpen(true)}>{t('profile.cancelSubscription')}</Button>
+              {isFree ? (
+                <>
+                  <div className="bg-muted rounded-lg p-3">
+                    <p className="font-medium text-foreground">{t('subscription.currentFree')}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{t('subscription.freeIncludes')}</p>
+                    <ul className="text-xs text-muted-foreground mt-2 space-y-1">
+                      <li>✅ {t('subscription.freeF1')}</li>
+                      <li>✅ {t('subscription.freeF2')}</li>
+                      <li>✅ {t('subscription.freeF3')}</li>
+                      <li>✅ {t('subscription.freeF4')}</li>
+                      <li>✅ {t('subscription.freeF5')}</li>
+                      <li>✅ {t('subscription.freeF6')}</li>
+                    </ul>
+                  </div>
+                  <Button onClick={() => setUpgradeOpen(true)} className="w-full gap-2">
+                    <Shield className="h-4 w-4" />
+                    {t('subscription.upgrade')} — {t('subscription.perMonth')}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
+                    <p className="font-medium text-primary">{t('subscription.familiar')} ✓</p>
+                    <p className="text-xs text-muted-foreground">{t('profile.renewal', { date: '28 abril 2026' })}</p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => toast({ title: t('profile.comingSoon') })}>{t('profile.manageSubscription')}</Button>
+                  <Button variant="outline" size="sm" className="text-destructive border-destructive/30" onClick={() => setCancelSubOpen(true)}>{t('profile.cancelSubscription')}</Button>
+                </>
+              )}
             </CardContent>
           </Card>
 
