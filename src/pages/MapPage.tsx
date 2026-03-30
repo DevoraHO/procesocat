@@ -900,6 +900,48 @@ const MapPage = () => {
         )}
       </div>
 
+      {/* Ripple animation during long press */}
+      {ripple && (
+        <div className="absolute z-[1001] pointer-events-none" style={{ left: ripple.x - 20, top: ripple.y - 20 }}>
+          <div className="w-10 h-10 rounded-full border-2 border-primary animate-ping" />
+        </div>
+      )}
+
+      {/* Quick tooltip on single click */}
+      {quickTooltip && (
+        <div
+          className="absolute z-[1001] animate-fade-in cursor-pointer"
+          style={{ left: quickTooltip.x - 70, top: quickTooltip.y - 50 }}
+          onClick={() => {
+            setSelectedCoords([quickTooltip.lat, quickTooltip.lng]);
+            setQuickTooltip(null);
+            setSelectedAlertType(null);
+            setReportStep(1);
+            setShowNewReport(true);
+          }}
+        >
+          <div className="bg-card shadow-lg rounded-lg px-3 py-2 text-xs font-medium text-foreground whitespace-nowrap border">
+            {t('mapInteraction.clickHint')}
+          </div>
+          <div className="w-0 h-0 mx-auto border-l-[6px] border-r-[6px] border-t-[6px] border-transparent border-t-card" />
+        </div>
+      )}
+
+      {/* Map hints overlay (first time) */}
+      {!mapHintsShown && !showNewReport && !safeWalkMode && (
+        <div
+          className="absolute inset-0 z-[1002] flex items-center justify-center bg-black/30 cursor-pointer"
+          onClick={() => { setMapHintsShown(true); localStorage.setItem('map_hints_shown', 'true'); }}
+        >
+          <div className="flex flex-col items-center gap-6 animate-fade-in">
+            <div className="bg-card rounded-xl px-5 py-3 shadow-xl text-center space-y-2">
+              <p className="text-sm font-medium text-foreground animate-pulse">👆 {lang === 'ca' ? 'Mantén premut al mapa' : 'Mantén pulsado el mapa'}</p>
+              <p className="text-xs text-muted-foreground">{lang === 'ca' ? 'O toca el botó +' : 'O toca el botón +'}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* BOTTOM RIGHT: FAB add report */}
       {!safeWalkMode && (
         <div className="absolute bottom-20 right-4 z-[1000] flex flex-col items-center gap-1">
@@ -913,6 +955,9 @@ const MapPage = () => {
               if (isFree && !canReport) {
                 showUpgrade('reports');
               } else {
+                setSelectedCoords(null);
+                setSelectedAlertType(null);
+                setReportStep(1);
                 setShowNewReport(true);
               }
             }}
