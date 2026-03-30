@@ -5,7 +5,7 @@ export const mockUser = {
   avatar_url: null as string | null,
   banner_color: '#2D6A4F',
   language: 'es',
-  plan: 'familiar',
+  plan: 'free',
   points: 3450,
   weekly_points: 280,
   rank: 'Verificador',
