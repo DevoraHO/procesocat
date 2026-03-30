@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { mockBadges, mockSavedZones, mockStats, mockRanking, mockRouteHistory } from '@/data/mockData';
+import { searchMunicipalities, getMunicipalityById, Municipality } from '@/data/municipalData';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
