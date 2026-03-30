@@ -248,7 +248,7 @@ const ProfilePage = () => {
 
   const shareRanking = () => {
     const pos = userRankIdx + 1;
-    const msg = `🏆 #${pos} ${t('profile.thisWeekIn')} Barcelonès - ${user?.weekly_points} pts - ProcesoAlert! procesoalert.es`;
+    const msg = `🏆 #${pos} ${t('profile.thisWeekIn')} Barcelonès - ${user?.weekly_points} pts - ProcesoCat! procesocat.es`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
@@ -580,7 +580,7 @@ const ProfilePage = () => {
                 {selectedBadge?.earned && (
                   <Button className="w-full" onClick={() => {
                     const n = lang === 'ca' ? selectedBadge.name_ca : selectedBadge.name_es;
-                    const msg = `${selectedBadge.icon} ${n} — ProcesoAlert! procesoalert.es`;
+                    const msg = `${selectedBadge.icon} ${n} — ProcesoCat! procesocat.es`;
                     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
                   }}>{t('profile.shareWhatsApp')}</Button>
                 )}

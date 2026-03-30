@@ -57,7 +57,7 @@ const GDPRModal = () => {
         {/* Logo */}
         <div className="flex flex-col items-center gap-2 mb-4">
           <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center text-2xl">🌲</div>
-          <h2 className="text-xl font-bold text-foreground">ProcesoAlert</h2>
+          <h2 className="text-xl font-bold text-foreground">ProcesoCat</h2>
         </div>
 
         <h3 className="text-lg font-bold text-foreground text-center mb-1">{t('gdpr.title')}</h3>

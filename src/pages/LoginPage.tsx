@@ -47,7 +47,7 @@ const LoginPage = () => {
           <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-3xl">
             🌲
           </div>
-          <h1 className="text-2xl font-bold text-foreground">ProcesoAlert</h1>
+          <h1 className="text-2xl font-bold text-foreground">ProcesoCat</h1>
           <p className="text-sm text-muted-foreground">Protegint Catalunya</p>
         </div>
 

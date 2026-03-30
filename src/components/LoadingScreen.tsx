@@ -6,7 +6,7 @@ const LoadingScreen = ({ onDone }: { onDone: () => void }) => {
       onAnimationEnd={onDone}
     >
       <div className="text-5xl mb-4 animate-pulse">🌲</div>
-      <h1 className="text-2xl font-bold tracking-tight">ProcesoAlert</h1>
+      <h1 className="text-2xl font-bold tracking-tight">ProcesoCat</h1>
       <p className="text-white/60 text-sm mt-1">Protegint Catalunya</p>
     </div>
   );

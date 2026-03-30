@@ -187,7 +187,7 @@ const InfoPage = () => {
         <div className="space-y-4">
           {[
             { num: 1, icon: '🚫', title_es: 'No te acerques', title_ca: 'No t\'acostis', desc_es: 'Mantén distancia mínima de 5 metros. Los pelos son microscópicos y vuelan.', desc_ca: 'Mantingues distància mínima de 5 metres. Els pèls són microscòpics i volen.' },
-            { num: 2, icon: '📱', title_es: 'Repórtalo en ProcesoAlert', title_ca: 'Reporta-ho a ProcesoAlert', desc_es: 'Avisa a otros usuarios para que eviten la zona.', desc_ca: 'Avisa altres usuaris perquè evitin la zona.', action: true },
+            { num: 2, icon: '📱', title_es: 'Repórtalo en ProcesoCat', title_ca: 'Reporta-ho a ProcesoCat', desc_es: 'Avisa a otros usuarios para que eviten la zona.', desc_ca: 'Avisa altres usuaris perquè evitin la zona.', action: true },
             { num: 3, icon: '🏛️', title_es: 'Avisa al ayuntamiento', title_ca: 'Avisa l\'ajuntament', desc_es: 'El ayuntamiento es responsable de tratamientos en zonas públicas.', desc_ca: 'L\'ajuntament és responsable dels tractaments en zones públiques.' },
             { num: 4, icon: '📞', title_es: 'Contacta con Agents Rurals', title_ca: 'Contacta amb Agents Rurals', desc_es: 'Para nidos en zonas forestales: 900 050 051 (gratuito)', desc_ca: 'Per a nius en zones forestals: 900 050 051 (gratuït)', phone: true },
             { num: 5, icon: '🚗', title_es: 'Si hay afectados', title_ca: 'Si hi ha afectats', desc_es: 'Veterinario para perros. Urgencias para personas. No esperes.', desc_ca: 'Veterinari per a gossos. Urgències per a persones. No esperis.' },

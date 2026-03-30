@@ -59,7 +59,7 @@ const RegisterPage = () => {
       </div>
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
-          <h1 className="text-3xl font-bold" style={{ color: '#2D6A4F' }}>🐛 ProcesoAlert</h1>
+          <h1 className="text-3xl font-bold" style={{ color: '#2D6A4F' }}>🐛 ProcesoCat</h1>
           <p className="text-muted-foreground mt-2">{t('auth.register')}</p>
         </div>
 

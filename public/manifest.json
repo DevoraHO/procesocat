@@ -1,6 +1,6 @@
 {
-  "name": "ProcesoAlert",
-  "short_name": "ProcesoAlert",
+  "name": "ProcesoCat",
+  "short_name": "ProcesoCat",
   "description": "Mapa colaborativo de procesionaria en Cataluña",
   "start_url": "/map",
   "display": "standalone",
