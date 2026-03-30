@@ -134,41 +134,6 @@ const PlansPage = () => {
     },
   ];
 
-  const apiPreview = `// Autenticació
-GET https://api.procesocat.es/v1/reports
-Headers:
-  X-API-Key: your_municipality_api_key
-
-// Paràmetres
-?municipality=mollet_del_valles
-?status=ACTIVE
-?danger_level=RED,PURPLE
-?format=json | csv | geojson | kml
-
-// Resposta
-{
-  "total": 23,
-  "municipality": "Mollet del Vallès",
-  "reports": [
-    {
-      "id": "r1",
-      "lat": 41.5200,
-      "lng": 2.2100,
-      "danger_score": 85,
-      "type": "procesionaria",
-      "status": "ACTIVE"
-    }
-  ]
-}
-
-// Webhook automàtic
-POST your_webhook_url
-{
-  "event": "DANGER_LEVEL_CRITICAL",
-  "municipality": "Mollet del Vallès",
-  "danger_score": 92
-}`;
-
   return (
     <div className="pb-28">
       {/* HERO */}
