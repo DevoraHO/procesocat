@@ -59,7 +59,10 @@ const RANKS_CA = [
 
 const BANNER_COLORS = ['#2D6A4F', '#1B4332', '#CC0000', '#1a3a5c', '#4a1d96', '#7f1d1d', '#0f4c5c', '#c1692a'];
 
-const BADGE_CATEGORIES = ['all', 'explorer', 'validator', 'media', 'streak', 'hero', 'special'] as const;
+const BADGE_CATEGORIES = ['all', 'explorador', 'validador', 'fotograf', 'ratxa', 'heroi', 'alerta', 'comunitat', 'especial'] as const;
+const RARITY_FILTERS = ['all', 'comú', 'inedit', 'rar', 'epic', 'llegenda'] as const;
+const RARITY_LABELS: Record<string, string> = { 'comú': 'COMÚ', 'inedit': 'INÈDIT', 'rar': 'RAR', 'epic': 'ÈPIC', 'llegenda': 'LLEGENDA' };
+const RARITY_COLORS: Record<string, string> = { 'comú': '#9ca3af', 'inedit': '#22c55e', 'rar': '#3b82f6', 'epic': '#a855f7', 'llegenda': '#f59e0b' };
 
 const ProfilePage = () => {
   const { t, i18n } = useTranslation();
