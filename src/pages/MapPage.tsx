@@ -213,14 +213,9 @@ const MapPage = () => {
       const alertIcon = alertInfo ? alertInfo.icon : '';
       const firstAid = alertInfo ? (lang === 'ca' ? alertInfo.first_aid_ca : alertInfo.first_aid_es) : '';
 
-      const marker = L.circleMarker([report.lat, report.lng], {
-        radius: 10,
-        color: markerColor,
-        fillColor: markerColor,
-        fillOpacity: report.status === LIFECYCLE.DECAYING ? 0.4 : 0.9,
-        weight: 2,
-        opacity: report.status === LIFECYCLE.DECAYING ? 0.5 : 1
-      });
+      const markerIcon = createAlertMarker(alertType || 'procesionaria', score, report.status);
+
+      const marker = L.marker([report.lat, report.lng], { icon: markerIcon });
 
       const decayDays = Math.floor(getReportAge(report.created_at));
       const decayBar = report.status === LIFECYCLE.DECAYING ? `
