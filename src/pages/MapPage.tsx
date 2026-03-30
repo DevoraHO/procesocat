@@ -280,6 +280,10 @@ const MapPage = () => {
 
   const handleSubmitReport = () => {
     if (!selectedCoords) return;
+    if (isFree && !canReport) {
+      showUpgrade('reports');
+      return;
+    }
     const newReport = {
       id: `r${Date.now()}`,
       user_id: mockUser.id,
@@ -294,6 +298,7 @@ const MapPage = () => {
       created_at: new Date().toISOString()
     };
     setReports(prev => [...prev, newReport]);
+    incrementReportCount();
     setShowNewReport(false);
     setReportStep(1);
     setSelectedCoords(null);
@@ -363,10 +368,13 @@ const MapPage = () => {
           {heatmapVisible ? '🔥' : '○'} {t('map.heatLayer')}
         </button>
         <button
-          onClick={() => toast.info(t('map.comingSoon'))}
-          className="px-3 py-2 rounded-xl text-sm font-medium shadow-lg backdrop-blur-sm bg-primary text-primary-foreground"
+          onClick={() => isFree ? showUpgrade('safeWalk') : toast.info(t('map.comingSoon'))}
+          className={`px-3 py-2 rounded-xl text-sm font-medium shadow-lg backdrop-blur-sm flex items-center gap-1.5 ${
+            isFree ? 'bg-card/95 text-muted-foreground' : 'bg-primary text-primary-foreground'
+          }`}
         >
           🛡️ {t('map.safeWalk')}
+          {isFree && <Lock className="h-3 w-3" />}
         </button>
       </div>
 
