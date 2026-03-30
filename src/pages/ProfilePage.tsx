@@ -59,7 +59,10 @@ const RANKS_CA = [
 
 const BANNER_COLORS = ['#2D6A4F', '#1B4332', '#CC0000', '#1a3a5c', '#4a1d96', '#7f1d1d', '#0f4c5c', '#c1692a'];
 
-const BADGE_CATEGORIES = ['all', 'explorer', 'validator', 'media', 'streak', 'hero', 'special'] as const;
+const BADGE_CATEGORIES = ['all', 'explorador', 'validador', 'fotograf', 'ratxa', 'heroi', 'alerta', 'comunitat', 'especial'] as const;
+const RARITY_FILTERS = ['all', 'comú', 'inedit', 'rar', 'epic', 'llegenda'] as const;
+const RARITY_LABELS: Record<string, string> = { 'comú': 'COMÚ', 'inedit': 'INÈDIT', 'rar': 'RAR', 'epic': 'ÈPIC', 'llegenda': 'LLEGENDA' };
+const RARITY_COLORS: Record<string, string> = { 'comú': '#9ca3af', 'inedit': '#22c55e', 'rar': '#3b82f6', 'epic': '#a855f7', 'llegenda': '#f59e0b' };
 
 const ProfilePage = () => {
   const { t, i18n } = useTranslation();
@@ -83,6 +86,7 @@ const ProfilePage = () => {
   const [bannerColor, setBannerColor] = useState(user?.banner_color || '#2D6A4F');
   const [showAllRanks, setShowAllRanks] = useState(false);
   const [badgeCategory, setBadgeCategory] = useState<string>('all');
+  const [badgeRarity, setBadgeRarity] = useState<string>('all');
   const [selectedBadge, setSelectedBadge] = useState<typeof mockBadges[0] | null>(null);
   const [unlockBadge, setUnlockBadge] = useState<typeof mockBadges[0] | null>(null);
   const [zones, setZones] = useState(mockSavedZones);
@@ -127,9 +131,24 @@ const ProfilePage = () => {
 
   // Filtered badges
   const filteredBadges = useMemo(() => {
-    if (badgeCategory === 'all') return mockBadges;
-    return mockBadges.filter(b => b.category === badgeCategory);
-  }, [badgeCategory]);
+    let result = mockBadges;
+    if (badgeCategory !== 'all') result = result.filter(b => b.category === badgeCategory);
+    if (badgeRarity !== 'all') result = result.filter(b => b.rarity === badgeRarity);
+    // Smart sorting
+    return [...result].sort((a, b) => {
+      const aNearly = !a.earned && a.progress !== undefined && a.total !== undefined && a.total > 0 && (a.progress / a.total) > 0.7;
+      const bNearly = !b.earned && b.progress !== undefined && b.total !== undefined && b.total > 0 && (b.progress / b.total) > 0.7;
+      if (aNearly && !bNearly) return -1;
+      if (!aNearly && bNearly) return 1;
+      if (a.earned && !b.earned) return aNearly ? 1 : -1;
+      if (!a.earned && b.earned) return bNearly ? -1 : 1;
+      if (a.earned && b.earned) return (b.earned_at || '').localeCompare(a.earned_at || '');
+      if (a.progress !== undefined && b.progress !== undefined && a.total && b.total) {
+        return (b.progress / b.total) - (a.progress / a.total);
+      }
+      return 0;
+    });
+  }, [badgeCategory, badgeRarity]);
 
   // Days until Monday
   const daysUntilMonday = useMemo(() => {
@@ -207,11 +226,13 @@ const ProfilePage = () => {
     }
   };
 
+  const [demoRarityIdx, setDemoRarityIdx] = useState(0);
+  const DEMO_RARITIES = ['comú', 'inedit', 'rar', 'epic', 'llegenda'];
   const handleDemoUnlock = () => {
-    const locked = mockBadges.filter(b => !b.earned);
-    if (locked.length > 0) {
-      setUnlockBadge(locked[Math.floor(Math.random() * locked.length)]);
-    }
+    const rarity = DEMO_RARITIES[demoRarityIdx % DEMO_RARITIES.length];
+    const badge = mockBadges.find(b => b.rarity === rarity && !b.earned) || mockBadges.find(b => !b.earned);
+    if (badge) setUnlockBadge(badge);
+    setDemoRarityIdx(prev => prev + 1);
   };
 
   const thresholdLabels: Record<number, { labelKey: string; color: string }> = {
@@ -385,31 +406,75 @@ const ProfilePage = () => {
 
         {/* TAB 2: MEDALLAS */}
         <TabsContent value="badges" className="mt-4 space-y-4">
-          <div className="flex gap-2 flex-wrap">
+          {/* Stats header */}
+          {(() => {
+            const earned = mockBadges.filter(b => b.earned).length;
+            const total = mockBadges.length;
+            const rarityCounts = mockBadges.reduce((acc, b) => { acc[b.rarity] = (acc[b.rarity] || 0) + 1; return acc; }, {} as Record<string, number>);
+            return (
+              <div className="bg-card border rounded-xl p-4">
+                <p className="text-sm font-semibold text-foreground mb-2">{earned} / {total} {t('badges.medals')}</p>
+                <Progress value={(earned / total) * 100} className="h-2 mb-3" />
+                <div className="flex gap-1.5 flex-wrap">
+                  {(['comú', 'inedit', 'rar', 'epic', 'llegenda'] as const).map(r => (
+                    <span key={r} className="text-[10px] px-2 py-0.5 rounded-full font-medium text-white" style={{ backgroundColor: RARITY_COLORS[r] }}>
+                      {rarityCounts[r] || 0} {RARITY_LABELS[r]}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Category filter */}
+          <div className="flex gap-1.5 flex-wrap overflow-x-auto pb-1">
             {BADGE_CATEGORIES.map(cat => (
-              <button key={cat} onClick={() => setBadgeCategory(cat)} className={`text-xs px-3 py-1.5 rounded-full font-medium transition ${badgeCategory === cat ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+              <button key={cat} onClick={() => setBadgeCategory(cat)} className={`text-xs px-2.5 py-1 rounded-full font-medium transition whitespace-nowrap ${badgeCategory === cat ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
                 {t(`badges.${cat}`)}
               </button>
             ))}
           </div>
 
+          {/* Rarity filter */}
+          <div className="flex gap-1.5 flex-wrap">
+            {RARITY_FILTERS.map(r => (
+              <button key={r} onClick={() => setBadgeRarity(r)} className={`text-[10px] px-2 py-0.5 rounded-full font-medium transition ${badgeRarity === r ? 'text-white' : 'opacity-50'}`} style={{ backgroundColor: r === 'all' ? (badgeRarity === 'all' ? 'hsl(var(--primary))' : 'hsl(var(--muted))') : RARITY_COLORS[r] }}>
+                {r === 'all' ? t('badges.all') : RARITY_LABELS[r]}
+              </button>
+            ))}
+          </div>
+
+          {/* Badge grid */}
           <div className="grid grid-cols-3 gap-3">
             {filteredBadges.map(badge => {
               const name = lang === 'ca' ? badge.name_ca : badge.name_es;
+              const isNearlyEarned = !badge.earned && badge.progress !== undefined && badge.total !== undefined && badge.total > 0 && (badge.progress / badge.total) > 0.7;
+              const isLimited = (badge as any).limited;
               return (
-                <button key={badge.id} onClick={() => setSelectedBadge(badge)} className={`p-3 rounded-xl border text-center transition hover:shadow-md ${badge.earned ? 'bg-card border-primary/20' : 'bg-muted/50 opacity-50'}`}>
-                  <span className={`text-3xl block mb-1 ${!badge.earned ? 'grayscale' : ''}`}>{badge.icon}</span>
-                  <p className="text-xs font-medium text-foreground truncate">{name}</p>
+                <button key={badge.id} onClick={() => setSelectedBadge(badge)} className={`p-3 rounded-xl border text-center transition hover:shadow-md relative ${badge.earned ? 'bg-card border-green-200' : isNearlyEarned ? 'bg-card' : 'bg-muted/30'}`}
+                  style={isNearlyEarned ? { borderColor: '#f59e0b', animation: 'pulse 2s infinite' } : isLimited && badge.earned ? { borderImage: 'linear-gradient(135deg, #f59e0b, #fbbf24, #d97706) 1' } : {}}
+                >
+                  {isNearlyEarned && <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-400 text-white whitespace-nowrap">⚡ {lang === 'ca' ? 'Gairebé!' : '¡Casi!'}</span>}
+                  {isLimited && badge.earned && <span className="absolute -top-1.5 -right-1.5 text-[8px] font-bold px-1 py-0.5 rounded bg-amber-500 text-white rotate-12">LTD</span>}
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium text-white inline-block mb-1" style={{ backgroundColor: badge.rarity_color }}>{RARITY_LABELS[badge.rarity]}</span>
+                  <span className={`text-3xl block mb-1 ${!badge.earned && !isNearlyEarned ? 'grayscale opacity-40' : !badge.earned ? 'opacity-80' : ''}`}>{badge.icon}</span>
+                  <p className={`text-xs font-medium truncate ${badge.earned ? 'text-foreground' : 'text-muted-foreground'}`}>{name}</p>
                   {badge.earned && badge.earned_at && (
-                    <p className="text-[10px] text-muted-foreground">{new Date(badge.earned_at).toLocaleDateString()}</p>
+                    <p className="text-[10px] text-green-600">{new Date(badge.earned_at).toLocaleDateString()}</p>
                   )}
-                  {!badge.earned && badge.progress !== undefined && badge.total !== undefined && (
+                  {badge.earned && badge.points_bonus > 0 && (
+                    <p className="text-[10px] text-orange-500 font-medium">+{badge.points_bonus} pts</p>
+                  )}
+                  {!badge.earned && badge.progress !== undefined && badge.total !== undefined && badge.total > 0 && (
                     <div className="mt-1">
                       <div className="h-1 bg-muted rounded-full overflow-hidden">
-                        <div className="h-full bg-primary rounded-full" style={{ width: `${(badge.progress / badge.total) * 100}%` }} />
+                        <div className="h-full rounded-full" style={{ width: `${(badge.progress / badge.total) * 100}%`, backgroundColor: isNearlyEarned ? '#f59e0b' : 'hsl(var(--primary))' }} />
                       </div>
                       <p className="text-[10px] text-muted-foreground mt-0.5">{badge.progress}/{badge.total}</p>
                     </div>
+                  )}
+                  {!badge.earned && (badge as any).motivator_es && isNearlyEarned && (
+                    <p className="text-[9px] italic text-green-600 mt-0.5 truncate">{lang === 'ca' ? (badge as any).motivator_ca : (badge as any).motivator_es}</p>
                   )}
                 </button>
               );
@@ -418,6 +483,7 @@ const ProfilePage = () => {
 
           <Button variant="outline" size="sm" onClick={handleDemoUnlock} className="w-full">{t('profile.demoUnlock')} 🎉</Button>
 
+          {/* Badge detail modal */}
           <Dialog open={!!selectedBadge} onOpenChange={() => setSelectedBadge(null)}>
             <DialogContent>
               <DialogHeader>
@@ -426,19 +492,30 @@ const ProfilePage = () => {
                   {lang === 'ca' ? selectedBadge?.name_ca : selectedBadge?.name_es}
                 </DialogDescription>
               </DialogHeader>
-              <div className="text-center space-y-2">
-                <p className="text-6xl">{selectedBadge?.icon}</p>
-                <p className="font-bold text-lg">{lang === 'ca' ? selectedBadge?.name_ca : selectedBadge?.name_es}</p>
+              <div className="text-center space-y-3">
+                <p className={`text-6xl ${!selectedBadge?.earned ? 'grayscale' : ''}`} style={selectedBadge?.earned ? { filter: `drop-shadow(0 0 8px ${selectedBadge.rarity_color})` } : {}}>{selectedBadge?.icon}</p>
+                <span className="inline-block px-3 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: selectedBadge?.rarity_color || '#9ca3af' }}>
+                  {RARITY_LABELS[selectedBadge?.rarity || 'comú']}
+                </span>
+                <p className="font-bold text-lg text-foreground">{lang === 'ca' ? selectedBadge?.name_ca : selectedBadge?.name_es}</p>
                 <p className="text-sm text-muted-foreground">{lang === 'ca' ? selectedBadge?.requirement_ca : selectedBadge?.requirement_es}</p>
-                {selectedBadge?.earned && <p className="text-primary font-medium">{t('badges.pointsBonus', { pts: selectedBadge.points_bonus })}</p>}
-                {selectedBadge?.earned && selectedBadge?.earned_at && (
-                  <p className="text-xs text-muted-foreground">{t('badges.earned', { date: new Date(selectedBadge.earned_at).toLocaleDateString() })}</p>
-                )}
-                {!selectedBadge?.earned && selectedBadge?.progress !== undefined && selectedBadge?.total !== undefined && (
+                {selectedBadge?.earned && <p className="text-primary font-medium">✅ {t('badges.earned', { date: new Date(selectedBadge.earned_at!).toLocaleDateString() })}</p>}
+                {selectedBadge?.earned && selectedBadge.points_bonus > 0 && <p className="text-orange-500 font-bold">+{selectedBadge.points_bonus} pts</p>}
+                {!selectedBadge?.earned && selectedBadge?.progress !== undefined && selectedBadge?.total !== undefined && selectedBadge.total > 0 && (
                   <div className="px-8">
-                    <Progress value={(selectedBadge.progress / selectedBadge.total) * 100} className="h-2" />
-                    <p className="text-xs text-muted-foreground mt-1">{selectedBadge.progress} / {selectedBadge.total}</p>
+                    <Progress value={(selectedBadge.progress / selectedBadge.total) * 100} className="h-3" />
+                    <p className="text-sm text-muted-foreground mt-1">{selectedBadge.progress} / {selectedBadge.total}</p>
                   </div>
+                )}
+                {!selectedBadge?.earned && (selectedBadge as any)?.motivator_es && (
+                  <p className="text-sm italic text-green-600">{lang === 'ca' ? (selectedBadge as any).motivator_ca : (selectedBadge as any).motivator_es}</p>
+                )}
+                {selectedBadge?.earned && (
+                  <Button className="w-full" onClick={() => {
+                    const n = lang === 'ca' ? selectedBadge.name_ca : selectedBadge.name_es;
+                    const msg = `${selectedBadge.icon} ${n} — ProcesoAlert! procesoalert.es`;
+                    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+                  }}>{t('profile.shareWhatsApp')}</Button>
                 )}
               </div>
             </DialogContent>

@@ -4,6 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { mockReports, mockUser, ALERT_TYPES, type AlertTypeKey } from '@/data/mockData';
 import { calculateDangerScore, getDangerColor, getDangerLevel } from '@/utils/dangerScore';
+import { createAlertMarker } from '@/utils/mapMarkers';
 import { updateLifecycle, resetToActive, LIFECYCLE, getReportAge } from '@/utils/reportLifecycle';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -112,7 +113,10 @@ const MapPage = () => {
     const map = mapRef.current;
     if (!map) return;
 
-    const handler = (e: L.LeafletMouseEvent) => {
+    let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+    let longPressCoords: [number, number] | null = null;
+
+    const clickHandler = (e: L.LeafletMouseEvent) => {
       if (safeWalkMode) {
         const newPoint: [number, number] = [e.latlng.lat, e.latlng.lng];
         setSafeWalkPoints(prev => [...prev, newPoint]);
@@ -121,9 +125,36 @@ const MapPage = () => {
         setMapClickMode(false);
       }
     };
-    map.on('click', handler);
-    return () => { map.off('click', handler); };
-  }, [mapClickMode, safeWalkMode]);
+
+    const mouseDownHandler = (e: L.LeafletMouseEvent) => {
+      if (safeWalkMode || mapClickMode) return;
+      longPressCoords = [e.latlng.lat, e.latlng.lng];
+      longPressTimer = setTimeout(() => {
+        if (longPressCoords) {
+          setSelectedCoords(longPressCoords);
+          setSelectedAlertType(null);
+          setReportStep(1);
+          setShowNewReport(true);
+          toast.info('📍 ' + t('map.locationCaptured'));
+        }
+      }, 800);
+    };
+
+    const mouseUpHandler = () => {
+      if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+    };
+
+    map.on('click', clickHandler);
+    map.on('mousedown', mouseDownHandler);
+    map.on('mouseup', mouseUpHandler);
+    map.on('mousemove', mouseUpHandler);
+    return () => {
+      map.off('click', clickHandler);
+      map.off('mousedown', mouseDownHandler);
+      map.off('mouseup', mouseUpHandler);
+      map.off('mousemove', mouseUpHandler);
+    };
+  }, [mapClickMode, safeWalkMode, t]);
 
   // Render safe walk markers and lines
   useEffect(() => {
@@ -212,14 +243,9 @@ const MapPage = () => {
       const alertIcon = alertInfo ? alertInfo.icon : '';
       const firstAid = alertInfo ? (lang === 'ca' ? alertInfo.first_aid_ca : alertInfo.first_aid_es) : '';
 
-      const marker = L.circleMarker([report.lat, report.lng], {
-        radius: 10,
-        color: markerColor,
-        fillColor: markerColor,
-        fillOpacity: report.status === LIFECYCLE.DECAYING ? 0.4 : 0.9,
-        weight: 2,
-        opacity: report.status === LIFECYCLE.DECAYING ? 0.5 : 1
-      });
+      const markerIcon = createAlertMarker(alertType || 'procesionaria', score, report.status);
+
+      const marker = L.marker([report.lat, report.lng], { icon: markerIcon });
 
       const decayDays = Math.floor(getReportAge(report.created_at));
       const decayBar = report.status === LIFECYCLE.DECAYING ? `
@@ -407,7 +433,7 @@ const MapPage = () => {
       lng: selectedCoords[1],
       description: reportDescription,
       status: 'ACTIVE' as const,
-      danger_score: 50,
+      danger_score: selectedAlertType === 'veneno' ? 85 : selectedAlertType === 'trampa' ? 65 : selectedAlertType === 'basura' ? 35 : 50,
       validation_count: 0,
       photos: [] as string[],
       comarca: 'Barcelonès',
@@ -422,7 +448,13 @@ const MapPage = () => {
     setReportDescription('');
     setReportPhotos([]);
     setSelectedAlertType(null);
-    toast.success(t('report.published') + ' 🎉');
+    const typeToasts: Record<string, string> = {
+      procesionaria: '🐛 ' + t('report.publishedType.procesionaria'),
+      veneno: '☠️ ' + t('report.publishedType.veneno'),
+      trampa: '🪤 ' + t('report.publishedType.trampa'),
+      basura: '🗑️ ' + t('report.publishedType.basura'),
+    };
+    toast.success(typeToasts[selectedAlertType!] || t('report.published') + ' 🎉');
   };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -753,15 +785,18 @@ const MapPage = () => {
         </div>
         {legendTab === 'types' ? (
           <>
-            {alertTypeKeys.map(key => {
-              const at = ALERT_TYPES[key];
-              return (
-                <div key={key} className="flex items-center gap-1.5 py-0.5">
-                  <span className="text-sm">{at.icon}</span>
-                  <span className="text-[11px] text-foreground">{lang === 'ca' ? at.name_ca : at.name_es}</span>
-                </div>
-              );
-            })}
+            {[
+              { key: 'procesionaria', shape: '●', color: '#a855f7' },
+              { key: 'veneno', shape: '▲', color: '#ef4444' },
+              { key: 'trampa', shape: '■', color: '#f97316' },
+              { key: 'basura', shape: '◆', color: '#eab308' },
+            ].map(item => (
+              <div key={item.key} className="flex items-center gap-1.5 py-0.5">
+                <span className="text-xs font-bold" style={{ color: item.color }}>{item.shape}</span>
+                <span className="text-[11px] text-foreground">{lang === 'ca' ? ALERT_TYPES[item.key as AlertTypeKey].name_ca : ALERT_TYPES[item.key as AlertTypeKey].name_es}</span>
+              </div>
+            ))}
+            <p className="text-[9px] text-muted-foreground mt-1">{lang === 'ca' ? 'Mida = nivell de perill' : 'Tamaño = nivel de peligro'}</p>
           </>
         ) : (
           <>
