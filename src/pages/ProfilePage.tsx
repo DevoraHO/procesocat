@@ -259,7 +259,7 @@ const ProfilePage = () => {
             <Camera size={14} />
           </button>
         </div>
-        <h1 className="text-xl font-bold mt-3 text-foreground">{user.name}</h1>
+        <h1 className="text-xl font-bold mt-3 text-foreground">{user.name} {user.pet_name && <span className="text-sm font-normal text-muted-foreground">· 🐕 {user.pet_name}</span>}</h1>
         <div className="flex gap-2 mt-2 flex-wrap justify-center">
           <span className="bg-primary text-primary-foreground text-xs px-3 py-1 rounded-full font-medium">⭐ {currentRank?.name || user.rank}</span>
           <span className="bg-muted text-muted-foreground text-xs px-3 py-1 rounded-full font-medium">{points.toLocaleString()} {t('profile.points')}</span>
