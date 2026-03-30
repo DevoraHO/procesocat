@@ -84,9 +84,14 @@ const ProfilePage = () => {
     { icon: '🔥', textKey: 'activity.loginStreak', textParams: { days: '7' }, timeKey: '1 ' + (lang === 'ca' ? 'setmana' : 'semana'), pts: 50 },
   ];
 
+  // Refs for file inputs
+  const bannerInputRef = useRef<HTMLInputElement>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
   // State
   const [bannerEditorOpen, setBannerEditorOpen] = useState(false);
   const [bannerColor, setBannerColor] = useState(user?.banner_color || '#2D6A4F');
+  const [bannerImage, setBannerImage] = useState<string | null>(user?.banner_image || null);
   const [showAllRanks, setShowAllRanks] = useState(false);
   const [badgeCategory, setBadgeCategory] = useState<string>('all');
   const [badgeRarity, setBadgeRarity] = useState<string>('all');
