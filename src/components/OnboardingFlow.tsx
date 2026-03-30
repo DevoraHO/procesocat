@@ -6,8 +6,15 @@ import logo from '@/assets/logoprocesocat.png';
 interface Props { onComplete: () => void; }
 
 const OnboardingFlow = ({ onComplete }: Props) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [step, setStep] = useState(0);
+
+  const currentLang = i18n.language?.startsWith('ca') ? 'ca' : 'es';
+  const toggleLang = () => {
+    const next = currentLang === 'es' ? 'ca' : 'es';
+    i18n.changeLanguage(next);
+    localStorage.setItem('procesocat_lang', next);
+  };
 
   const skip = () => { localStorage.setItem('onboarding_done', 'true'); onComplete(); };
   const next = () => { if (step < 2) setStep(step + 1); else skip(); };
@@ -23,7 +30,13 @@ const OnboardingFlow = ({ onComplete }: Props) => {
 
   if (step === 0) return (
     <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center p-8 text-white text-center" style={{ background: '#2D6A4F' }}>
-      <button onClick={skip} className="absolute top-6 right-6 text-white/70 text-sm">{t('onboarding.skip')}</button>
+      <div className="absolute top-6 left-6 right-6 flex justify-between items-center">
+        <div className="flex gap-1">
+          <button onClick={() => { i18n.changeLanguage('es'); localStorage.setItem('procesocat_lang', 'es'); }} className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${currentLang === 'es' ? 'bg-white text-[#2D6A4F]' : 'bg-white/20 text-white/70'}`}>ES</button>
+          <button onClick={() => { i18n.changeLanguage('ca'); localStorage.setItem('procesocat_lang', 'ca'); }} className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${currentLang === 'ca' ? 'bg-white text-[#2D6A4F]' : 'bg-white/20 text-white/70'}`}>CA</button>
+        </div>
+        <button onClick={skip} className="text-white/70 text-sm">{t('onboarding.skip')}</button>
+      </div>
       <img src={logo} alt="ProcesoCat" className="w-28 h-28 mb-6 rounded-2xl" />
       <h1 className="text-2xl font-bold mb-3">{t('onboarding.title1')}</h1>
       <p className="text-white/80 max-w-xs">{t('onboarding.sub1')}</p>
