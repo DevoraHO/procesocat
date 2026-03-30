@@ -154,6 +154,11 @@ const MapPage = () => {
     }
   }, [location.state]);
 
+  // Long press ripple state
+  const [ripple, setRipple] = useState<{ x: number; y: number } | null>(null);
+  const [quickTooltip, setQuickTooltip] = useState<{ lat: number; lng: number; x: number; y: number } | null>(null);
+  const [mapHintsShown, setMapHintsShown] = useState(!!localStorage.getItem('map_hints_shown'));
+
   // Handle map click for report placement OR safe walk
   useEffect(() => {
     const map = mapRef.current;
@@ -161,49 +166,67 @@ const MapPage = () => {
 
     let longPressTimer: ReturnType<typeof setTimeout> | null = null;
     let longPressCoords: [number, number] | null = null;
+    let longPressPixel: { x: number; y: number } | null = null;
 
     const clickHandler = (e: L.LeafletMouseEvent) => {
       if (safeWalkMode) {
         const newPoint: [number, number] = [e.latlng.lat, e.latlng.lng];
         setSafeWalkPoints(prev => [...prev, newPoint]);
-      } else if (mapClickMode) {
-        setSelectedCoords([e.latlng.lat, e.latlng.lng]);
-        setMapClickMode(false);
-        setShowNewReport(true);
-        setReportStep(2);
-        toast.success('📍 ' + t('map.locationCaptured'));
+        return;
       }
+      if (showNewReport) return;
+      // Check if clicked near an existing marker
+      let nearMarker = false;
+      markersLayerRef.current?.eachLayer(layer => {
+        if (layer instanceof L.Marker) {
+          const d = map.distance(e.latlng, layer.getLatLng());
+          if (d < 50) nearMarker = true;
+        }
+      });
+      if (nearMarker) return;
+
+      // Show quick tooltip
+      const point = map.latLngToContainerPoint(e.latlng);
+      setQuickTooltip({ lat: e.latlng.lat, lng: e.latlng.lng, x: point.x, y: point.y });
+      setTimeout(() => setQuickTooltip(prev => prev?.lat === e.latlng.lat ? null : prev), 3000);
     };
 
     const mouseDownHandler = (e: L.LeafletMouseEvent) => {
-      if (safeWalkMode || mapClickMode) return;
+      if (safeWalkMode || showNewReport) return;
       longPressCoords = [e.latlng.lat, e.latlng.lng];
+      const point = map.latLngToContainerPoint(e.latlng);
+      longPressPixel = { x: point.x, y: point.y };
+      setRipple({ x: point.x, y: point.y });
+
       longPressTimer = setTimeout(() => {
         if (longPressCoords) {
+          setRipple(null);
+          setQuickTooltip(null);
           setSelectedCoords(longPressCoords);
           setSelectedAlertType(null);
           setReportStep(1);
           setShowNewReport(true);
-          toast.info('📍 ' + t('map.locationCaptured'));
+          toast.info('📍 ' + t('mapInteraction.preSelected'));
         }
       }, 800);
     };
 
-    const mouseUpHandler = () => {
+    const cancelLongPress = () => {
       if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+      setRipple(null);
     };
 
     map.on('click', clickHandler);
     map.on('mousedown', mouseDownHandler);
-    map.on('mouseup', mouseUpHandler);
-    map.on('mousemove', mouseUpHandler);
+    map.on('mouseup', cancelLongPress);
+    map.on('mousemove', cancelLongPress);
     return () => {
       map.off('click', clickHandler);
       map.off('mousedown', mouseDownHandler);
-      map.off('mouseup', mouseUpHandler);
-      map.off('mousemove', mouseUpHandler);
+      map.off('mouseup', cancelLongPress);
+      map.off('mousemove', cancelLongPress);
     };
-  }, [mapClickMode, safeWalkMode, t]);
+  }, [safeWalkMode, showNewReport, t]);
 
   // Render safe walk markers and lines
   useEffect(() => {
