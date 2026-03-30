@@ -27,11 +27,18 @@ const MONTH_DATA = [
 ];
 
 const VIDEOS = [
-  { icon: '🐕', title_es: 'Si tu perro la ha tocado', title_ca: 'Si el teu gos l\'ha tocat', src_es: 'Col·legi de Veterinaris de Catalunya', src_ca: 'Col·legi de Veterinaris de Catalunya', videoId: 'dQw4w9WgXcQ' },
-  { icon: '👶', title_es: 'Si un niño la ha tocado', title_ca: 'Si un nen l\'ha tocat', src_es: 'Cruz Roja España', src_ca: 'Creu Roja Espanya', videoId: 'dQw4w9WgXcQ' },
-  { icon: '🔍', title_es: 'Cómo identificar un nido', title_ca: 'Com identificar un niu', src_es: 'Generalitat de Catalunya', src_ca: 'Generalitat de Catalunya', videoId: 'dQw4w9WgXcQ' },
-  { icon: '🌲', title_es: 'Qué es la procesionaria', title_ca: 'Què és la processionària', src_es: 'Universitat Autònoma de Barcelona', src_ca: 'Universitat Autònoma de Barcelona', videoId: 'dQw4w9WgXcQ' },
-  { icon: '🏡', title_es: 'Prevención y tratamiento', title_ca: 'Prevenció i tractament', src_es: 'Ministerio de Medio Ambiente', src_ca: 'Ministeri de Medi Ambient', videoId: 'dQw4w9WgXcQ' },
+  { icon: '🐕', title_es: 'Si tu perro la ha tocado', title_ca: 'Si el teu gos l\'ha tocat', src_es: 'Col·legi de Veterinaris de Catalunya', src_ca: 'Col·legi de Veterinaris de Catalunya', videoId: 'placeholder1' },
+  { icon: '👶', title_es: 'Si un niño la ha tocado', title_ca: 'Si un nen l\'ha tocat', src_es: 'Cruz Roja España', src_ca: 'Creu Roja Espanya', videoId: 'placeholder2' },
+  { icon: '🔍', title_es: 'Cómo identificar un nido', title_ca: 'Com identificar un niu', src_es: 'Generalitat de Catalunya', src_ca: 'Generalitat de Catalunya', videoId: 'placeholder3' },
+  { icon: '🌲', title_es: 'Qué es la procesionaria', title_ca: 'Què és la processionària', src_es: 'Universitat Autònoma de Barcelona', src_ca: 'Universitat Autònoma de Barcelona', videoId: 'placeholder4' },
+  { icon: '🏡', title_es: 'Prevención y tratamiento', title_ca: 'Prevenció i tractament', src_es: 'Ministerio de Medio Ambiente', src_ca: 'Ministeri de Medi Ambient', videoId: 'placeholder5' },
+];
+
+const OFFICIAL_RESOURCES = [
+  { name: 'Generalitat de Catalunya — Sanitat Forestal', url: 'https://agricultura.gencat.cat', domain: 'gencat.cat' },
+  { name_es: 'Agents Rurals Catalunya', name_ca: 'Agents Rurals Catalunya', url: 'tel:900050051', domain: '900 050 051 (gratuït/gratuito)' },
+  { name: 'Col·legi de Veterinaris de Barcelona', url: 'https://www.covb.cat', domain: 'covb.cat' },
+  { name_es: 'Cruz Roja España — Primeros auxilios', name_ca: 'Creu Roja Espanya — Primers auxilis', url: 'https://www.cruzroja.es', domain: 'cruzroja.es' },
 ];
 
 const InfoPage = () => {
