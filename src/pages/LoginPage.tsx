@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import LanguageToggle from '@/components/LanguageToggle';
 import { toast } from 'sonner';
 import { Mail, Eye, EyeOff, Loader2, Lock, ShieldAlert } from 'lucide-react';
+import logo from '@/assets/logoprocesocat.png';
 import { isAccountLocked, recordLoginAttempt, getLoginAttempts, logSecurityEvent, addSession, SECURITY_CONFIG } from '@/utils/security';
 import { supabase } from '@/integrations/supabase/client';
 
