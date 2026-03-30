@@ -209,10 +209,10 @@ const InfoPage = () => {
         </div>
       </section>
 
-      {/* SECTION 5: VIDEOS */}
+      {/* SECTION 5: VIDEOS — FREE FOR ALL USERS */}
       <section className="space-y-3">
         <h2 className="text-lg font-bold text-foreground">🎥 {t('info.videosTitle')}</h2>
-        <p className="text-xs text-muted-foreground">{t('info.videosDisclaimer')}</p>
+        <p className="text-xs text-primary font-medium">{t('info.videosFreeNote')}</p>
         {VIDEOS.map((v, i) => (
           <Collapsible key={i} open={!!openVideos[i]} onOpenChange={o => setOpenVideos(prev => ({ ...prev, [i]: o }))}>
             <CollapsibleTrigger className="w-full">
@@ -228,8 +228,11 @@ const InfoPage = () => {
                 {openVideos[i] && (
                   <iframe
                     src={`https://www.youtube-nocookie.com/embed/${v.videoId}`}
-                    className="w-full h-[200px] rounded-lg"
-                    style={{ border: 'none' }}
+                    width="100%"
+                    height="215"
+                    frameBorder="0"
+                    className="rounded-lg"
+                    style={{ border: 'none', borderRadius: '8px' }}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                     loading="lazy"
@@ -241,10 +244,32 @@ const InfoPage = () => {
             </CollapsibleContent>
           </Collapsible>
         ))}
-        <p className="text-xs text-muted-foreground">
-          {t('info.moreInfo')}{' '}
-          <a href="https://agricultura.gencat.cat" target="_blank" rel="noopener noreferrer" className="text-primary underline">gencat.cat</a>
-        </p>
+        {/* Disclaimer */}
+        <div className="bg-muted/50 border border-border rounded-xl p-4 flex gap-2 text-xs text-muted-foreground">
+          <span>ℹ️</span>
+          <span>{t('info.videosFullDisclaimer')}</span>
+        </div>
+      </section>
+
+      {/* SECTION 5b: OFFICIAL RESOURCES */}
+      <section className="space-y-3">
+        <h2 className="text-lg font-bold text-foreground">🔗 {t('info.officialResources')}</h2>
+        <div className="space-y-2">
+          {OFFICIAL_RESOURCES.map((r, i) => (
+            <a
+              key={i}
+              href={r.url}
+              target={r.url.startsWith('tel:') ? '_self' : '_blank'}
+              rel="noopener noreferrer"
+              className="flex items-center justify-between p-3 bg-muted/30 border border-border rounded-xl hover:bg-muted/50 transition"
+            >
+              <span className="text-sm font-medium text-foreground">
+                {(r as any).name || (lang === 'ca' ? (r as any).name_ca : (r as any).name_es)}
+              </span>
+              <span className="text-xs text-primary">{r.domain}</span>
+            </a>
+          ))}
+        </div>
       </section>
 
       {/* SECTION 6: ABOUT */}
