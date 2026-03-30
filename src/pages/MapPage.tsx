@@ -7,6 +7,8 @@ import { mockReports, mockUser, ALERT_TYPES, type AlertTypeKey } from '@/data/mo
 import { calculateDangerScore, getDangerColor, getDangerLevel } from '@/utils/dangerScore';
 import { createAlertMarker } from '@/utils/mapMarkers';
 import { updateLifecycle, resetToActive, LIFECYCLE, getReportAge } from '@/utils/reportLifecycle';
+import { calculateDistance, getValidationType, formatDistance } from '@/utils/validation';
+import { useValidation } from '@/contexts/ValidationContext';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -49,6 +51,13 @@ const MapPage = () => {
   const [validatedIds, setValidatedIds] = useState<Set<string>>(new Set());
   const [selectedAlertType, setSelectedAlertType] = useState<AlertTypeKey | null>(null);
   const { isFree, canReport, reportsRemaining, incrementReportCount, upgradeOpen, upgradeTrigger, showUpgrade, closeUpgrade } = useFreemium();
+  const { canValidate, submitValidation, mockGPS, setMockGPS, dailyCount, dailyLimit } = useValidation();
+
+  // GPS state for validation
+  const [userGPS, setUserGPS] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [showEducation, setShowEducation] = useState(false);
+  const [showGPSSimulator, setShowGPSSimulator] = useState(false);
 
   // Filter state
   const [showFilterPanel, setShowFilterPanel] = useState(false);
@@ -290,6 +299,23 @@ const MapPage = () => {
     });
   }, [scoredReports, filterTypes, filterDanger, filterTime]);
 
+  // Request GPS for validation
+  const requestGPSForValidation = useCallback(() => {
+    setGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserGPS({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
+        setGpsLoading(false);
+        toast.success(t('mapInteraction.gpsActivated'));
+      },
+      () => {
+        setGpsLoading(false);
+        toast.error(t('errors.location'));
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  }, [t]);
+
   // Render markers & heatmap
   const renderMarkers = useCallback(() => {
     if (!markersLayerRef.current || !heatmapLayerRef.current) return;
@@ -343,6 +369,60 @@ const MapPage = () => {
         </div>
       ` : '';
 
+      // Determine validation state for popup
+      const effectiveGPS = mockGPS || (userGPS ? { lat: userGPS.lat, lng: userGPS.lng } : null);
+      const gpsAccuracy = mockGPS ? 10 : (userGPS?.accuracy || null);
+      const valResult = canValidate(report.id, report.user_id, effectiveGPS?.lat ?? null, effectiveGPS?.lng ?? null, report.lat, report.lng, gpsAccuracy);
+
+      let validateBtnHtml = '';
+      if (valResult.status === 'own_report') {
+        validateBtnHtml = `<div style="text-align:center;padding:6px;font-size:11px;color:#888">ℹ️ ${t('validation.ownReport')}</div>`;
+      } else if (valResult.status === 'already_validated') {
+        validateBtnHtml = `<div style="text-align:center;padding:6px;font-size:11px;color:#22c55e">✅ ${t('validation.alreadyValidated')}</div>`;
+      } else if (valResult.status === 'gps_required') {
+        validateBtnHtml = `
+          <button data-action="activate-gps" data-id="${report.id}" style="width:100%;padding:8px 0;border:none;border-radius:8px;background:#9ca3af;color:#fff;font-size:12px;cursor:pointer;margin-top:4px">📍 ${t('validation.activateGPS')}</button>
+          <p style="font-size:10px;color:#888;text-align:center;margin:4px 0 0">${lang === 'ca' ? 'Necessites estar a prop per confirmar' : 'Necesitas estar cerca para confirmar'}</p>`;
+      } else if (valResult.status === 'daily_limit') {
+        validateBtnHtml = `<div style="text-align:center;padding:6px;font-size:11px;color:#f97316">⏰ ${t('validation.dailyLimit')}<br><span style="font-size:10px;color:#888">${t('validation.dailyLimitDetail', { count: dailyCount, limit: dailyLimit })}</span></div>`;
+      } else if (valResult.status === 'burst_limit') {
+        validateBtnHtml = `<div style="text-align:center;padding:6px;font-size:11px;color:#f97316">⏳ ${t('validation.burstLimit')}</div>`;
+      } else if (valResult.status === 'blocked') {
+        const distStr = formatDistance(valResult.distance, lang);
+        validateBtnHtml = `
+          <div style="text-align:center;padding:6px">
+            <div style="font-size:12px;color:#ef4444;font-weight:600">📍 ${t('validation.blocked')}</div>
+            <div style="font-size:10px;color:#888;margin-top:2px">${distStr}</div>
+            <div style="font-size:10px;color:#888">${t('validation.blockedTip')}</div>
+          </div>`;
+      } else if (valResult.status === 'remote') {
+        const distStr = formatDistance(valResult.distance, lang);
+        validateBtnHtml = `
+          <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:8px;margin-top:4px;font-size:11px">
+            <div style="color:#92400e;font-weight:600">⚠️ ${t('validation.remoteWarning')}</div>
+            <div style="color:#92400e;margin-top:2px">${distStr}</div>
+          </div>
+          <button data-action="validate" data-id="${report.id}" style="width:100%;padding:8px 0;border:none;border-radius:8px;background:#f97316;color:#fff;font-size:12px;cursor:pointer;margin-top:6px">👁️ ${t('validation.remoteConfirm')}</button>`;
+      } else {
+        // allowed (in_situ)
+        const distStr = formatDistance(valResult.distance, lang);
+        validateBtnHtml = `
+          <div style="background:#dcfce7;border:1px solid #22c55e;border-radius:8px;padding:6px 8px;margin-top:4px;font-size:11px;color:#166534;display:flex;align-items:center;gap:4px">
+            <span>🎯</span> ${t('validation.inSituBadge')} · ${distStr}
+          </div>
+          <button data-action="validate" data-id="${report.id}" style="width:100%;padding:8px 0;border:none;border-radius:8px;background:#2D6A4F;color:#fff;font-size:12px;cursor:pointer;margin-top:6px;font-weight:600">✅ ${t('validation.inSitu')}</button>`;
+      }
+
+      // Trust indicator for confirmed reports
+      const totalTrust = report.validation_count > 0 ? Math.min(100, Math.round((report.validation_count * 0.75) * 100 / 6)) : 0;
+      const trustBar = report.validation_count > 0 ? `
+        <div style="margin:6px 0">
+          <div style="font-size:10px;color:#666;margin-bottom:2px">${t('validation.trustLevel')}</div>
+          <div style="background:#e5e7eb;height:4px;border-radius:2px;overflow:hidden">
+            <div style="background:${totalTrust > 60 ? '#22c55e' : totalTrust > 30 ? '#eab308' : '#ef4444'};width:${totalTrust}%;height:100%"></div>
+          </div>
+        </div>` : '';
+
       const popupContent = `
         <div style="min-width:220px;font-family:system-ui,sans-serif">
           ${alertTypeHeader}
@@ -352,12 +432,11 @@ const MapPage = () => {
           <div style="margin-bottom:8px">
             <span style="display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;color:#fff;background:${dangerColor}">${score} — ${levelName}</span>
           </div>
-          <p style="margin:0 0 4px;font-size:12px;color:#666">✅ ${t('report.validatedBy', { count: report.validation_count })}</p>
-          <p style="margin:0 0 10px;font-size:12px;color:#999">📍 ${report.comarca} · ${daysAgo}d</p>
-          <div style="display:flex;gap:6px">
-            <button data-action="validate" data-id="${report.id}" style="flex:1;padding:6px 0;border:none;border-radius:6px;background:#2D6A4F;color:#fff;font-size:12px;cursor:pointer">✅ ${t('report.validate')}</button>
-            <button data-action="share" data-id="${report.id}" style="flex:1;padding:6px 0;border:none;border-radius:6px;background:#25D366;color:#fff;font-size:12px;cursor:pointer">📱 WhatsApp</button>
-          </div>
+          <p style="margin:0 0 2px;font-size:12px;color:#666">✅ ${t('validation.confirmedBy', { count: report.validation_count })}</p>
+          ${trustBar}
+          <p style="margin:0 0 8px;font-size:12px;color:#999">📍 ${report.comarca} · ${daysAgo}d</p>
+          ${validateBtnHtml}
+          <button data-action="share" data-id="${report.id}" style="width:100%;padding:6px 0;border:none;border-radius:6px;background:#25D366;color:#fff;font-size:12px;cursor:pointer;margin-top:6px">📱 WhatsApp</button>
         </div>
       `;
 
@@ -368,19 +447,33 @@ const MapPage = () => {
           if (!container) return;
 
           container.querySelector('[data-action="validate"]')?.addEventListener('click', () => {
-            if (report.user_id === mockUser.id) {
-              toast.error(t('report.ownReport'));
+            const effectiveGPS = mockGPS || (userGPS ? { lat: userGPS.lat, lng: userGPS.lng } : null);
+            if (!effectiveGPS) {
+              toast.error(t('validation.activateGPS'));
               return;
             }
-            if (validatedIds.has(report.id)) {
-              toast.info(t('report.alreadyValidated'));
-              return;
+            const record = submitValidation(report.id, effectiveGPS.lat, effectiveGPS.lng, report.lat, report.lng);
+            if (record) {
+              setValidatedIds(prev => new Set(prev).add(report.id));
+              setReports(prev => prev.map(r =>
+                r.id === report.id ? { ...r, validation_count: r.validation_count + 1 } : r
+              ));
+              if (record.type === 'in_situ') {
+                toast.success(t('validation.successInSitu'));
+              } else {
+                toast.success(t('validation.successRemote'));
+              }
+              marker.closePopup();
             }
-            setValidatedIds(prev => new Set(prev).add(report.id));
-            setReports(prev => prev.map(r =>
-              r.id === report.id ? { ...r, validation_count: r.validation_count + 1 } : r
-            ));
-            toast.success(t('report.confirmed'));
+          });
+
+          container.querySelector('[data-action="activate-gps"]')?.addEventListener('click', () => {
+            // Check if education shown
+            if (!localStorage.getItem('validation_explained')) {
+              setShowEducation(true);
+            } else {
+              requestGPSForValidation();
+            }
             marker.closePopup();
           });
 
@@ -416,7 +509,7 @@ const MapPage = () => {
       });
       heatmapLayerRef.current!.addLayer(heatCircle);
     });
-  }, [scoredReports, t, validatedIds, getFilteredReports, lang]);
+  }, [scoredReports, t, validatedIds, getFilteredReports, lang, mockGPS, userGPS, canValidate, submitValidation, dailyCount, dailyLimit, requestGPSForValidation]);
 
   useEffect(() => {
     renderMarkers();
@@ -1366,6 +1459,77 @@ const MapPage = () => {
       )}
 
       <UpgradeModal open={upgradeOpen} onClose={closeUpgrade} trigger={upgradeTrigger} />
+
+      {/* EDUCATION MODAL */}
+      {showEducation && (
+        <div className="fixed inset-0 z-[3000] bg-black/60 flex items-end sm:items-center justify-center p-4">
+          <div className="bg-card rounded-2xl max-w-sm w-full shadow-2xl p-6 animate-slide-in-bottom">
+            <div className="text-center mb-4">
+              <div className="text-4xl mb-2">🎯</div>
+              <h3 className="text-lg font-bold text-foreground">{t('validation.educationTitle')}</h3>
+              <p className="text-sm text-muted-foreground mt-2">{t('validation.educationText')}</p>
+            </div>
+            <div className="space-y-2 mb-4">
+              <div className="flex items-center gap-2 text-sm text-foreground">
+                <span className="text-primary">✅</span> {t('validation.educationInSitu')}
+              </div>
+              <div className="flex items-center gap-2 text-sm text-foreground">
+                <span className="text-orange-500">👁️</span> {t('validation.educationRemote')}
+              </div>
+              <div className="flex items-center gap-2 text-sm text-foreground">
+                <span className="text-destructive">❌</span> {t('validation.educationBlocked')}
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground text-center mb-4">{t('validation.educationWhy')}</p>
+            <Button className="w-full" onClick={() => {
+              setShowEducation(false);
+              localStorage.setItem('validation_explained', 'true');
+              requestGPSForValidation();
+            }}>
+              {t('validation.understood')}
+            </Button>
+            <button onClick={() => setShowEducation(false)} className="w-full text-center text-xs text-muted-foreground mt-2 hover:text-foreground">
+              {lang === 'ca' ? 'Cancel·lar' : 'Cancelar'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* GPS SIMULATOR (debug) */}
+      {showGPSSimulator && (
+        <div className="absolute bottom-24 left-3 z-[1001] bg-card/95 backdrop-blur-sm shadow-xl rounded-xl p-3 w-[220px] animate-fade-in border">
+          <p className="text-xs font-semibold text-foreground mb-2">📍 {t('validation.simulateGPS')}</p>
+          <div className="space-y-1.5">
+            <button onClick={() => { setMockGPS({ lat: mockReports[0].lat + 0.0003, lng: mockReports[0].lng + 0.0003 }); toast.success('GPS → 50m de r1'); }} className="w-full text-left text-xs px-2 py-1.5 rounded-lg bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 hover:opacity-80">
+              📍 {t('validation.nearReport')}
+            </button>
+            <button onClick={() => { setMockGPS({ lat: mockReports[0].lat + 0.003, lng: mockReports[0].lng }); toast.success('GPS → 300m'); }} className="w-full text-left text-xs px-2 py-1.5 rounded-lg bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 hover:opacity-80">
+              📍 {t('validation.greyZone')}
+            </button>
+            <button onClick={() => { setMockGPS({ lat: mockReports[0].lat + 0.02, lng: mockReports[0].lng }); toast.success('GPS → 2km'); }} className="w-full text-left text-xs px-2 py-1.5 rounded-lg bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 hover:opacity-80">
+              📍 {t('validation.farAway')}
+            </button>
+            <button onClick={() => { setMockGPS(null); toast.info(t('validation.deactivate')); }} className="w-full text-left text-xs px-2 py-1.5 rounded-lg bg-muted text-muted-foreground hover:opacity-80">
+              ❌ {t('validation.deactivate')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* GPS simulation banner */}
+      {mockGPS && (
+        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[1001] bg-blue-600 text-white rounded-lg px-3 py-1.5 text-xs font-medium shadow-lg">
+          🔵 {t('validation.simulationActive')}
+        </div>
+      )}
+
+      {/* GPS sim toggle button (bottom left) */}
+      <button
+        onClick={() => setShowGPSSimulator(v => !v)}
+        className="absolute bottom-4 right-16 z-[1000] bg-card/90 backdrop-blur-sm text-muted-foreground shadow-lg rounded-lg px-2 py-1.5 text-[10px] border hover:text-foreground transition"
+      >
+        📍 GPS
+      </button>
     </div>
   );
 };
