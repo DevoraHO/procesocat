@@ -28,6 +28,7 @@ const MapPage = () => {
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const heatmapLayerRef = useRef<L.LayerGroup | null>(null);
   const userMarkerRef = useRef<L.CircleMarker | null>(null);
+  const previewMarkerRef = useRef<L.Marker | null>(null);
 
   const [reports, setReports] = useState(() =>
     updateLifecycle(mockReports.map(r => ({ ...r, validation_count: r.validation_count })))
@@ -67,7 +68,23 @@ const MapPage = () => {
   const safeWalkLineRef = useRef<L.Polyline | null>(null);
   const safeWalkResultLinesRef = useRef<L.LayerGroup | null>(null);
 
-  // Calculate scores
+  // Show/remove preview marker on map when coords are selected
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (previewMarkerRef.current) {
+      map.removeLayer(previewMarkerRef.current);
+      previewMarkerRef.current = null;
+    }
+    if (selectedCoords) {
+      const alertType = selectedAlertType || 'procesionaria';
+      const marker = createAlertMarker(alertType, 50, 'ACTIVE');
+      const m = L.marker(selectedCoords, { icon: marker }).addTo(map);
+      m.bindPopup(`📍 ${t('map.locationCaptured')}`).openPopup();
+      previewMarkerRef.current = m;
+    }
+  }, [selectedCoords, selectedAlertType, t]);
+
   useEffect(() => {
     const scored = reports.map(r => ({
       report: r,
@@ -1161,8 +1178,14 @@ const MapPage = () => {
 
       {/* Map click mode indicator */}
       {mapClickMode && (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] bg-card/95 backdrop-blur-sm shadow-lg rounded-xl px-4 py-3 text-sm font-medium text-foreground pointer-events-none animate-pulse">
-          📍 {t('map.tapMapToSelect')}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] flex flex-col items-center gap-2 pointer-events-none">
+          <div className="text-4xl">📍</div>
+          <div className="bg-card/95 backdrop-blur-sm shadow-lg rounded-xl px-4 py-3 text-sm font-medium text-foreground animate-pulse">
+            {t('map.tapMapToSelect')}
+          </div>
+          <Button size="sm" variant="destructive" className="pointer-events-auto" onClick={() => { setMapClickMode(false); setShowNewReport(true); }}>
+            {t('cancel')}
+          </Button>
         </div>
       )}
 
