@@ -45,7 +45,7 @@ const MapPage = () => {
   const [selectedCoords, setSelectedCoords] = useState<[number, number] | null>(null);
   const [reportDescription, setReportDescription] = useState('');
   const [reportPhotos, setReportPhotos] = useState<File[]>([]);
-  const [mapClickMode, setMapClickMode] = useState(false);
+  const [mapClickMode] = useState(false); // kept for safe walk compat
   const [validatedIds, setValidatedIds] = useState<Set<string>>(new Set());
   const [selectedAlertType, setSelectedAlertType] = useState<AlertTypeKey | null>(null);
   const { isFree, canReport, reportsRemaining, incrementReportCount, upgradeOpen, upgradeTrigger, showUpgrade, closeUpgrade } = useFreemium();
@@ -154,6 +154,11 @@ const MapPage = () => {
     }
   }, [location.state]);
 
+  // Long press ripple state
+  const [ripple, setRipple] = useState<{ x: number; y: number } | null>(null);
+  const [quickTooltip, setQuickTooltip] = useState<{ lat: number; lng: number; x: number; y: number } | null>(null);
+  const [mapHintsShown, setMapHintsShown] = useState(!!localStorage.getItem('map_hints_shown'));
+
   // Handle map click for report placement OR safe walk
   useEffect(() => {
     const map = mapRef.current;
@@ -161,49 +166,67 @@ const MapPage = () => {
 
     let longPressTimer: ReturnType<typeof setTimeout> | null = null;
     let longPressCoords: [number, number] | null = null;
+    let longPressPixel: { x: number; y: number } | null = null;
 
     const clickHandler = (e: L.LeafletMouseEvent) => {
       if (safeWalkMode) {
         const newPoint: [number, number] = [e.latlng.lat, e.latlng.lng];
         setSafeWalkPoints(prev => [...prev, newPoint]);
-      } else if (mapClickMode) {
-        setSelectedCoords([e.latlng.lat, e.latlng.lng]);
-        setMapClickMode(false);
-        setShowNewReport(true);
-        setReportStep(2);
-        toast.success('📍 ' + t('map.locationCaptured'));
+        return;
       }
+      if (showNewReport) return;
+      // Check if clicked near an existing marker
+      let nearMarker = false;
+      markersLayerRef.current?.eachLayer(layer => {
+        if (layer instanceof L.Marker) {
+          const d = map.distance(e.latlng, layer.getLatLng());
+          if (d < 50) nearMarker = true;
+        }
+      });
+      if (nearMarker) return;
+
+      // Show quick tooltip
+      const point = map.latLngToContainerPoint(e.latlng);
+      setQuickTooltip({ lat: e.latlng.lat, lng: e.latlng.lng, x: point.x, y: point.y });
+      setTimeout(() => setQuickTooltip(prev => prev?.lat === e.latlng.lat ? null : prev), 3000);
     };
 
     const mouseDownHandler = (e: L.LeafletMouseEvent) => {
-      if (safeWalkMode || mapClickMode) return;
+      if (safeWalkMode || showNewReport) return;
       longPressCoords = [e.latlng.lat, e.latlng.lng];
+      const point = map.latLngToContainerPoint(e.latlng);
+      longPressPixel = { x: point.x, y: point.y };
+      setRipple({ x: point.x, y: point.y });
+
       longPressTimer = setTimeout(() => {
         if (longPressCoords) {
+          setRipple(null);
+          setQuickTooltip(null);
           setSelectedCoords(longPressCoords);
           setSelectedAlertType(null);
           setReportStep(1);
           setShowNewReport(true);
-          toast.info('📍 ' + t('map.locationCaptured'));
+          toast.info('📍 ' + t('mapInteraction.preSelected'));
         }
       }, 800);
     };
 
-    const mouseUpHandler = () => {
+    const cancelLongPress = () => {
       if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+      setRipple(null);
     };
 
     map.on('click', clickHandler);
     map.on('mousedown', mouseDownHandler);
-    map.on('mouseup', mouseUpHandler);
-    map.on('mousemove', mouseUpHandler);
+    map.on('mouseup', cancelLongPress);
+    map.on('mousemove', cancelLongPress);
     return () => {
       map.off('click', clickHandler);
       map.off('mousedown', mouseDownHandler);
-      map.off('mouseup', mouseUpHandler);
-      map.off('mousemove', mouseUpHandler);
+      map.off('mouseup', cancelLongPress);
+      map.off('mousemove', cancelLongPress);
     };
-  }, [mapClickMode, safeWalkMode, t]);
+  }, [safeWalkMode, showNewReport, t]);
 
   // Render safe walk markers and lines
   useEffect(() => {
@@ -493,10 +516,9 @@ const MapPage = () => {
     incrementReportCount();
     setShowNewReport(false);
     setReportStep(1);
-    setSelectedCoords(null);
     setReportDescription('');
     setReportPhotos([]);
-    setSelectedAlertType(null);
+
     const typeToasts: Record<string, string> = {
       procesionaria: '🐛 ' + t('report.publishedType.procesionaria'),
       veneno: '☠️ ' + t('report.publishedType.veneno'),
@@ -504,6 +526,25 @@ const MapPage = () => {
       basura: '🗑️ ' + t('report.publishedType.basura'),
     };
     toast.success(typeToasts[selectedAlertType!] || t('report.published') + ' 🎉');
+
+    // Fly to new marker and open popup after markers re-render
+    setTimeout(() => {
+      if (mapRef.current) {
+        mapRef.current.flyTo(selectedCoords!, 15, { duration: 1 });
+        setTimeout(() => {
+          markersLayerRef.current?.eachLayer(layer => {
+            if (layer instanceof L.Marker) {
+              const ll = layer.getLatLng();
+              if (Math.abs(ll.lat - selectedCoords![0]) < 0.0001 && Math.abs(ll.lng - selectedCoords![1]) < 0.0001) {
+                layer.openPopup();
+              }
+            }
+          });
+        }, 1200);
+      }
+      setSelectedCoords(null);
+      setSelectedAlertType(null);
+    }, 100);
   };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -859,6 +900,48 @@ const MapPage = () => {
         )}
       </div>
 
+      {/* Ripple animation during long press */}
+      {ripple && (
+        <div className="absolute z-[1001] pointer-events-none" style={{ left: ripple.x - 20, top: ripple.y - 20 }}>
+          <div className="w-10 h-10 rounded-full border-2 border-primary animate-ping" />
+        </div>
+      )}
+
+      {/* Quick tooltip on single click */}
+      {quickTooltip && (
+        <div
+          className="absolute z-[1001] animate-fade-in cursor-pointer"
+          style={{ left: quickTooltip.x - 70, top: quickTooltip.y - 50 }}
+          onClick={() => {
+            setSelectedCoords([quickTooltip.lat, quickTooltip.lng]);
+            setQuickTooltip(null);
+            setSelectedAlertType(null);
+            setReportStep(1);
+            setShowNewReport(true);
+          }}
+        >
+          <div className="bg-card shadow-lg rounded-lg px-3 py-2 text-xs font-medium text-foreground whitespace-nowrap border">
+            {t('mapInteraction.clickHint')}
+          </div>
+          <div className="w-0 h-0 mx-auto border-l-[6px] border-r-[6px] border-t-[6px] border-transparent border-t-card" />
+        </div>
+      )}
+
+      {/* Map hints overlay (first time) */}
+      {!mapHintsShown && !showNewReport && !safeWalkMode && (
+        <div
+          className="absolute inset-0 z-[1002] flex items-center justify-center bg-black/30 cursor-pointer"
+          onClick={() => { setMapHintsShown(true); localStorage.setItem('map_hints_shown', 'true'); }}
+        >
+          <div className="flex flex-col items-center gap-6 animate-fade-in">
+            <div className="bg-card rounded-xl px-5 py-3 shadow-xl text-center space-y-2">
+              <p className="text-sm font-medium text-foreground animate-pulse">👆 {lang === 'ca' ? 'Mantén premut al mapa' : 'Mantén pulsado el mapa'}</p>
+              <p className="text-xs text-muted-foreground">{lang === 'ca' ? 'O toca el botó +' : 'O toca el botón +'}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* BOTTOM RIGHT: FAB add report */}
       {!safeWalkMode && (
         <div className="absolute bottom-20 right-4 z-[1000] flex flex-col items-center gap-1">
@@ -872,6 +955,9 @@ const MapPage = () => {
               if (isFree && !canReport) {
                 showUpgrade('reports');
               } else {
+                setSelectedCoords(null);
+                setSelectedAlertType(null);
+                setReportStep(1);
                 setShowNewReport(true);
               }
             }}
@@ -1055,25 +1141,48 @@ const MapPage = () => {
       {showNewReport && (
         <div className="fixed inset-0 z-[2000]">
           <div className="absolute inset-0 bg-black/50" onClick={() => { setShowNewReport(false); setReportStep(1); setSelectedCoords(null); setReportDescription(''); setReportPhotos([]); setSelectedAlertType(null); }} />
-          <div className="absolute bottom-0 left-0 right-0 bg-card rounded-t-[20px] shadow-2xl" style={{ height: '70vh' }}>
+          <div className="absolute bottom-0 left-0 right-0 bg-card rounded-t-[20px] shadow-2xl animate-slide-in-bottom" style={{ maxHeight: '75vh' }}>
             <div className="flex justify-center pt-3 pb-1">
               <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
             </div>
 
-            <div className="px-5 pb-5 h-full overflow-y-auto">
-              <button onClick={() => { setShowNewReport(false); setReportStep(1); setSelectedCoords(null); setReportDescription(''); setReportPhotos([]); setSelectedAlertType(null); }} className="absolute top-4 right-4 text-muted-foreground">
+            <div className="px-5 pb-5 overflow-y-auto" style={{ maxHeight: 'calc(75vh - 20px)' }}>
+              <button onClick={() => { setShowNewReport(false); setReportStep(1); setSelectedCoords(null); setReportDescription(''); setReportPhotos([]); setSelectedAlertType(null); }} className="absolute top-4 right-4 text-muted-foreground z-10">
                 <X className="h-5 w-5" />
               </button>
 
-              <div className="flex items-center gap-2 mb-4 mt-1">
-                {[1, 2, 3, 4].map(s => (
-                  <div key={s} className={`h-1 flex-1 rounded-full ${s <= reportStep ? 'bg-primary' : 'bg-muted'}`} />
+              {/* Step indicator with dots and labels */}
+              <div className="flex items-center justify-between mb-5 mt-1 px-2">
+                {[
+                  { n: 1, label: t('mapInteraction.stepType') },
+                  { n: 2, label: t('mapInteraction.stepLocation') },
+                  { n: 3, label: t('mapInteraction.stepDetails') },
+                  { n: 4, label: t('mapInteraction.stepConfirm') },
+                ].map((step, i) => (
+                  <div key={step.n} className="flex items-center flex-1">
+                    <div className="flex flex-col items-center">
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                        step.n < reportStep ? 'bg-primary text-primary-foreground' :
+                        step.n === reportStep ? 'bg-primary text-primary-foreground ring-2 ring-primary/30 ring-offset-2 ring-offset-card' :
+                        'bg-muted text-muted-foreground'
+                      }`}>
+                        {step.n < reportStep ? '✓' : step.n}
+                      </div>
+                      <span className={`text-[10px] mt-1 ${step.n <= reportStep ? 'text-primary font-medium' : 'text-muted-foreground'}`}>{step.label}</span>
+                    </div>
+                    {i < 3 && <div className={`flex-1 h-0.5 mx-1 mt-[-12px] ${step.n < reportStep ? 'bg-primary' : 'bg-muted'}`} />}
+                  </div>
                 ))}
               </div>
 
               {/* Step 1: Alert Type */}
               {reportStep === 1 && (
-                <div>
+                <div className="animate-fade-in">
+                  {selectedCoords && (
+                    <div className="bg-primary/10 border border-primary/20 rounded-lg px-3 py-2 text-xs text-primary mb-4">
+                      {t('mapInteraction.preSelected')}
+                    </div>
+                  )}
                   <h3 className="text-lg font-bold text-foreground mb-4">⚠️ {t('alertTypes.selectType')}</h3>
                   <div className="grid grid-cols-2 gap-3">
                     {alertTypeKeys.map(key => {
@@ -1102,25 +1211,62 @@ const MapPage = () => {
                 </div>
               )}
 
-              {/* Step 2: Location */}
+              {/* Step 2: Location with crosshair mini map */}
               {reportStep === 2 && (
-                <div>
-                  <h3 className="text-lg font-bold text-foreground mb-4">📍 {t('map.step1')}</h3>
-                  <Button onClick={handleGetLocationForReport} className="w-full mb-3 gap-2">
-                    <MapPin className="h-4 w-4" />
-                    {t('report.useLocation')}
-                  </Button>
-                  <p className="text-center text-sm text-muted-foreground mb-3">
-                    {t('map.orSelectMap')}
-                  </p>
-                  <Button variant="outline" className="w-full mb-4" onClick={() => { setMapClickMode(true); setShowNewReport(false); toast.info(t('map.tapMapToSelect')); }}>
-                    🗺️ {t('map.selectOnMap')}
-                  </Button>
+                <div className="animate-fade-in">
+                  <h3 className="text-lg font-bold text-foreground mb-2">📍 {t('mapInteraction.stepLocation')}</h3>
+                  <p className="text-xs text-muted-foreground italic mb-3">{t('mapInteraction.moveMapHint')}</p>
+
+                  {/* Mini map container */}
+                  <div className="relative rounded-xl overflow-hidden border border-border mb-3" style={{ height: 260 }}>
+                    <MiniLocationMap
+                      initialCoords={selectedCoords}
+                      alertType={selectedAlertType}
+                      onCoordsChange={(coords) => setSelectedCoords(coords)}
+                    />
+                    {/* Crosshair overlay */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[500]">
+                      <div className="relative">
+                        <div className="w-8 h-0.5 bg-primary/70 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                        <div className="h-8 w-0.5 bg-primary/70 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                        <div className="w-4 h-4 border-2 border-primary rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Coords display */}
                   {selectedCoords && (
-                    <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-3 text-sm text-green-700 dark:text-green-300 mb-4">
-                      ✅ {t('map.locationCaptured')}: {selectedCoords[0].toFixed(2)}°, {selectedCoords[1].toFixed(2)}°
+                    <p className="text-xs text-muted-foreground text-center mb-1">
+                      📍 {selectedCoords[0].toFixed(4)}° N, {selectedCoords[1].toFixed(4)}° E
+                    </p>
+                  )}
+                  <MockAddress coords={selectedCoords} />
+
+                  <div className="flex gap-2 mt-3 mb-3">
+                    <Button variant="outline" size="sm" className="flex-1 text-xs gap-1" onClick={() => {
+                      navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                          setSelectedCoords([pos.coords.latitude, pos.coords.longitude]);
+                          toast.success(t('mapInteraction.gpsActivated'));
+                        },
+                        () => toast.error(t('errors.location'))
+                      );
+                    }}>
+                      📍 {t('mapInteraction.gpsButton')}
+                    </Button>
+                    <Button size="sm" className="flex-1 text-xs gap-1" onClick={() => {
+                      toast.success(t('mapInteraction.locationConfirmed'));
+                    }}>
+                      🎯 {t('mapInteraction.centerButton')}
+                    </Button>
+                  </div>
+
+                  {selectedCoords && (
+                    <div className="bg-primary/10 border border-primary/20 rounded-lg px-3 py-2 text-xs text-primary text-center mb-3">
+                      {t('mapInteraction.locationConfirmed')}
                     </div>
                   )}
+
                   <div className="flex gap-2">
                     <Button variant="outline" onClick={() => setReportStep(1)} className="flex-1 gap-1">
                       <ChevronLeft className="h-4 w-4" /> {t('map.previous')}
@@ -1134,8 +1280,13 @@ const MapPage = () => {
 
               {/* Step 3: Details */}
               {reportStep === 3 && (
-                <div>
-                  <h3 className="text-lg font-bold text-foreground mb-4">📝 {t('map.step2')}</h3>
+                <div className="animate-fade-in">
+                  <h3 className="text-lg font-bold text-foreground mb-2">📝 {t('mapInteraction.stepDetails')}</h3>
+                  {selectedCoords && (
+                    <span className="inline-block text-[11px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full mb-3">
+                      📍 {selectedCoords[0].toFixed(2)}°, {selectedCoords[1].toFixed(2)}°
+                    </span>
+                  )}
                   <Textarea
                     rows={4}
                     maxLength={500}
@@ -1180,13 +1331,22 @@ const MapPage = () => {
 
               {/* Step 4: Confirm */}
               {reportStep === 4 && (
-                <div>
-                  <h3 className="text-lg font-bold text-foreground mb-4">✅ {t('map.step3')}</h3>
+                <div className="animate-fade-in">
+                  <h3 className="text-lg font-bold text-foreground mb-4">✅ {t('mapInteraction.stepConfirm')}</h3>
+                  {/* Static mini map preview */}
+                  {selectedCoords && (
+                    <div className="rounded-xl overflow-hidden border border-border mb-4 relative" style={{ height: 140 }}>
+                      <MiniLocationMap initialCoords={selectedCoords} alertType={selectedAlertType} onCoordsChange={() => {}} static />
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[500]">
+                        <span className="text-2xl">{selectedAlertType ? ALERT_TYPES[selectedAlertType].icon : '📍'}</span>
+                      </div>
+                    </div>
+                  )}
                   <div className="bg-muted rounded-xl p-4 mb-4 space-y-2 text-sm text-foreground">
                     {selectedAlertType && (
                       <p>{ALERT_TYPES[selectedAlertType].icon} {lang === 'ca' ? ALERT_TYPES[selectedAlertType].name_ca : ALERT_TYPES[selectedAlertType].name_es}</p>
                     )}
-                    <p>📍 {t('map.location')}: {selectedCoords?.[0].toFixed(4)}, {selectedCoords?.[1].toFixed(4)}</p>
+                    <p>📍 {selectedCoords?.[0].toFixed(4)}, {selectedCoords?.[1].toFixed(4)}</p>
                     <p>📝 {reportDescription.length > 100 ? reportDescription.slice(0, 100) + '...' : reportDescription}</p>
                     <p>📷 {reportPhotos.length} {t('map.photosAttached')}</p>
                   </div>
@@ -1205,21 +1365,93 @@ const MapPage = () => {
         </div>
       )}
 
-      {/* Map click mode indicator */}
-      {mapClickMode && (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] flex flex-col items-center gap-2 pointer-events-none">
-          <div className="text-4xl">📍</div>
-          <div className="bg-card/95 backdrop-blur-sm shadow-lg rounded-xl px-4 py-3 text-sm font-medium text-foreground animate-pulse">
-            {t('map.tapMapToSelect')}
-          </div>
-          <Button size="sm" variant="destructive" className="pointer-events-auto" onClick={() => { setMapClickMode(false); setShowNewReport(true); }}>
-            {t('cancel')}
-          </Button>
-        </div>
-      )}
-
       <UpgradeModal open={upgradeOpen} onClose={closeUpgrade} trigger={upgradeTrigger} />
     </div>
+  );
+};
+
+// Mini location map component with crosshair
+const MiniLocationMap = ({ initialCoords, alertType, onCoordsChange, static: isStatic }: {
+  initialCoords: [number, number] | null;
+  alertType: AlertTypeKey | null;
+  onCoordsChange: (coords: [number, number]) => void;
+  static?: boolean;
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const miniMapRef = useRef<L.Map | null>(null);
+
+  useEffect(() => {
+    if (!containerRef.current || miniMapRef.current) return;
+    const center: [number, number] = initialCoords || [41.54, 2.21];
+    const map = L.map(containerRef.current, {
+      zoomControl: false,
+      attributionControl: false,
+      dragging: !isStatic,
+      scrollWheelZoom: !isStatic,
+      doubleClickZoom: false,
+      touchZoom: !isStatic,
+    }).setView(center, initialCoords ? 16 : 12);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+    if (!isStatic) {
+      const updateCenter = () => {
+        const c = map.getCenter();
+        onCoordsChange([c.lat, c.lng]);
+      };
+      map.on('move', updateCenter);
+      // Set initial coords
+      if (initialCoords) onCoordsChange(initialCoords);
+      else {
+        const c = map.getCenter();
+        onCoordsChange([c.lat, c.lng]);
+      }
+    }
+
+    miniMapRef.current = map;
+    setTimeout(() => map.invalidateSize(), 100);
+
+    return () => {
+      map.remove();
+      miniMapRef.current = null;
+    };
+  }, []);
+
+  // Fly to new coords if initialCoords changes
+  useEffect(() => {
+    if (initialCoords && miniMapRef.current && !isStatic) {
+      miniMapRef.current.setView(initialCoords, 16);
+    }
+  }, [initialCoords?.[0], initialCoords?.[1]]);
+
+  return <div ref={containerRef} className="w-full h-full" />;
+};
+
+// Mock address display
+const MockAddress = ({ coords }: { coords: [number, number] | null }) => {
+  const [address, setAddress] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!coords) { setAddress(null); return; }
+    setLoading(true);
+    setAddress(null);
+    const timer = setTimeout(() => {
+      const streets = ['Carrer dels Pins', 'Av. Catalunya', 'Passeig del Bosc', 'Camí de la Riera', 'Plaça Major'];
+      const towns = ['Mollet del Vallès', 'Sabadell', 'Terrassa', 'Granollers', 'Vic'];
+      const s = streets[Math.floor(Math.abs(coords[0] * 100) % streets.length)];
+      const t = towns[Math.floor(Math.abs(coords[1] * 100) % towns.length)];
+      setAddress(`${s}, ${t}`);
+      setLoading(false);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [coords?.[0], coords?.[1]]);
+
+  if (!coords) return null;
+  return (
+    <p className="text-xs text-muted-foreground text-center">
+      {loading ? '⏳ ...' : `🏠 ${address}`}
+    </p>
   );
 };
 
