@@ -307,6 +307,24 @@ const MapPage = () => {
     <div className="relative w-full" style={{ height: 'calc(100vh - 64px)' }}>
       <div ref={mapContainerRef} className="w-full h-full" />
 
+      {/* Season banner */}
+      {showSeasonBanner && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1001] bg-amber-50 border border-amber-300 rounded-xl px-4 py-2.5 shadow-lg max-w-sm w-[90%] flex items-center gap-3">
+          <span className="text-sm text-amber-900">🍂 {t('map.newSeason', { year: new Date().getFullYear() })}</span>
+          <button onClick={() => { setShowSeasonBanner(false); localStorage.setItem('annual_reset_shown', 'true'); }} className="text-xs font-medium text-amber-700 whitespace-nowrap">{t('map.understood')}</button>
+        </div>
+      )}
+
+      {/* Nearby decay banner */}
+      {nearbyDecay && (
+        <div className="absolute bottom-24 left-3 right-16 z-[1001] bg-amber-50 border border-amber-300 rounded-xl px-3 py-2 shadow-lg flex items-center gap-2 text-sm">
+          <span className="text-amber-900 flex-1">{t('map.nearbyDecay', { days: Math.floor(getReportAge(nearbyDecay.created_at)) })}</span>
+          <button onClick={() => { setReports(prev => prev.map(r => r.id === nearbyDecay.id ? resetToActive(r) : r)); setNearbyDecay(null); toast.success(t('map.reactivated')); }} className="text-xs font-bold text-green-700">Sí</button>
+          <button onClick={() => { setReports(prev => prev.filter(r => r.id !== nearbyDecay.id)); setNearbyDecay(null); toast.success(t('map.resolved')); }} className="text-xs font-bold text-red-700">No</button>
+          <button onClick={() => { setNearbyDecay(null); localStorage.setItem('decay_dismissed', Date.now().toString()); }} className="text-muted-foreground">×</button>
+        </div>
+      )}
+
       {/* TOP LEFT: Active count + filter */}
       <div className="absolute top-3 left-3 z-[1000] flex flex-col gap-2">
         <div className="bg-card/95 backdrop-blur-sm shadow-lg rounded-xl px-3 py-2 flex items-center gap-2 text-sm font-semibold text-foreground">
