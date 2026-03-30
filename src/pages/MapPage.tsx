@@ -51,6 +51,13 @@ const MapPage = () => {
   const [validatedIds, setValidatedIds] = useState<Set<string>>(new Set());
   const [selectedAlertType, setSelectedAlertType] = useState<AlertTypeKey | null>(null);
   const { isFree, canReport, reportsRemaining, incrementReportCount, upgradeOpen, upgradeTrigger, showUpgrade, closeUpgrade } = useFreemium();
+  const { canValidate, submitValidation, mockGPS, setMockGPS, dailyCount, dailyLimit } = useValidation();
+
+  // GPS state for validation
+  const [userGPS, setUserGPS] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [showEducation, setShowEducation] = useState(false);
+  const [showGPSSimulator, setShowGPSSimulator] = useState(false);
 
   // Filter state
   const [showFilterPanel, setShowFilterPanel] = useState(false);
