@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { mockRanking, mockUser, mockStats } from '@/data/mockData';
+import { useAuth } from '@/contexts/AuthContext';
+import { fetchRanking } from '@/lib/supabase-queries';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -9,13 +10,35 @@ import { useToast } from '@/hooks/use-toast';
 import UserAvatar from '@/components/UserAvatar';
 import { Trophy, ChevronDown, Info, ArrowUp, ArrowDown, Copy, X } from 'lucide-react';
 
+interface RankingUser {
+  id: string;
+  name: string;
+  rank: string;
+  points: number;
+  weekly_points: number;
+  avatar_url: string | null;
+  municipality_id?: string | null;
+}
+
 const RankingPage = () => {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
+  const { user } = useAuth();
   const lang = i18n.language;
   const [tab, setTab] = useState<'comarca' | 'catalunya'>('comarca');
   const [shareOpen, setShareOpen] = useState(false);
   const [pointsOpen, setPointsOpen] = useState(false);
+  const [ranking, setRanking] = useState<RankingUser[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      const data = await fetchRanking(50);
+      if (data.length > 0) {
+        setRanking(data as RankingUser[]);
+      }
+    };
+    load();
+  }, []);
 
   // Countdown to next Monday 00:00
   const [countdown, setCountdown] = useState({ days: 0, hours: 0 });
@@ -35,10 +58,10 @@ const RankingPage = () => {
     return () => clearInterval(iv);
   }, []);
 
-  const userIdx = mockRanking.findIndex(r => r.name === mockUser.name);
-  const userPos = userIdx + 1;
-  const nextUser = userIdx > 0 ? mockRanking[userIdx - 1] : null;
-  const ptsToNext = nextUser ? nextUser.weekly_points - mockUser.weekly_points : 0;
+  const userIdx = ranking.findIndex(r => r.id === user?.id);
+  const userPos = userIdx >= 0 ? userIdx + 1 : ranking.length + 1;
+  const nextUser = userIdx > 0 ? ranking[userIdx - 1] : null;
+  const ptsToNext = nextUser && user ? nextUser.weekly_points - (user.weekly_points || 0) : 0;
 
   const POINTS_TABLE = [
     { action: lang === 'ca' ? 'Publicar report' : 'Publicar reporte', pts: 50 },
@@ -52,11 +75,26 @@ const RankingPage = () => {
     { action: lang === 'ca' ? 'Referir subscriptor' : 'Referir suscriptor', pts: 150 },
   ];
 
-  const arrows = useMemo(() => mockRanking.map(() => Math.random() > 0.5), []);
+  const arrows = useMemo(() => ranking.map(() => Math.random() > 0.5), [ranking]);
 
   const whatsappMsg = lang === 'ca'
     ? `Aquesta setmana sóc el #${userPos} a ProcesoCat 🌲 He reportat processionària a Catalunya per protegir mascotes i famílies. Uneix-te: procesocat.es`
     : `Esta semana soy el #${userPos} en ProcesoCat 🌲 He reportado procesionaria en Cataluña para proteger mascotas y familias. Únete: procesocat.es`;
+
+  if (ranking.length === 0) {
+    return (
+      <div className="pb-24 max-w-lg mx-auto px-4 py-12 text-center">
+        <Trophy className="mx-auto text-muted-foreground mb-4" size={48} />
+        <h2 className="text-lg font-bold text-foreground mb-2">{t('ranking.weekly')}</h2>
+        <p className="text-sm text-muted-foreground">
+          {lang === 'ca' ? 'Encara no hi ha usuaris al rànquing. Sigues el primer!' : 'Aún no hay usuarios en el ranking. ¡Sé el primero!'}
+        </p>
+      </div>
+    );
+  }
+
+  const top3 = ranking.slice(0, 3);
+  const rest = ranking.slice(3);
 
   return (
     <div className="pb-24 max-w-lg mx-auto px-4">
@@ -73,7 +111,7 @@ const RankingPage = () => {
       {/* Sub-tabs */}
       <div className="flex gap-2 mb-4">
         <button onClick={() => setTab('comarca')} className={`flex-1 text-sm py-2 rounded-lg font-medium transition ${tab === 'comarca' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
-          {t('ranking.comarca')} (Barcelonès)
+          {t('ranking.comarca')}
         </button>
         <button onClick={() => setTab('catalunya')} className={`flex-1 text-sm py-2 rounded-lg font-medium transition ${tab === 'catalunya' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
           {t('ranking.catalunya')}
@@ -81,63 +119,71 @@ const RankingPage = () => {
       </div>
 
       {/* Weekly Winner Banner */}
-      <Card className="mb-4 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/20 dark:to-amber-950/20 border-yellow-200 dark:border-yellow-800">
-        <CardContent className="py-3 flex items-center gap-3">
-          <span className="text-3xl">👑</span>
-          <div className="flex-1">
-            <p className="text-xs text-muted-foreground">{lang === 'ca' ? 'Campió de la setmana passada' : 'Campeón de la semana pasada'}</p>
-            <div className="flex items-center gap-2 mt-1">
-              <UserAvatar name={mockRanking[0].name} avatar_url={null} size="sm" />
-              <div>
-                <p className="text-sm font-semibold text-foreground">{mockRanking[0].name}</p>
-                <p className="text-xs text-muted-foreground">{mockRanking[0].rank} · 520 pts</p>
+      {top3.length > 0 && (
+        <Card className="mb-4 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/20 dark:to-amber-950/20 border-yellow-200 dark:border-yellow-800">
+          <CardContent className="py-3 flex items-center gap-3">
+            <span className="text-3xl">👑</span>
+            <div className="flex-1">
+              <p className="text-xs text-muted-foreground">{lang === 'ca' ? 'Campió de la setmana passada' : 'Campeón de la semana pasada'}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <UserAvatar name={top3[0].name} avatar_url={top3[0].avatar_url} size="sm" />
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{top3[0].name}</p>
+                  <p className="text-xs text-muted-foreground">{top3[0].rank} · {top3[0].weekly_points} pts</p>
+                </div>
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Podium */}
       <div className="flex items-end justify-center gap-4 pt-4 pb-6">
         {/* #2 - left */}
-        <div className="flex flex-col items-center">
-          <span className="text-2xl mb-1">🥈</span>
-          <UserAvatar name={mockRanking[1].name} avatar_url={null} size="md" />
-          <p className="text-xs font-medium mt-1 text-foreground truncate max-w-[80px]">{mockRanking[1].name.split(' ')[0]}</p>
-          <p className="text-[10px] text-muted-foreground">{mockRanking[1].rank}</p>
-          <p className="text-xs text-muted-foreground">{mockRanking[1].weekly_points} pts</p>
-          <div className="w-16 bg-muted rounded-t-lg mt-2" style={{ height: 80 }} />
-        </div>
+        {top3[1] && (
+          <div className="flex flex-col items-center">
+            <span className="text-2xl mb-1">🥈</span>
+            <UserAvatar name={top3[1].name} avatar_url={top3[1].avatar_url} size="md" />
+            <p className="text-xs font-medium mt-1 text-foreground truncate max-w-[80px]">{top3[1].name.split(' ')[0]}</p>
+            <p className="text-[10px] text-muted-foreground">{top3[1].rank}</p>
+            <p className="text-xs text-muted-foreground">{top3[1].weekly_points} pts</p>
+            <div className="w-16 bg-muted rounded-t-lg mt-2" style={{ height: 80 }} />
+          </div>
+        )}
 
         {/* #1 - center */}
-        <div className="flex flex-col items-center">
-          <span className="text-3xl mb-1">👑</span>
-          <div className="ring-2 ring-yellow-400 rounded-full">
-            <UserAvatar name={mockRanking[0].name} avatar_url={null} size="lg" />
+        {top3[0] && (
+          <div className="flex flex-col items-center">
+            <span className="text-3xl mb-1">👑</span>
+            <div className="ring-2 ring-yellow-400 rounded-full">
+              <UserAvatar name={top3[0].name} avatar_url={top3[0].avatar_url} size="lg" />
+            </div>
+            <p className="text-sm font-bold mt-1 text-foreground">{top3[0].name.split(' ')[0]}</p>
+            <p className="text-[10px] text-muted-foreground">{top3[0].rank}</p>
+            <p className="text-sm font-bold text-primary">{top3[0].weekly_points} pts</p>
+            <div className="w-20 bg-primary/20 rounded-t-lg mt-2" style={{ height: 110 }} />
           </div>
-          <p className="text-sm font-bold mt-1 text-foreground">{mockRanking[0].name.split(' ')[0]}</p>
-          <p className="text-[10px] text-muted-foreground">{mockRanking[0].rank}</p>
-          <p className="text-sm font-bold text-primary">{mockRanking[0].weekly_points} pts</p>
-          <div className="w-20 bg-primary/20 rounded-t-lg mt-2" style={{ height: 110 }} />
-        </div>
+        )}
 
         {/* #3 - right */}
-        <div className="flex flex-col items-center">
-          <span className="text-2xl mb-1">🥉</span>
-          <div className={mockRanking[2].name === mockUser.name ? 'ring-2 ring-primary rounded-full' : ''}>
-            <UserAvatar name={mockRanking[2].name} avatar_url={null} size="md" />
+        {top3[2] && (
+          <div className="flex flex-col items-center">
+            <span className="text-2xl mb-1">🥉</span>
+            <div className={top3[2].id === user?.id ? 'ring-2 ring-primary rounded-full' : ''}>
+              <UserAvatar name={top3[2].name} avatar_url={top3[2].avatar_url} size="md" />
+            </div>
+            <p className="text-xs font-medium mt-1 text-foreground truncate max-w-[80px]">{top3[2].name.split(' ')[0]}</p>
+            <p className="text-[10px] text-muted-foreground">{top3[2].rank}</p>
+            <p className="text-xs text-muted-foreground">{top3[2].weekly_points} pts</p>
+            <div className={`w-16 rounded-t-lg mt-2 ${top3[2].id === user?.id ? 'bg-primary/10' : 'bg-muted'}`} style={{ height: 60 }} />
           </div>
-          <p className="text-xs font-medium mt-1 text-foreground truncate max-w-[80px]">{mockRanking[2].name.split(' ')[0]}</p>
-          <p className="text-[10px] text-muted-foreground">{mockRanking[2].rank}</p>
-          <p className="text-xs text-muted-foreground">{mockRanking[2].weekly_points} pts</p>
-          <div className={`w-16 rounded-t-lg mt-2 ${mockRanking[2].name === mockUser.name ? 'bg-primary/10' : 'bg-muted'}`} style={{ height: 60 }} />
-        </div>
+        )}
       </div>
 
-      {/* List positions 4-8 */}
+      {/* List positions 4+ */}
       <div className="space-y-2 mb-4">
-        {mockRanking.slice(3).map((r, i) => {
-          const isUser = r.name === mockUser.name;
+        {rest.map((r, i) => {
+          const isUser = r.id === user?.id;
           return (
             <div key={r.id} className={`flex items-center gap-3 p-3 rounded-xl transition ${isUser ? 'bg-primary/10 border border-primary/20' : 'bg-card border'}`}>
               <span className="text-sm font-bold text-muted-foreground w-6">#{i + 4}</span>
@@ -162,7 +208,7 @@ const RankingPage = () => {
             <p className="text-sm font-medium text-primary">🎉 {lang === 'ca' ? 'Ets al podi aquesta setmana!' : '¡Estás en el podio esta semana!'}</p>
           ) : null}
           <p className="text-sm font-medium text-foreground">
-            {lang === 'ca' ? `La teva posició: #${userPos} · ${mockUser.weekly_points} pts aquesta setmana` : `Tu posición: #${userPos} · ${mockUser.weekly_points} pts esta semana`}
+            {lang === 'ca' ? `La teva posició: #${userPos} · ${user?.weekly_points || 0} pts aquesta setmana` : `Tu posición: #${userPos} · ${user?.weekly_points || 0} pts esta semana`}
           </p>
           {nextUser && (
             <p className="text-xs text-muted-foreground mt-1">
@@ -222,16 +268,14 @@ const RankingPage = () => {
             <p className="font-bold text-lg mb-3">🌲 ProcesoCat</p>
             <div className="flex justify-center mb-2">
               <div className="border-2 border-white rounded-full">
-                <UserAvatar name={mockUser.name} avatar_url={null} size="lg" />
+                <UserAvatar name={user?.name || ''} avatar_url={user?.avatar_url || null} size="lg" />
               </div>
             </div>
-            <p className="font-bold text-lg">{mockUser.name}</p>
-            <p className="text-sm opacity-90 mt-1">#{userPos} {lang === 'ca' ? 'aquesta setmana a' : 'esta semana en'} Barcelonès</p>
+            <p className="font-bold text-lg">{user?.name}</p>
+            <p className="text-sm opacity-90 mt-1">#{userPos} {lang === 'ca' ? 'aquesta setmana' : 'esta semana'}</p>
             <div className="border-t border-white/20 my-3" />
-            <p className="text-xs opacity-80">
-              {mockStats.totalReports} {lang === 'ca' ? 'reports' : 'reportes'} · {mockStats.totalValidations} {lang === 'ca' ? 'validacions' : 'validaciones'} · {mockRanking[userIdx]?.rank}
-            </p>
-            <span className="inline-block mt-2 bg-primary text-primary-foreground text-xs px-3 py-1 rounded-full">{mockUser.weekly_points} pts {lang === 'ca' ? 'aquesta setmana' : 'esta semana'}</span>
+            <p className="text-xs opacity-80">{user?.rank}</p>
+            <span className="inline-block mt-2 bg-primary text-primary-foreground text-xs px-3 py-1 rounded-full">{user?.weekly_points || 0} pts {lang === 'ca' ? 'aquesta setmana' : 'esta semana'}</span>
             <p className="text-[10px] opacity-60 mt-3">procesocat.es</p>
           </div>
 
