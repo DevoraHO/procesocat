@@ -350,7 +350,7 @@ const ProfilePage = () => {
           <div className="border-4 border-card rounded-full">
             <UserAvatar name={user.name} avatar_url={user.avatar_url} size="xl" />
           </div>
-          <button onClick={() => toast({ title: t('profile.comingSoon') })} className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-1.5">
+          <button onClick={() => avatarInputRef.current?.click()} className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-1.5">
             <Camera size={14} />
           </button>
         </div>

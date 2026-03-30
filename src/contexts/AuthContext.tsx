@@ -7,6 +7,7 @@ interface UserProfile {
   email: string;
   avatar_url: string | null;
   banner_color: string;
+  banner_image?: string | null;
   language: string;
   plan: string;
   points: number;
