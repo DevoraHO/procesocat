@@ -29,6 +29,7 @@ const MapPage = () => {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
   const location = useLocation();
+  const { user } = useAuth();
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
@@ -36,9 +37,18 @@ const MapPage = () => {
   const userMarkerRef = useRef<L.CircleMarker | null>(null);
   const previewMarkerRef = useRef<L.Marker | null>(null);
 
-  const [reports, setReports] = useState<Report[]>(() =>
-    []
-  );
+  const [reports, setReports] = useState<Report[]>([]);
+
+  // Load reports from Supabase
+  useEffect(() => {
+    const load = async () => {
+      const data = await fetchReports();
+      if (data.length > 0) {
+        setReports(updateLifecycle(data as any));
+      }
+    };
+    load();
+  }, []);
   const [showSeasonBanner, setShowSeasonBanner] = useState(!localStorage.getItem('annual_reset_shown'));
   const [nearbyDecay, setNearbyDecay] = useState<typeof reports[0] | null>(null);
   const [scoredReports, setScoredReports] = useState<ReportWithScore[]>([]);
