@@ -5,8 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
-import { ChevronDown, Loader2, Check, X as XIcon } from 'lucide-react';
+  import { Loader2, Check, X as XIcon } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import Confetti from '@/components/Confetti';
 
