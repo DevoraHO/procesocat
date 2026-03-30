@@ -418,7 +418,13 @@ const MapPage = () => {
     setReportDescription('');
     setReportPhotos([]);
     setSelectedAlertType(null);
-    toast.success(t('report.published') + ' 🎉');
+    const typeToasts: Record<string, string> = {
+      procesionaria: '🐛 ' + t('report.publishedType.procesionaria'),
+      veneno: '☠️ ' + t('report.publishedType.veneno'),
+      trampa: '🪤 ' + t('report.publishedType.trampa'),
+      basura: '🗑️ ' + t('report.publishedType.basura'),
+    };
+    toast.success(typeToasts[selectedAlertType!] || t('report.published') + ' 🎉');
   };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
