@@ -1178,8 +1178,14 @@ const MapPage = () => {
 
       {/* Map click mode indicator */}
       {mapClickMode && (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] bg-card/95 backdrop-blur-sm shadow-lg rounded-xl px-4 py-3 text-sm font-medium text-foreground pointer-events-none animate-pulse">
-          📍 {t('map.tapMapToSelect')}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] flex flex-col items-center gap-2 pointer-events-none">
+          <div className="text-4xl">📍</div>
+          <div className="bg-card/95 backdrop-blur-sm shadow-lg rounded-xl px-4 py-3 text-sm font-medium text-foreground animate-pulse">
+            {t('map.tapMapToSelect')}
+          </div>
+          <Button size="sm" variant="destructive" className="pointer-events-auto" onClick={() => { setMapClickMode(false); setShowNewReport(true); }}>
+            {t('cancel')}
+          </Button>
         </div>
       )}
 
