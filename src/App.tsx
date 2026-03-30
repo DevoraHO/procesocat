@@ -30,6 +30,9 @@ import AnalyticsPage from "@/pages/AnalyticsPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import GDPRModal from "@/components/GDPRModal";
 import NotFound from "@/pages/NotFound";
+import ReportsPage from "@/pages/ReportsPage";
+import MunicipiDashboard from "@/pages/MunicipiDashboard";
+import PDFPreview from "@/pages/PDFPreview";
 
 const queryClient = new QueryClient();
 
