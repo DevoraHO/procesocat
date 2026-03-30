@@ -676,6 +676,9 @@ const ProfilePage = () => {
                     <Shield className="h-4 w-4" />
                     {t('subscription.upgrade')} — {t('subscription.perMonth')}
                   </Button>
+                  <Button variant="outline" size="sm" className="w-full" onClick={() => navigate('/pricing')}>
+                    {t('pricing.view_plans')}
+                  </Button>
                 </>
               ) : (
                 <>
