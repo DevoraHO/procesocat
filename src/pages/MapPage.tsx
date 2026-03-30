@@ -68,7 +68,23 @@ const MapPage = () => {
   const safeWalkLineRef = useRef<L.Polyline | null>(null);
   const safeWalkResultLinesRef = useRef<L.LayerGroup | null>(null);
 
-  // Calculate scores
+  // Show/remove preview marker on map when coords are selected
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (previewMarkerRef.current) {
+      map.removeLayer(previewMarkerRef.current);
+      previewMarkerRef.current = null;
+    }
+    if (selectedCoords) {
+      const alertType = selectedAlertType || 'procesionaria';
+      const marker = createAlertMarker(alertType, 50, 'ACTIVE');
+      const m = L.marker(selectedCoords, { icon: marker }).addTo(map);
+      m.bindPopup(`📍 ${t('map.locationCaptured')}`).openPopup();
+      previewMarkerRef.current = m;
+    }
+  }, [selectedCoords, selectedAlertType, t]);
+
   useEffect(() => {
     const scored = reports.map(r => ({
       report: r,
