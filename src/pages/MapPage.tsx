@@ -352,6 +352,60 @@ const MapPage = () => {
         </div>
       ` : '';
 
+      // Determine validation state for popup
+      const effectiveGPS = mockGPS || (userGPS ? { lat: userGPS.lat, lng: userGPS.lng } : null);
+      const gpsAccuracy = mockGPS ? 10 : (userGPS?.accuracy || null);
+      const valResult = canValidate(report.id, report.user_id, effectiveGPS?.lat ?? null, effectiveGPS?.lng ?? null, report.lat, report.lng, gpsAccuracy);
+
+      let validateBtnHtml = '';
+      if (valResult.status === 'own_report') {
+        validateBtnHtml = `<div style="text-align:center;padding:6px;font-size:11px;color:#888">ℹ️ ${t('validation.ownReport')}</div>`;
+      } else if (valResult.status === 'already_validated') {
+        validateBtnHtml = `<div style="text-align:center;padding:6px;font-size:11px;color:#22c55e">✅ ${t('validation.alreadyValidated')}</div>`;
+      } else if (valResult.status === 'gps_required') {
+        validateBtnHtml = `
+          <button data-action="activate-gps" data-id="${report.id}" style="width:100%;padding:8px 0;border:none;border-radius:8px;background:#9ca3af;color:#fff;font-size:12px;cursor:pointer;margin-top:4px">📍 ${t('validation.activateGPS')}</button>
+          <p style="font-size:10px;color:#888;text-align:center;margin:4px 0 0">${lang === 'ca' ? 'Necessites estar a prop per confirmar' : 'Necesitas estar cerca para confirmar'}</p>`;
+      } else if (valResult.status === 'daily_limit') {
+        validateBtnHtml = `<div style="text-align:center;padding:6px;font-size:11px;color:#f97316">⏰ ${t('validation.dailyLimit')}<br><span style="font-size:10px;color:#888">${t('validation.dailyLimitDetail', { count: dailyCount, limit: dailyLimit })}</span></div>`;
+      } else if (valResult.status === 'burst_limit') {
+        validateBtnHtml = `<div style="text-align:center;padding:6px;font-size:11px;color:#f97316">⏳ ${t('validation.burstLimit')}</div>`;
+      } else if (valResult.status === 'blocked') {
+        const distStr = formatDistance(valResult.distance, lang);
+        validateBtnHtml = `
+          <div style="text-align:center;padding:6px">
+            <div style="font-size:12px;color:#ef4444;font-weight:600">📍 ${t('validation.blocked')}</div>
+            <div style="font-size:10px;color:#888;margin-top:2px">${distStr}</div>
+            <div style="font-size:10px;color:#888">${t('validation.blockedTip')}</div>
+          </div>`;
+      } else if (valResult.status === 'remote') {
+        const distStr = formatDistance(valResult.distance, lang);
+        validateBtnHtml = `
+          <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:8px;margin-top:4px;font-size:11px">
+            <div style="color:#92400e;font-weight:600">⚠️ ${t('validation.remoteWarning')}</div>
+            <div style="color:#92400e;margin-top:2px">${distStr}</div>
+          </div>
+          <button data-action="validate" data-id="${report.id}" style="width:100%;padding:8px 0;border:none;border-radius:8px;background:#f97316;color:#fff;font-size:12px;cursor:pointer;margin-top:6px">👁️ ${t('validation.remoteConfirm')}</button>`;
+      } else {
+        // allowed (in_situ)
+        const distStr = formatDistance(valResult.distance, lang);
+        validateBtnHtml = `
+          <div style="background:#dcfce7;border:1px solid #22c55e;border-radius:8px;padding:6px 8px;margin-top:4px;font-size:11px;color:#166534;display:flex;align-items:center;gap:4px">
+            <span>🎯</span> ${t('validation.inSituBadge')} · ${distStr}
+          </div>
+          <button data-action="validate" data-id="${report.id}" style="width:100%;padding:8px 0;border:none;border-radius:8px;background:#2D6A4F;color:#fff;font-size:12px;cursor:pointer;margin-top:6px;font-weight:600">✅ ${t('validation.inSitu')}</button>`;
+      }
+
+      // Trust indicator for confirmed reports
+      const totalTrust = report.validation_count > 0 ? Math.min(100, Math.round((report.validation_count * 0.75) * 100 / 6)) : 0;
+      const trustBar = report.validation_count > 0 ? `
+        <div style="margin:6px 0">
+          <div style="font-size:10px;color:#666;margin-bottom:2px">${t('validation.trustLevel')}</div>
+          <div style="background:#e5e7eb;height:4px;border-radius:2px;overflow:hidden">
+            <div style="background:${totalTrust > 60 ? '#22c55e' : totalTrust > 30 ? '#eab308' : '#ef4444'};width:${totalTrust}%;height:100%"></div>
+          </div>
+        </div>` : '';
+
       const popupContent = `
         <div style="min-width:220px;font-family:system-ui,sans-serif">
           ${alertTypeHeader}
@@ -361,12 +415,11 @@ const MapPage = () => {
           <div style="margin-bottom:8px">
             <span style="display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;color:#fff;background:${dangerColor}">${score} — ${levelName}</span>
           </div>
-          <p style="margin:0 0 4px;font-size:12px;color:#666">✅ ${t('report.validatedBy', { count: report.validation_count })}</p>
-          <p style="margin:0 0 10px;font-size:12px;color:#999">📍 ${report.comarca} · ${daysAgo}d</p>
-          <div style="display:flex;gap:6px">
-            <button data-action="validate" data-id="${report.id}" style="flex:1;padding:6px 0;border:none;border-radius:6px;background:#2D6A4F;color:#fff;font-size:12px;cursor:pointer">✅ ${t('report.validate')}</button>
-            <button data-action="share" data-id="${report.id}" style="flex:1;padding:6px 0;border:none;border-radius:6px;background:#25D366;color:#fff;font-size:12px;cursor:pointer">📱 WhatsApp</button>
-          </div>
+          <p style="margin:0 0 2px;font-size:12px;color:#666">✅ ${t('validation.confirmedBy', { count: report.validation_count })}</p>
+          ${trustBar}
+          <p style="margin:0 0 8px;font-size:12px;color:#999">📍 ${report.comarca} · ${daysAgo}d</p>
+          ${validateBtnHtml}
+          <button data-action="share" data-id="${report.id}" style="width:100%;padding:6px 0;border:none;border-radius:6px;background:#25D366;color:#fff;font-size:12px;cursor:pointer;margin-top:6px">📱 WhatsApp</button>
         </div>
       `;
 
