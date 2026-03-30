@@ -343,6 +343,38 @@ const ProfilePage = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Route History */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2 mb-3">
+                <Route size={18} className="text-primary" />
+                <h3 className="font-semibold text-foreground">{t('safeWalk.routeHistory')}</h3>
+              </div>
+              <div className="space-y-3">
+                {mockRouteHistory.map(route => {
+                  const daysAgo = Math.floor((Date.now() - new Date(route.date).getTime()) / 86400000);
+                  const color = route.result === 'SEGURA' ? 'text-green-600' : 'text-orange-500';
+                  const dot = route.result === 'SEGURA' ? 'bg-green-500' : 'bg-orange-500';
+                  const label = route.result === 'SEGURA' ? (lang === 'ca' ? 'Segura' : 'Segura') : (lang === 'ca' ? 'Precaució' : 'Precaución');
+                  return (
+                    <div key={route.id} className="flex items-center gap-3">
+                      <span className={`w-2.5 h-2.5 rounded-full ${dot} flex-shrink-0`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-foreground truncate">{lang === 'ca' ? route.name_ca : route.name_es}</p>
+                        <p className="text-xs text-muted-foreground">
+                          <span className={color}>{label}</span> · {t('safeWalk.daysAgo', { days: daysAgo })} · {route.distance}km
+                        </p>
+                      </div>
+                      <Button variant="ghost" size="sm" className="text-xs text-primary" onClick={() => navigate('/map')}>
+                        {t('safeWalk.viewOnMap')}
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* TAB 2: MEDALLAS */}
