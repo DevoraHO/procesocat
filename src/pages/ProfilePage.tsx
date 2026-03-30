@@ -1080,6 +1080,7 @@ const ProfilePage = () => {
             </CardContent>
           </Card>
 
+          <Card>
             <CardContent className="pt-6 space-y-3">
               <h3 className="font-semibold text-foreground">{t('settingsSections.privacy')}</h3>
               <Button variant="outline" size="sm" onClick={() => toast({ title: t('profile.downloadDataToast') })}>{t('settings.downloadData')}</Button>
