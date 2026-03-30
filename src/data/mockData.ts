@@ -95,3 +95,45 @@ export const mockRouteHistory = [
   {id:'rh2', name_es:'Ruta del bosque', name_ca:'Ruta del bosc', result:'PRECAUCIÓN', distance:3.2, date: new Date(Date.now()-5*24*60*60*1000).toISOString()},
   {id:'rh3', name_es:'Ruta casa-colegio', name_ca:'Ruta casa-escola', result:'SEGURA', distance:0.9, date: new Date(Date.now()-7*24*60*60*1000).toISOString()}
 ];
+
+export const PLAN_LIMITS = {
+  free: {
+    reports_per_month: 3,
+    photos_per_report: 2,
+    saved_zones: 0,
+    video_upload: false,
+    push_notifications: false,
+    paseo_seguro: false,
+    weekly_pdf: false,
+    api_access: false,
+    official_validator: false,
+    data_export: false,
+    municipality_dashboard: false
+  },
+  familiar: {
+    reports_per_month: -1,
+    photos_per_report: 5,
+    saved_zones: 10,
+    video_upload: true,
+    push_notifications: true,
+    paseo_seguro: true,
+    weekly_pdf: true,
+    api_access: false,
+    official_validator: false,
+    data_export: false,
+    municipality_dashboard: false
+  },
+  municipi: {
+    reports_per_month: -1,
+    photos_per_report: -1,
+    saved_zones: -1,
+    video_upload: true,
+    push_notifications: true,
+    paseo_seguro: true,
+    weekly_pdf: true,
+    api_access: true,
+    official_validator: true,
+    data_export: true,
+    municipality_dashboard: true
+  }
+};
