@@ -15,7 +15,8 @@ import { useToast } from '@/hooks/use-toast';
 import UserAvatar from '@/components/UserAvatar';
 import DangerBadge from '@/components/DangerBadge';
 import BadgeUnlockModal from '@/components/BadgeUnlockModal';
-import { Pencil, Camera, TrendingUp, ChevronDown, ChevronUp, MapPin, Trash2 } from 'lucide-react';
+import UpgradeModal from '@/components/UpgradeModal';
+import { Pencil, Camera, TrendingUp, ChevronDown, ChevronUp, MapPin, Trash2, Lock, Shield } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -105,7 +106,9 @@ const ProfilePage = () => {
   const [cancelSubOpen, setCancelSubOpen] = useState(false);
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
+  const isFree = user?.plan === 'free';
   // Ranking sub-tab
   const [rankingTab, setRankingTab] = useState<'comarca' | 'catalunya'>('comarca');
 
