@@ -41,6 +41,10 @@ const AdminPage = () => {
   // Alerts state
   const [alerts, setAlerts] = useState(mockZoneAlerts);
   const [emailModal, setEmailModal] = useState<typeof mockZoneAlerts[0] | null>(null);
+  const [adminSecLogs, setAdminSecLogs] = useState<SecurityLog[]>([]);
+  const [secEventFilter, setSecEventFilter] = useState('all');
+
+  useEffect(() => { setAdminSecLogs(getSecurityLogs()); }, []);
 
   // Filtered reports
   const filteredReports = useMemo(() => {
