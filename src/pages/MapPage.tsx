@@ -4,6 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { mockReports, mockUser, ALERT_TYPES, type AlertTypeKey } from '@/data/mockData';
 import { calculateDangerScore, getDangerColor, getDangerLevel } from '@/utils/dangerScore';
+import { createAlertMarker } from '@/utils/mapMarkers';
 import { updateLifecycle, resetToActive, LIFECYCLE, getReportAge } from '@/utils/reportLifecycle';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
