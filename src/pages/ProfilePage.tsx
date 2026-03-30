@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import WeeklyCharts from '@/components/WeeklyCharts';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
