@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import LanguageToggle from '@/components/LanguageToggle';
 import { searchMunicipalities, Municipality } from '@/data/municipalData';
-import { MapPin, Search } from 'lucide-react';
+import { MapPin, Search, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const RegisterPage = () => {
   const { t, i18n } = useTranslation();
@@ -21,11 +22,26 @@ const RegisterPage = () => {
   const [petName, setPetName] = useState('');
   const [municipalityQuery, setMunicipalityQuery] = useState('');
   const [selectedMunicipality, setSelectedMunicipality] = useState<Municipality | null>(null);
+  const [error, setError] = useState('');
   const results = searchMunicipalities(municipalityQuery);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStep('pet');
+    setError('');
+    setLoading(true);
+    try {
+      await signUp(email, password, name);
+      setStep('pet');
+    } catch (err: any) {
+      let msg = err?.message || 'Error';
+      if (msg.includes('already registered')) {
+        msg = lang === 'ca' ? 'Aquest email ja està registrat' : 'Este email ya está registrado';
+      }
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleFinishPet = (withPet: boolean) => {
@@ -37,13 +53,16 @@ const RegisterPage = () => {
 
   const handleFinish = async (muni: Municipality | null) => {
     setLoading(true);
-    await signUp(email, password, name);
-    if (petName) {
-      updateProfile({ pet_name: petName });
-    }
-    if (muni) {
-      updateProfile({ municipality_id: muni.id });
-      localStorage.setItem('municipality_id', muni.id);
+    try {
+      if (petName) {
+        await updateProfile({ pet_name: petName });
+      }
+      if (muni) {
+        await updateProfile({ municipality_id: muni.id });
+        localStorage.setItem('municipality_id', muni.id);
+      }
+    } catch (err) {
+      console.error('Error updating profile:', err);
     }
     setLoading(false);
     navigate('/map');
@@ -67,10 +86,18 @@ const RegisterPage = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input placeholder={t('auth.namePlaceholder')} value={name} onChange={e => setName(e.target.value)} required />
             <Input type="email" placeholder={t('auth.email')} value={email} onChange={e => setEmail(e.target.value)} required />
-            <Input type="password" placeholder={t('auth.password')} value={password} onChange={e => setPassword(e.target.value)} required />
-            <Button type="submit" className="w-full text-white" style={{ backgroundColor: '#2D6A4F' }}>
-              {t('auth.createAccount')}
+            <Input type="password" placeholder={t('auth.password')} value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
+            {error && (
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 text-sm text-destructive">
+                {error}
+              </div>
+            )}
+            <Button type="submit" className="w-full text-white" style={{ backgroundColor: '#2D6A4F' }} disabled={loading}>
+              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : t('auth.createAccount')}
             </Button>
+            <p className="text-xs text-muted-foreground text-center">
+              {lang === 'ca' ? "Verificaràs el teu email després del registre" : "Verificarás tu email después del registro"}
+            </p>
           </form>
         )}
 
@@ -139,7 +166,6 @@ const RegisterPage = () => {
                   variant="outline"
                   className="w-full"
                   onClick={() => {
-                    // Mock: select Barcelona as nearest
                     const bcn = searchMunicipalities('Barcelona')[0];
                     if (bcn) setSelectedMunicipality(bcn);
                   }}
@@ -167,7 +193,7 @@ const RegisterPage = () => {
                 style={{ backgroundColor: '#2D6A4F' }}
                 disabled={loading}
               >
-                {selectedMunicipality ? t('municipality.save') : t('municipality.skipForNow')}
+                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : (selectedMunicipality ? t('municipality.save') : t('municipality.skipForNow'))}
               </Button>
               {selectedMunicipality && (
                 <button onClick={() => handleFinish(null)} className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition" disabled={loading}>

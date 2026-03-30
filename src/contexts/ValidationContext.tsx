@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { VALIDATION_CONFIG as VC, mockUser } from '@/data/mockData';
+import { VALIDATION_CONFIG as VC } from '@/data/mockData';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   calculateDistance,
   getValidationType,
@@ -65,8 +66,9 @@ export const ValidationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [userValidations, setUserValidations] = useState<ValidationRecord[]>(loadValidations);
   const [mockGPS, setMockGPS] = useState<{ lat: number; lng: number } | null>(null);
   const [fraudLog, setFraudLog] = useState<ValidationRecord[]>([]);
+  const { user } = useAuth();
 
-  const plan = mockUser.plan;
+  const plan = user?.plan || 'free';
   const dailyLimit = plan === 'free' ? VC.MAX_VALIDATIONS_PER_DAY_FREE : VC.MAX_VALIDATIONS_PER_DAY_FAMILIAR;
   const today = new Date().toDateString();
   const dailyCount = userValidations.filter(v => new Date(v.created_at).toDateString() === today).length;
@@ -93,7 +95,7 @@ export const ValidationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     });
 
     // Own report
-    if (reportUserId === mockUser.id) {
+    if (user && reportUserId === user.id) {
       return noResult('own_report', 'No puedes confirmar tu propio reporte', 'No pots confirmar el teu propi report');
     }
 
@@ -170,7 +172,7 @@ export const ValidationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const record: ValidationRecord = {
       id: `v${Date.now()}`,
       report_id: reportId,
-      user_id: mockUser.id,
+      user_id: user?.id || 'anonymous',
       trust_score: trustScore,
       distance_meters: Math.round(distance),
       type: vType,
