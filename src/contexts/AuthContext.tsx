@@ -16,6 +16,7 @@ interface UserProfile {
   pet_type: string;
   referral_code: string;
   created_at: string;
+  municipality_id?: string;
 }
 
 interface AuthContextType {
