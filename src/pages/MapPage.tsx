@@ -123,6 +123,9 @@ const MapPage = () => {
       } else if (mapClickMode) {
         setSelectedCoords([e.latlng.lat, e.latlng.lng]);
         setMapClickMode(false);
+        setShowNewReport(true);
+        setReportStep(2);
+        toast.success('📍 ' + t('map.locationCaptured'));
       }
     };
 
