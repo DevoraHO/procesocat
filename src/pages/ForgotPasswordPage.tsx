@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import LanguageToggle from '@/components/LanguageToggle';
 import { Mail, Loader2, ArrowLeft } from 'lucide-react';
+import logo from '@/assets/logoprocesocat.png';
 
 const ForgotPasswordPage = () => {
   const { i18n } = useTranslation();
@@ -31,7 +32,7 @@ const ForgotPasswordPage = () => {
 
       <div className="w-full max-w-[420px] bg-card rounded-2xl shadow-xl p-8 space-y-6">
         <div className="flex flex-col items-center gap-2">
-          <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-3xl">🌲</div>
+          <img src={logo} alt="ProcesoCat" className="w-16 h-16 rounded-2xl" />
           <h1 className="text-2xl font-bold text-foreground">ProcesoCat</h1>
         </div>
 

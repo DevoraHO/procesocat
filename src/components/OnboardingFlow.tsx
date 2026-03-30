@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import logo from '@/assets/logoprocesocat.png';
 
 interface Props { onComplete: () => void; }
 
@@ -23,7 +24,7 @@ const OnboardingFlow = ({ onComplete }: Props) => {
   if (step === 0) return (
     <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center p-8 text-white text-center" style={{ background: '#2D6A4F' }}>
       <button onClick={skip} className="absolute top-6 right-6 text-white/70 text-sm">{t('onboarding.skip')}</button>
-      <div className="text-7xl mb-6">🌲</div>
+      <img src={logo} alt="ProcesoCat" className="w-28 h-28 mb-6 rounded-2xl" />
       <h1 className="text-2xl font-bold mb-3">{t('onboarding.title1')}</h1>
       <p className="text-white/80 max-w-xs">{t('onboarding.sub1')}</p>
       {dots}
