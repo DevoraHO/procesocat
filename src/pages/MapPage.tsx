@@ -45,7 +45,7 @@ const MapPage = () => {
   const [selectedCoords, setSelectedCoords] = useState<[number, number] | null>(null);
   const [reportDescription, setReportDescription] = useState('');
   const [reportPhotos, setReportPhotos] = useState<File[]>([]);
-  const [mapClickMode, setMapClickMode] = useState(false);
+  const [mapClickMode] = useState(false); // kept for safe walk compat
   const [validatedIds, setValidatedIds] = useState<Set<string>>(new Set());
   const [selectedAlertType, setSelectedAlertType] = useState<AlertTypeKey | null>(null);
   const { isFree, canReport, reportsRemaining, incrementReportCount, upgradeOpen, upgradeTrigger, showUpgrade, closeUpgrade } = useFreemium();
