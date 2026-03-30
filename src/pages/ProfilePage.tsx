@@ -312,12 +312,27 @@ const ProfilePage = () => {
 
       {/* Tabs */}
       <Tabs defaultValue="summary" className="mt-6 px-4">
-        <TabsList className="w-full grid grid-cols-5">
-          <TabsTrigger value="summary">{t('profile.summary')}</TabsTrigger>
-          <TabsTrigger value="badges">{t('profile.badges')}</TabsTrigger>
-          <TabsTrigger value="zones">{t('profile.zones')}</TabsTrigger>
-          <TabsTrigger value="ranking">{t('profile.ranking')}</TabsTrigger>
-          <TabsTrigger value="settings">{t('profile.settingsTab')}</TabsTrigger>
+        <TabsList className="w-full grid grid-cols-5 h-12 bg-card border border-border shadow-sm rounded-xl p-1 gap-1">
+          <TabsTrigger value="summary" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md flex items-center gap-1.5 text-xs sm:text-sm font-medium transition-all">
+            <LayoutDashboard size={16} />
+            <span className="hidden sm:inline">{t('profile.summary')}</span>
+          </TabsTrigger>
+          <TabsTrigger value="badges" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md flex items-center gap-1.5 text-xs sm:text-sm font-medium transition-all">
+            <Award size={16} />
+            <span className="hidden sm:inline">{t('profile.badges')}</span>
+          </TabsTrigger>
+          <TabsTrigger value="zones" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md flex items-center gap-1.5 text-xs sm:text-sm font-medium transition-all">
+            <MapPinned size={16} />
+            <span className="hidden sm:inline">{t('profile.zones')}</span>
+          </TabsTrigger>
+          <TabsTrigger value="ranking" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md flex items-center gap-1.5 text-xs sm:text-sm font-medium transition-all">
+            <Trophy size={16} />
+            <span className="hidden sm:inline">{t('profile.ranking')}</span>
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md flex items-center gap-1.5 text-xs sm:text-sm font-medium transition-all">
+            <Settings size={16} />
+            <span className="hidden sm:inline">{t('profile.settingsTab')}</span>
+          </TabsTrigger>
         </TabsList>
 
         {/* TAB 1: RESUMEN */}
