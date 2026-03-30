@@ -8,9 +8,10 @@ import { updateLifecycle, resetToActive, LIFECYCLE, getReportAge } from '@/utils
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Filter, Plus, X, ChevronLeft, ChevronRight, MapPin, Camera, Lock } from 'lucide-react';
+import { Filter, Plus, X, ChevronLeft, ChevronRight, MapPin, Camera, Lock, Shield, Search, Trash2, RotateCcw } from 'lucide-react';
 import { useFreemium } from '@/hooks/useFreemium';
 import UpgradeModal from '@/components/UpgradeModal';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ReportWithScore {
   report: typeof mockReports[0] & { last_activity_at?: string };
@@ -42,6 +43,16 @@ const MapPage = () => {
   const [validatedIds, setValidatedIds] = useState<Set<string>>(new Set());
   const { isFree, canReport, reportsRemaining, incrementReportCount, upgradeOpen, upgradeTrigger, showUpgrade, closeUpgrade } = useFreemium();
 
+  // Safe walk state
+  const [safeWalkMode, setSafeWalkMode] = useState(false);
+  const [safeWalkPoints, setSafeWalkPoints] = useState<[number, number][]>([]);
+  const [safeWalkAnalyzing, setSafeWalkAnalyzing] = useState(false);
+  const [safeWalkResult, setSafeWalkResult] = useState<any>(null);
+  const [showSafeWalkUpgrade, setShowSafeWalkUpgrade] = useState(false);
+  const safeWalkMarkersRef = useRef<L.LayerGroup | null>(null);
+  const safeWalkLineRef = useRef<L.Polyline | null>(null);
+  const safeWalkResultLinesRef = useRef<L.LayerGroup | null>(null);
+
   // Calculate scores
   useEffect(() => {
     const scored = reports.map(r => ({
@@ -69,6 +80,8 @@ const MapPage = () => {
 
     markersLayerRef.current = L.layerGroup().addTo(map);
     heatmapLayerRef.current = L.layerGroup().addTo(map);
+    safeWalkMarkersRef.current = L.layerGroup().addTo(map);
+    safeWalkResultLinesRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
 
     if (!localStorage.getItem('location_asked')) {
@@ -81,20 +94,63 @@ const MapPage = () => {
     };
   }, []);
 
-  // Handle map click for report placement
+  // Handle map click for report placement OR safe walk
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
     const handler = (e: L.LeafletMouseEvent) => {
-      if (mapClickMode) {
+      if (safeWalkMode) {
+        const newPoint: [number, number] = [e.latlng.lat, e.latlng.lng];
+        setSafeWalkPoints(prev => [...prev, newPoint]);
+      } else if (mapClickMode) {
         setSelectedCoords([e.latlng.lat, e.latlng.lng]);
         setMapClickMode(false);
       }
     };
     map.on('click', handler);
     return () => { map.off('click', handler); };
-  }, [mapClickMode]);
+  }, [mapClickMode, safeWalkMode]);
+
+  // Render safe walk markers and lines
+  useEffect(() => {
+    if (!safeWalkMarkersRef.current || !mapRef.current) return;
+    safeWalkMarkersRef.current.clearLayers();
+    if (safeWalkLineRef.current) {
+      mapRef.current.removeLayer(safeWalkLineRef.current);
+      safeWalkLineRef.current = null;
+    }
+
+    safeWalkPoints.forEach((pt, i) => {
+      const icon = L.divIcon({
+        className: '',
+        html: `<div style="width:28px;height:28px;border-radius:50%;background:white;border:3px solid hsl(var(--primary));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:hsl(var(--primary));box-shadow:0 2px 6px rgba(0,0,0,0.2)">${i + 1}</div>`,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14],
+      });
+      const marker = L.marker(pt, { icon });
+      marker.bindPopup(`<div style="font-size:12px;text-align:center">${t('safeWalk.point', { n: i + 1 })}<br><button data-sw-remove="${i}" style="color:#ef4444;font-size:11px;cursor:pointer;border:none;background:none;text-decoration:underline">${t('safeWalk.removePoint')}</button></div>`);
+      marker.on('popupopen', () => {
+        setTimeout(() => {
+          const el = marker.getPopup()?.getElement();
+          el?.querySelector(`[data-sw-remove="${i}"]`)?.addEventListener('click', () => {
+            setSafeWalkPoints(prev => prev.filter((_, j) => j !== i));
+            marker.closePopup();
+          });
+        }, 10);
+      });
+      safeWalkMarkersRef.current!.addLayer(marker);
+    });
+
+    if (safeWalkPoints.length >= 2 && !safeWalkResult) {
+      safeWalkLineRef.current = L.polyline(safeWalkPoints, {
+        color: '#94a3b8',
+        weight: 3,
+        dashArray: '8, 8',
+        opacity: 0.7,
+      }).addTo(mapRef.current);
+    }
+  }, [safeWalkPoints, safeWalkResult, t]);
 
   // Render markers & heatmap
   const renderMarkers = useCallback(() => {
@@ -312,6 +368,115 @@ const MapPage = () => {
     setReportPhotos(prev => [...prev, ...files].slice(0, 2));
   };
 
+  // Safe walk functions
+  const handleSafeWalkClick = () => {
+    if (isFree) {
+      setShowSafeWalkUpgrade(true);
+    } else {
+      setSafeWalkMode(true);
+      setSafeWalkPoints([]);
+      setSafeWalkResult(null);
+      if (safeWalkResultLinesRef.current) safeWalkResultLinesRef.current.clearLayers();
+    }
+  };
+
+  const handleClearRoute = () => {
+    setSafeWalkPoints([]);
+    setSafeWalkResult(null);
+    if (safeWalkResultLinesRef.current) safeWalkResultLinesRef.current.clearLayers();
+  };
+
+  const handleCancelSafeWalk = () => {
+    setSafeWalkMode(false);
+    handleClearRoute();
+    if (safeWalkMarkersRef.current) safeWalkMarkersRef.current.clearLayers();
+  };
+
+  const handleAnalyzeRoute = () => {
+    setSafeWalkAnalyzing(true);
+    setTimeout(() => {
+      // Simulate analysis: check which segments pass near reports
+      const segments: any[] = [];
+      let totalDistance = 0;
+      let safeDistance = 0;
+      const riskyZones: any[] = [];
+
+      for (let i = 0; i < safeWalkPoints.length - 1; i++) {
+        const p1 = safeWalkPoints[i];
+        const p2 = safeWalkPoints[i + 1];
+        const midLat = (p1[0] + p2[0]) / 2;
+        const midLng = (p1[1] + p2[1]) / 2;
+        const segDist = Math.sqrt(Math.pow((p2[0] - p1[0]) * 111, 2) + Math.pow((p2[1] - p1[1]) * 111 * Math.cos(p1[0] * Math.PI / 180), 2));
+        totalDistance += segDist;
+
+        // Check proximity to reports
+        let maxDanger = 0;
+        let nearReport: any = null;
+        scoredReports.forEach(({ report, score }) => {
+          const dist = Math.sqrt(Math.pow((midLat - report.lat) * 111, 2) + Math.pow((midLng - report.lng) * 111 * Math.cos(midLat * Math.PI / 180), 2));
+          if (dist < 1.5 && score > maxDanger) {
+            maxDanger = score;
+            nearReport = { ...report, score };
+          }
+        });
+
+        const segColor = maxDanger > 60 ? '#ef4444' : maxDanger > 30 ? '#f97316' : '#22c55e';
+        const segLevel = maxDanger > 60 ? 'red' : maxDanger > 30 ? 'orange' : 'green';
+        segments.push({ from: p1, to: p2, color: segColor, level: segLevel, distance: segDist, danger: maxDanger });
+
+        if (segLevel === 'green') safeDistance += segDist;
+        if (maxDanger > 30 && nearReport) {
+          const daysAgo = Math.floor((Date.now() - new Date(nearReport.created_at).getTime()) / 86400000);
+          riskyZones.push({
+            segment: i + 1,
+            distance: (totalDistance - segDist).toFixed(0),
+            report: nearReport,
+            daysAgo,
+            level: segLevel,
+          });
+        }
+      }
+
+      const safePercent = totalDistance > 0 ? Math.round((safeDistance / totalDistance) * 100) : 100;
+      const overallLevel = riskyZones.some(z => z.level === 'red') ? 'PELIGROSA' : riskyZones.length > 0 ? 'PRECAUCIÓN' : 'SEGURA';
+
+      // Draw colored segments on map
+      if (safeWalkResultLinesRef.current && mapRef.current) {
+        safeWalkResultLinesRef.current.clearLayers();
+        segments.forEach(seg => {
+          const line = L.polyline([seg.from, seg.to], {
+            color: seg.color,
+            weight: 5,
+            opacity: 0.9,
+          });
+          safeWalkResultLinesRef.current!.addLayer(line);
+        });
+      }
+
+      // Remove dashed line
+      if (safeWalkLineRef.current && mapRef.current) {
+        mapRef.current.removeLayer(safeWalkLineRef.current);
+        safeWalkLineRef.current = null;
+      }
+
+      setSafeWalkResult({
+        segments,
+        totalDistance: totalDistance.toFixed(1),
+        safePercent,
+        riskyZones,
+        overallLevel,
+      });
+      setSafeWalkAnalyzing(false);
+    }, 1500);
+  };
+
+  const handleShareRoute = () => {
+    if (!safeWalkResult) return;
+    const levelText = safeWalkResult.overallLevel === 'SEGURA' ? t('safeWalk.resultSafe') : safeWalkResult.overallLevel === 'PRECAUCIÓN' ? t('safeWalk.resultCaution') : t('safeWalk.resultDangerous');
+    const msg = `🛡️ ${t('safeWalk.shareMsg', { level: levelText, percent: safeWalkResult.safePercent, pet: mockUser.pet_name })}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+  };
+
   const activeCount = reports.filter(r => r.status === 'ACTIVE').length;
 
   const legendItems = [
@@ -334,8 +499,34 @@ const MapPage = () => {
         </div>
       )}
 
+      {/* Safe walk instruction banner */}
+      {safeWalkMode && !safeWalkResult && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1001] bg-blue-600 text-white rounded-xl px-4 py-3 shadow-lg max-w-md w-[94%] animate-fade-in">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-400"></span>
+            </span>
+            <span className="text-sm font-medium">{t('safeWalk.tapToMark')}</span>
+          </div>
+          <p className="text-xs opacity-80">
+            {safeWalkPoints.length < 2
+              ? t('safeWalk.pointsNeeded', { count: safeWalkPoints.length })
+              : t('safeWalk.pointsReady', { count: safeWalkPoints.length })}
+          </p>
+          <div className="flex gap-2 mt-2">
+            <button onClick={handleClearRoute} className="text-xs bg-white/20 hover:bg-white/30 rounded-lg px-3 py-1 flex items-center gap-1 transition">
+              <Trash2 className="h-3 w-3" /> {t('safeWalk.clear')}
+            </button>
+            <button onClick={handleCancelSafeWalk} className="text-xs bg-white/20 hover:bg-white/30 rounded-lg px-3 py-1 flex items-center gap-1 transition">
+              <X className="h-3 w-3" /> {t('safeWalk.cancel')}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Nearby decay banner */}
-      {nearbyDecay && (
+      {nearbyDecay && !safeWalkMode && (
         <div className="absolute bottom-24 left-3 right-16 z-[1001] bg-amber-50 border border-amber-300 rounded-xl px-3 py-2 shadow-lg flex items-center gap-2 text-sm">
           <span className="text-amber-900 flex-1">{t('map.nearbyDecay', { days: Math.floor(getReportAge(nearbyDecay.created_at)) })}</span>
           <button onClick={() => { setReports(prev => prev.map(r => r.id === nearbyDecay.id ? resetToActive(r) : r)); setNearbyDecay(null); toast.success(t('map.reactivated')); }} className="text-xs font-bold text-green-700">Sí</button>
@@ -367,16 +558,47 @@ const MapPage = () => {
         >
           {heatmapVisible ? '🔥' : '○'} {t('map.heatLayer')}
         </button>
-        <button
-          onClick={() => isFree ? showUpgrade('safeWalk') : toast.info(t('map.comingSoon'))}
-          className={`px-3 py-2 rounded-xl text-sm font-medium shadow-lg backdrop-blur-sm flex items-center gap-1.5 ${
-            isFree ? 'bg-card/95 text-muted-foreground' : 'bg-primary text-primary-foreground'
-          }`}
-        >
-          🛡️ {t('map.safeWalk')}
-          {isFree && <Lock className="h-3 w-3" />}
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={handleSafeWalkClick}
+              className={`px-3 py-2 rounded-xl text-sm font-medium shadow-lg backdrop-blur-sm flex items-center gap-1.5 transition-colors ${
+                safeWalkMode ? 'bg-blue-600 text-white' : isFree ? 'bg-card/95 text-muted-foreground' : 'bg-primary text-primary-foreground'
+              }`}
+            >
+              🛡️ {t('map.safeWalk')}
+              {isFree && <Lock className="h-3 w-3" />}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="left" className="max-w-[220px] text-xs">
+            {t('safeWalk.tooltip')}
+          </TooltipContent>
+        </Tooltip>
       </div>
+
+      {/* Analyze route button */}
+      {safeWalkMode && safeWalkPoints.length >= 2 && !safeWalkResult && !safeWalkAnalyzing && (
+        <div className="absolute bottom-32 right-4 z-[1001] animate-scale-in">
+          <button
+            onClick={handleAnalyzeRoute}
+            className="bg-primary text-primary-foreground px-4 py-2.5 rounded-full shadow-xl text-sm font-semibold flex items-center gap-2 animate-bounce"
+            style={{ animationDuration: '2s' }}
+          >
+            <Search className="h-4 w-4" />
+            {t('safeWalk.analyze', { n: safeWalkPoints.length })}
+          </button>
+        </div>
+      )}
+
+      {/* Analyzing spinner */}
+      {safeWalkAnalyzing && (
+        <div className="absolute bottom-32 right-4 z-[1001]">
+          <div className="bg-card/95 backdrop-blur-sm text-foreground px-4 py-2.5 rounded-full shadow-xl text-sm font-medium flex items-center gap-2">
+            <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            {t('safeWalk.analyzing')}
+          </div>
+        </div>
+      )}
 
       {/* BOTTOM LEFT: Legend */}
       <div className="absolute bottom-4 left-3 z-[1000] bg-card/95 backdrop-blur-sm shadow-lg rounded-xl p-2.5 hidden sm:block">
@@ -392,27 +614,176 @@ const MapPage = () => {
       </div>
 
       {/* BOTTOM RIGHT: FAB add report */}
-      <div className="absolute bottom-20 right-4 z-[1000] flex flex-col items-center gap-1">
-        {isFree && (
-          <span className="text-[10px] font-medium text-muted-foreground bg-card/90 backdrop-blur-sm rounded-full px-2 py-0.5 shadow">
-            {canReport ? t('map.reportLimit', { count: reportsRemaining }) : t('map.reportLimitReached')}
-          </span>
-        )}
-        <button
-          onClick={() => {
-            if (isFree && !canReport) {
-              showUpgrade('reports');
-            } else {
-              setShowNewReport(true);
-            }
-          }}
-          className={`w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-opacity ${
-            isFree && !canReport ? 'bg-muted text-muted-foreground' : 'bg-primary text-primary-foreground hover:opacity-90'
-          }`}
-        >
-          <Plus className="h-7 w-7" />
-        </button>
-      </div>
+      {!safeWalkMode && (
+        <div className="absolute bottom-20 right-4 z-[1000] flex flex-col items-center gap-1">
+          {isFree && (
+            <span className="text-[10px] font-medium text-muted-foreground bg-card/90 backdrop-blur-sm rounded-full px-2 py-0.5 shadow">
+              {canReport ? t('map.reportLimit', { count: reportsRemaining }) : t('map.reportLimitReached')}
+            </span>
+          )}
+          <button
+            onClick={() => {
+              if (isFree && !canReport) {
+                showUpgrade('reports');
+              } else {
+                setShowNewReport(true);
+              }
+            }}
+            className={`w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-opacity ${
+              isFree && !canReport ? 'bg-muted text-muted-foreground' : 'bg-primary text-primary-foreground hover:opacity-90'
+            }`}
+          >
+            <Plus className="h-7 w-7" />
+          </button>
+        </div>
+      )}
+
+      {/* SAFE WALK RESULTS CARD */}
+      {safeWalkResult && (
+        <div className="fixed inset-x-0 bottom-0 z-[2000] animate-slide-in-bottom">
+          <div className="bg-card rounded-t-[20px] shadow-2xl max-h-[70vh] overflow-y-auto">
+            {/* Header */}
+            <div className={`rounded-t-[20px] px-5 py-4 text-white ${
+              safeWalkResult.overallLevel === 'SEGURA' ? 'bg-primary' :
+              safeWalkResult.overallLevel === 'PRECAUCIÓN' ? 'bg-orange-500' : 'bg-destructive'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-lg font-bold">
+                    {safeWalkResult.overallLevel === 'SEGURA' && `✅ ${t('safeWalk.resultSafeTitle', { pet: mockUser.pet_name })}`}
+                    {safeWalkResult.overallLevel === 'PRECAUCIÓN' && `⚠️ ${t('safeWalk.resultCautionTitle')}`}
+                    {safeWalkResult.overallLevel === 'PELIGROSA' && `🔴 ${t('safeWalk.resultDangerousTitle')}`}
+                  </p>
+                  <p className="text-sm opacity-90 mt-0.5">
+                    {safeWalkResult.overallLevel === 'SEGURA' && t('safeWalk.resultSafeDesc')}
+                    {safeWalkResult.overallLevel === 'PRECAUCIÓN' && t('safeWalk.resultCautionDesc', { pet: mockUser.pet_name })}
+                    {safeWalkResult.overallLevel === 'PELIGROSA' && t('safeWalk.resultDangerousDesc')}
+                  </p>
+                </div>
+                <button onClick={() => { setSafeWalkResult(null); handleCancelSafeWalk(); }} className="text-white/80 hover:text-white">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="px-5 py-4 space-y-4">
+              {/* Stats pills */}
+              <div className="flex gap-2">
+                <div className="flex-1 bg-muted rounded-xl py-2 text-center">
+                  <p className="text-xs text-muted-foreground">📏</p>
+                  <p className="text-sm font-bold text-foreground">{safeWalkResult.totalDistance}km</p>
+                </div>
+                <div className="flex-1 bg-muted rounded-xl py-2 text-center">
+                  <p className="text-xs text-muted-foreground">✅</p>
+                  <p className="text-sm font-bold text-foreground">{safeWalkResult.safePercent}% {t('safeWalk.safe')}</p>
+                </div>
+                <div className="flex-1 bg-muted rounded-xl py-2 text-center">
+                  <p className="text-xs text-muted-foreground">⚠️</p>
+                  <p className="text-sm font-bold text-foreground">{safeWalkResult.riskyZones.length} {t('safeWalk.stretches')}</p>
+                </div>
+              </div>
+
+              {/* Route colored bar */}
+              <div className="flex h-3 rounded-full overflow-hidden">
+                {safeWalkResult.segments.map((seg: any, i: number) => (
+                  <div key={i} className="h-full" style={{ backgroundColor: seg.color, flex: seg.distance }} />
+                ))}
+              </div>
+
+              {/* Risky zones */}
+              {safeWalkResult.riskyZones.length > 0 && (
+                <div className="space-y-2">
+                  {safeWalkResult.riskyZones.map((zone: any, i: number) => (
+                    <div key={i} className={`border-l-4 rounded-lg p-3 bg-muted/50 ${zone.level === 'red' ? 'border-destructive' : 'border-orange-500'}`}>
+                      <p className="text-sm font-semibold text-foreground">{t('safeWalk.stretch', { n: zone.segment })}: {zone.distance}m</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {t('safeWalk.nestReported', { days: zone.daysAgo, count: zone.report.validation_count })}
+                      </p>
+                      <p className="text-xs text-muted-foreground">📍 {zone.report.comarca}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Pet recommendation */}
+              <div className="bg-primary/5 border border-primary/20 rounded-xl p-3">
+                <p className="text-sm text-foreground">
+                  {safeWalkResult.riskyZones.length > 0
+                    ? t('safeWalk.petWarning', { pet: mockUser.pet_name, n: safeWalkResult.riskyZones[0].segment })
+                    : t('safeWalk.petSafe', { pet: mockUser.pet_name })}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">{t('safeWalk.petNote')}</p>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex flex-col gap-2 pb-4">
+                <Button variant="outline" onClick={() => { setSafeWalkResult(null); handleClearRoute(); }} className="gap-2">
+                  <RotateCcw className="h-4 w-4" /> {t('safeWalk.tryAnother')}
+                </Button>
+                <Button onClick={handleShareRoute} className="bg-[#25D366] hover:bg-[#25D366]/90 gap-2">
+                  📱 {t('safeWalk.shareWhatsApp')}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SAFE WALK UPGRADE MODAL (FREE USERS) */}
+      {showSafeWalkUpgrade && (
+        <div className="fixed inset-0 z-[2000] bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-card rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden animate-scale-in">
+            {/* Blurred demo preview */}
+            <div className="relative bg-muted p-4">
+              <div className="blur-[4px] pointer-events-none">
+                <div className="bg-primary rounded-xl p-3 text-white text-sm mb-2">✅ Ruta segura para {mockUser.pet_name}</div>
+                <div className="flex gap-2 mb-2">
+                  <div className="flex-1 bg-card rounded-lg py-2 text-center text-xs">📏 2.1km</div>
+                  <div className="flex-1 bg-card rounded-lg py-2 text-center text-xs">✅ 92%</div>
+                  <div className="flex-1 bg-card rounded-lg py-2 text-center text-xs">⚠️ 1</div>
+                </div>
+                <div className="flex h-2 rounded-full overflow-hidden">
+                  <div className="bg-green-500 flex-[8]" />
+                  <div className="bg-orange-500 flex-1" />
+                </div>
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-t-2xl">
+                <p className="text-white font-semibold text-sm text-center px-4 drop-shadow">{t('safeWalk.unlockFull')}</p>
+              </div>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-2 animate-bounce" style={{ animationDuration: '2s' }}>
+                  <Shield className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground">{t('safeWalk.upgradeTitle')}</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {t('safeWalk.upgradeDesc', { pet: mockUser.pet_name })}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                {['safeWalk.upgradeFeat1', 'safeWalk.upgradeFeat2', 'safeWalk.upgradeFeat3'].map(key => (
+                  <div key={key} className="flex items-center gap-2 text-sm text-foreground">
+                    <span className="text-primary">✅</span>
+                    <span>{t(key)}</span>
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-center text-xs text-muted-foreground">{t('safeWalk.priceNote')}</p>
+
+              <Button className="w-full gap-2" onClick={() => { setShowSafeWalkUpgrade(false); toast.success(t('safeWalk.upgradeMock')); }}>
+                🛡️ {t('safeWalk.activateBtn')}
+              </Button>
+              <button onClick={() => setShowSafeWalkUpgrade(false)} className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition">
+                {t('safeWalk.continueFree')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* GEOLOCATION MODAL */}
       {showLocationModal && (
