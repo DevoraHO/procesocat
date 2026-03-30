@@ -15,7 +15,7 @@ interface ReportWithScore {
 }
 
 const MapPage = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
@@ -35,8 +35,6 @@ const MapPage = () => {
   const [reportPhotos, setReportPhotos] = useState<File[]>([]);
   const [mapClickMode, setMapClickMode] = useState(false);
   const [validatedIds, setValidatedIds] = useState<Set<string>>(new Set());
-
-  const lang = i18n.language;
 
   // Calculate scores
   useEffect(() => {
@@ -67,7 +65,6 @@ const MapPage = () => {
     heatmapLayerRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
 
-    // Check location modal
     if (!localStorage.getItem('location_asked')) {
       setShowLocationModal(true);
     }
@@ -106,7 +103,6 @@ const MapPage = () => {
       const desc = report.description.length > 80 ? report.description.slice(0, 80) + '...' : report.description;
       const levelName = t(`danger.${level}`);
 
-      // Marker
       const marker = L.circleMarker([report.lat, report.lng], {
         radius: 10,
         color,
@@ -162,7 +158,6 @@ const MapPage = () => {
 
       markersLayerRef.current!.addLayer(marker);
 
-      // Heatmap circle
       const heatCircle = L.circle([report.lat, report.lng], {
         radius: 800,
         color,
@@ -198,9 +193,9 @@ const MapPage = () => {
   }, []);
 
   const shareToWhatsApp = (report: any, score: number) => {
-    const level = score > 60 ? 'PELIGRO ALTO' : score > 40 ? 'Precaución' : 'Zona segura';
+    const level = score > 60 ? t('map.dangerHigh') : score > 40 ? t('map.caution') : t('map.safeZone');
     const emoji = score > 60 ? '🔴' : score > 40 ? '🟡' : '🟢';
-    const msg = `${emoji} ${level}: Procesionaria detectada en ${report.comarca}, Cataluña. Cuidado con mascotas y niños. Ver en ProcesoAlert: procesoalert.es/r/${report.id}`;
+    const msg = `${emoji} ${level}: ${t('map.whatsappMsg', { comarca: report.comarca, id: report.id })}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
@@ -270,11 +265,11 @@ const MapPage = () => {
   const activeCount = reports.filter(r => r.status === 'ACTIVE').length;
 
   const legendItems = [
-    { color: '#22c55e', label: lang === 'ca' ? 'Sense perill (0-20)' : 'Sin peligro (0-20)' },
-    { color: '#eab308', label: lang === 'ca' ? 'Precaució (21-40)' : 'Precaución (21-40)' },
-    { color: '#f97316', label: lang === 'ca' ? 'Perill moderat (41-60)' : 'Peligro moderado (41-60)' },
-    { color: '#ef4444', label: lang === 'ca' ? 'Perill alt (61-80)' : 'Peligro alto (61-80)' },
-    { color: '#a855f7', label: lang === 'ca' ? 'Perill crític (81-100)' : 'Peligro crítico (81-100)' },
+    { color: '#22c55e', level: 'green', range: '0-20' },
+    { color: '#eab308', level: 'yellow', range: '21-40' },
+    { color: '#f97316', level: 'orange', range: '41-60' },
+    { color: '#ef4444', level: 'red', range: '61-80' },
+    { color: '#a855f7', level: 'purple', range: '81-100' },
   ];
 
   return (
@@ -305,10 +300,7 @@ const MapPage = () => {
           {heatmapVisible ? '🔥' : '○'} {t('map.heatLayer')}
         </button>
         <button
-          onClick={() => toast.info(mockUser.plan === 'familiar'
-            ? (lang === 'ca' ? 'Funció pròximament' : 'Función próximamente')
-            : t('subscription.upgradePrompt')
-          )}
+          onClick={() => toast.info(t('map.comingSoon'))}
           className="px-3 py-2 rounded-xl text-sm font-medium shadow-lg backdrop-blur-sm bg-primary text-primary-foreground"
         >
           🛡️ {t('map.safeWalk')}
@@ -318,12 +310,12 @@ const MapPage = () => {
       {/* BOTTOM LEFT: Legend */}
       <div className="absolute bottom-4 left-3 z-[1000] bg-card/95 backdrop-blur-sm shadow-lg rounded-xl p-2.5 hidden sm:block">
         <p className="text-[11px] text-muted-foreground font-medium mb-1">
-          {lang === 'ca' ? 'Nivells de perill' : 'Niveles de peligro'}
+          {t('map.legendTitle')}
         </p>
         {legendItems.map(item => (
           <div key={item.color} className="flex items-center gap-1.5 py-0.5">
             <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: item.color }} />
-            <span className="text-[11px] text-foreground">{item.label}</span>
+            <span className="text-[11px] text-foreground">{t(`danger.${item.level}`)} ({item.range})</span>
           </div>
         ))}
       </div>
@@ -342,24 +334,21 @@ const MapPage = () => {
           <div className="bg-card rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl">
             <div className="text-5xl mb-4">📍</div>
             <h2 className="text-lg font-bold text-foreground mb-2">
-              {lang === 'ca' ? 'Activa la teva ubicació' : 'Activa tu ubicación'}
+              {t('map.activateLocationTitle')}
             </h2>
             <p className="text-sm text-muted-foreground mb-6">
-              {lang === 'ca'
-                ? `ProcesoAlert necessita la teva ubicació per mostrar-te alertes properes i calcular rutes segures per passejar amb ${mockUser.pet_name}.`
-                : `ProcesoAlert necesita tu ubicación para mostrarte alertas cercanas y calcular rutas seguras para pasear con ${mockUser.pet_name}.`
-              }
+              {t('map.activateLocationText', { pet: mockUser.pet_name })}
             </p>
             <div className="flex flex-col gap-2">
               <Button onClick={handleActivateLocation} className="w-full">
-                {lang === 'ca' ? 'Activar ubicació' : 'Activar ubicación'}
+                {t('map.activateLocation')}
               </Button>
               <Button
                 variant="ghost"
                 onClick={() => { setShowLocationModal(false); localStorage.setItem('location_asked', 'true'); }}
                 className="w-full text-muted-foreground"
               >
-                {lang === 'ca' ? 'Ara no' : 'Ahora no'}
+                {t('map.notNow')}
               </Button>
             </div>
           </div>
@@ -371,18 +360,15 @@ const MapPage = () => {
         <div className="fixed inset-0 z-[2000]">
           <div className="absolute inset-0 bg-black/50" onClick={() => { setShowNewReport(false); setReportStep(1); setSelectedCoords(null); setReportDescription(''); setReportPhotos([]); }} />
           <div className="absolute bottom-0 left-0 right-0 bg-card rounded-t-[20px] shadow-2xl" style={{ height: '60vh' }}>
-            {/* Handle */}
             <div className="flex justify-center pt-3 pb-1">
               <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
             </div>
 
             <div className="px-5 pb-5 h-full overflow-y-auto">
-              {/* Close */}
               <button onClick={() => { setShowNewReport(false); setReportStep(1); setSelectedCoords(null); setReportDescription(''); setReportPhotos([]); }} className="absolute top-4 right-4 text-muted-foreground">
                 <X className="h-5 w-5" />
               </button>
 
-              {/* Step indicator */}
               <div className="flex items-center gap-2 mb-4 mt-1">
                 {[1, 2, 3].map(s => (
                   <div key={s} className={`h-1 flex-1 rounded-full ${s <= reportStep ? 'bg-primary' : 'bg-muted'}`} />
@@ -391,31 +377,31 @@ const MapPage = () => {
 
               {reportStep === 1 && (
                 <div>
-                  <h3 className="text-lg font-bold text-foreground mb-4">📍 {lang === 'ca' ? 'Pas 1: Ubicació' : 'Paso 1: Ubicación'}</h3>
+                  <h3 className="text-lg font-bold text-foreground mb-4">📍 {t('map.step1')}</h3>
                   <Button onClick={handleGetLocationForReport} className="w-full mb-3 gap-2">
                     <MapPin className="h-4 w-4" />
                     {t('report.useLocation')}
                   </Button>
                   <p className="text-center text-sm text-muted-foreground mb-3">
-                    {lang === 'ca' ? 'O toca el mapa per seleccionar ubicació' : 'O toca el mapa para seleccionar ubicación'}
+                    {t('map.orSelectMap')}
                   </p>
-                  <Button variant="outline" className="w-full mb-4" onClick={() => { setMapClickMode(true); setShowNewReport(false); toast.info(lang === 'ca' ? 'Toca el mapa per seleccionar' : 'Toca el mapa para seleccionar'); }}>
-                    🗺️ {lang === 'ca' ? 'Seleccionar al mapa' : 'Seleccionar en el mapa'}
+                  <Button variant="outline" className="w-full mb-4" onClick={() => { setMapClickMode(true); setShowNewReport(false); toast.info(t('map.tapMapToSelect')); }}>
+                    🗺️ {t('map.selectOnMap')}
                   </Button>
                   {selectedCoords && (
                     <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-3 text-sm text-green-700 dark:text-green-300 mb-4">
-                      ✅ {lang === 'ca' ? 'Ubicació capturada' : 'Ubicación capturada'}: {selectedCoords[0].toFixed(2)}°, {selectedCoords[1].toFixed(2)}°
+                      ✅ {t('map.locationCaptured')}: {selectedCoords[0].toFixed(2)}°, {selectedCoords[1].toFixed(2)}°
                     </div>
                   )}
                   <Button onClick={() => setReportStep(2)} disabled={!selectedCoords} className="w-full gap-1">
-                    {lang === 'ca' ? 'Següent' : 'Siguiente'} <ChevronRight className="h-4 w-4" />
+                    {t('map.next')} <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
               )}
 
               {reportStep === 2 && (
                 <div>
-                  <h3 className="text-lg font-bold text-foreground mb-4">📝 {lang === 'ca' ? 'Pas 2: Detalls' : 'Paso 2: Detalles'}</h3>
+                  <h3 className="text-lg font-bold text-foreground mb-4">📝 {t('map.step2')}</h3>
                   <Textarea
                     rows={4}
                     maxLength={500}
@@ -429,7 +415,7 @@ const MapPage = () => {
                   <div className="border-2 border-dashed border-muted rounded-lg p-4 text-center mb-4">
                     <label className="cursor-pointer flex flex-col items-center gap-2">
                       <Camera className="h-6 w-6 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">📷 {t('report.addPhoto')} (máx. 2)</span>
+                      <span className="text-sm text-muted-foreground">📷 {t('report.addPhoto')} ({t('map.maxPhotos')})</span>
                       <input type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoChange} />
                     </label>
                     {reportPhotos.length > 0 && (
@@ -449,10 +435,10 @@ const MapPage = () => {
 
                   <div className="flex gap-2">
                     <Button variant="outline" onClick={() => setReportStep(1)} className="flex-1 gap-1">
-                      <ChevronLeft className="h-4 w-4" /> {lang === 'ca' ? 'Anterior' : 'Anterior'}
+                      <ChevronLeft className="h-4 w-4" /> {t('map.previous')}
                     </Button>
                     <Button onClick={() => setReportStep(3)} disabled={reportDescription.length < 10} className="flex-1 gap-1">
-                      {lang === 'ca' ? 'Següent' : 'Siguiente'} <ChevronRight className="h-4 w-4" />
+                      {t('map.next')} <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
@@ -460,15 +446,15 @@ const MapPage = () => {
 
               {reportStep === 3 && (
                 <div>
-                  <h3 className="text-lg font-bold text-foreground mb-4">✅ {lang === 'ca' ? 'Pas 3: Confirmar' : 'Paso 3: Confirmar'}</h3>
+                  <h3 className="text-lg font-bold text-foreground mb-4">✅ {t('map.step3')}</h3>
                   <div className="bg-muted rounded-xl p-4 mb-4 space-y-2 text-sm text-foreground">
-                    <p>📍 {lang === 'ca' ? 'Ubicació' : 'Ubicación'}: {selectedCoords?.[0].toFixed(4)}, {selectedCoords?.[1].toFixed(4)}</p>
+                    <p>📍 {t('map.location')}: {selectedCoords?.[0].toFixed(4)}, {selectedCoords?.[1].toFixed(4)}</p>
                     <p>📝 {reportDescription.length > 100 ? reportDescription.slice(0, 100) + '...' : reportDescription}</p>
-                    <p>📷 {reportPhotos.length} {lang === 'ca' ? 'fotos adjuntes' : 'fotos adjuntas'}</p>
+                    <p>📷 {reportPhotos.length} {t('map.photosAttached')}</p>
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" onClick={() => setReportStep(2)} className="flex-1 gap-1">
-                      <ChevronLeft className="h-4 w-4" /> {lang === 'ca' ? 'Anterior' : 'Anterior'}
+                      <ChevronLeft className="h-4 w-4" /> {t('map.previous')}
                     </Button>
                     <Button onClick={handleSubmitReport} className="flex-1">
                       {t('report.submit')}
@@ -484,7 +470,7 @@ const MapPage = () => {
       {/* Map click mode indicator */}
       {mapClickMode && (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] bg-card/95 backdrop-blur-sm shadow-lg rounded-xl px-4 py-3 text-sm font-medium text-foreground pointer-events-none animate-pulse">
-          📍 {lang === 'ca' ? 'Toca el mapa per seleccionar ubicació' : 'Toca el mapa para seleccionar ubicación'}
+          📍 {t('map.tapMapToSelect')}
         </div>
       )}
     </div>

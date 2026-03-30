@@ -34,7 +34,7 @@ const RegisterPage = () => {
           <p className="text-muted-foreground mt-2">{t('auth.register')}</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Input placeholder="Nombre / Nom" value={name} onChange={e => setName(e.target.value)} required />
+          <Input placeholder={t('auth.namePlaceholder')} value={name} onChange={e => setName(e.target.value)} required />
           <Input type="email" placeholder={t('auth.email')} value={email} onChange={e => setEmail(e.target.value)} required />
           <Input type="password" placeholder={t('auth.password')} value={password} onChange={e => setPassword(e.target.value)} required />
           <Button type="submit" className="w-full text-white" style={{ backgroundColor: '#2D6A4F' }} disabled={loading}>

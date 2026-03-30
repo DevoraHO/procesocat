@@ -66,7 +66,7 @@ const SOSButton = () => {
             <DialogTitle className="text-center text-xl">{t('sos.title')}</DialogTitle>
           </DialogHeader>
           <p className="text-center text-sm text-muted-foreground">
-            Tu ubicación: 41.4036, 2.1744
+            {t('sos.yourLocation')}: 41.4036, 2.1744
           </p>
           {user?.pet_name && (
             <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">

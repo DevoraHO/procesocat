@@ -15,11 +15,11 @@ import { useToast } from '@/hooks/use-toast';
 import UserAvatar from '@/components/UserAvatar';
 import DangerBadge from '@/components/DangerBadge';
 import BadgeUnlockModal from '@/components/BadgeUnlockModal';
-import { Pencil, Camera, TrendingUp, ChevronDown, ChevronUp, MapPin, X, Trash2 } from 'lucide-react';
+import { Pencil, Camera, TrendingUp, ChevronDown, ChevronUp, MapPin, Trash2 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-const RANKS = [
+const RANKS_ES = [
   { name: 'Observador', min: 0, max: 500 },
   { name: 'Explorador', min: 501, max: 1500 },
   { name: 'Reportador', min: 1501, max: 3000 },
@@ -37,15 +37,25 @@ const RANKS = [
   { name: 'Leyenda de Cataluña', min: 100000, max: 100000 },
 ];
 
-const BANNER_COLORS = ['#2D6A4F', '#1B4332', '#CC0000', '#1a3a5c', '#4a1d96', '#7f1d1d', '#0f4c5c', '#c1692a'];
-
-const MOCK_ACTIVITY = [
-  { icon: '📍', text_es: 'Publicaste un reporte en Barcelonès', text_ca: 'Has publicat un report al Barcelonès', time_es: 'hace 2 días', time_ca: 'fa 2 dies', pts: 50 },
-  { icon: '✅', text_es: 'Confirmaste un avistamiento', text_ca: 'Has confirmat un avistament', time_es: 'hace 3 días', time_ca: 'fa 3 dies', pts: 15 },
-  { icon: '🏅', text_es: 'Ganaste medalla Verificador', text_ca: 'Has guanyat medalla Verificador', time_es: 'hace 5 días', time_ca: 'fa 5 dies', pts: 200 },
-  { icon: '📍', text_es: 'Publicaste un reporte en Vallès', text_ca: 'Has publicat un report al Vallès', time_es: 'hace 6 días', time_ca: 'fa 6 dies', pts: 50 },
-  { icon: '🔥', text_es: 'Iniciaste sesión 7 días seguidos', text_ca: 'Has iniciat sessió 7 dies seguits', time_es: 'hace 1 semana', time_ca: 'fa 1 setmana', pts: 50 },
+const RANKS_CA = [
+  { name: 'Observador', min: 0, max: 500 },
+  { name: 'Explorador', min: 501, max: 1500 },
+  { name: 'Reportador', min: 1501, max: 3000 },
+  { name: 'Verificador', min: 3001, max: 5000 },
+  { name: 'Protector', min: 5001, max: 8000 },
+  { name: 'Guardià', min: 8001, max: 12000 },
+  { name: 'Vigilant', min: 12001, max: 18000 },
+  { name: 'Defensor', min: 18001, max: 25000 },
+  { name: 'Expert', min: 25001, max: 35000 },
+  { name: 'Investigador', min: 35001, max: 50000 },
+  { name: 'Guardià Sènior', min: 50001, max: 65000 },
+  { name: 'Mestre', min: 65001, max: 80000 },
+  { name: 'Èlit de Catalunya', min: 80001, max: 90000 },
+  { name: 'Heroi de Catalunya', min: 90001, max: 99999 },
+  { name: 'Llegenda de Catalunya', min: 100000, max: 100000 },
 ];
+
+const BANNER_COLORS = ['#2D6A4F', '#1B4332', '#CC0000', '#1a3a5c', '#4a1d96', '#7f1d1d', '#0f4c5c', '#c1692a'];
 
 const BADGE_CATEGORIES = ['all', 'explorer', 'validator', 'media', 'streak', 'hero', 'special'] as const;
 
@@ -55,6 +65,16 @@ const ProfilePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const lang = i18n.language;
+
+  const RANKS = lang === 'ca' ? RANKS_CA : RANKS_ES;
+
+  const MOCK_ACTIVITY = [
+    { icon: '📍', textKey: 'activity.reportPublished', textParams: { comarca: 'Barcelonès' }, timeKey: '2 ' + t('activity.days'), pts: 50 },
+    { icon: '✅', textKey: 'activity.validationDone', textParams: {}, timeKey: '3 ' + t('activity.days'), pts: 15 },
+    { icon: '🏅', textKey: 'activity.badgeEarned', textParams: { badge: 'Verificador' }, timeKey: '5 ' + t('activity.days'), pts: 200 },
+    { icon: '📍', textKey: 'activity.reportInVallès', textParams: {}, timeKey: '6 ' + t('activity.days'), pts: 50 },
+    { icon: '🔥', textKey: 'activity.loginStreak', textParams: { days: '7' }, timeKey: '1 ' + (lang === 'ca' ? 'setmana' : 'semana'), pts: 50 },
+  ];
 
   // State
   const [bannerEditorOpen, setBannerEditorOpen] = useState(false);
@@ -185,19 +205,18 @@ const ProfilePage = () => {
     }
   };
 
-  const thresholdLabels: Record<number, { label: string; color: string }> = {
-    20: { label: lang === 'ca' ? 'Verd' : 'Verde', color: '#22c55e' },
-    40: { label: lang === 'ca' ? 'Groc' : 'Amarillo', color: '#eab308' },
-    60: { label: lang === 'ca' ? 'Taronja' : 'Naranja', color: '#f97316' },
-    80: { label: lang === 'ca' ? 'Vermell' : 'Rojo', color: '#ef4444' },
+  const thresholdLabels: Record<number, { labelKey: string; color: string }> = {
+    20: { labelKey: 'danger.green', color: '#22c55e' },
+    40: { labelKey: 'danger.yellow', color: '#eab308' },
+    60: { labelKey: 'danger.orange', color: '#f97316' },
+    80: { labelKey: 'danger.red', color: '#ef4444' },
   };
 
   const userRankIdx = mockRanking.findIndex(r => r.name === user?.name);
 
-  // Share ranking
   const shareRanking = () => {
     const pos = userRankIdx + 1;
-    const msg = `🏆 #${pos} ${t('profile.thisWeekIn')} Barcelonès con ${user?.weekly_points} pts en ProcesoAlert! procesoalert.es`;
+    const msg = `🏆 #${pos} ${t('profile.thisWeekIn')} Barcelonès - ${user?.weekly_points} pts - ProcesoAlert! procesoalert.es`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
@@ -239,9 +258,9 @@ const ProfilePage = () => {
         </div>
         <h1 className="text-xl font-bold mt-3 text-foreground">{user.name}</h1>
         <div className="flex gap-2 mt-2 flex-wrap justify-center">
-          <span className="bg-primary text-primary-foreground text-xs px-3 py-1 rounded-full font-medium">⭐ {user.rank}</span>
-          <span className="bg-muted text-muted-foreground text-xs px-3 py-1 rounded-full font-medium">{user.points.toLocaleString()} {t('profile.points')}</span>
-          <span className="bg-primary/10 text-primary text-xs px-3 py-1 rounded-full font-medium">{t('profile.plan', { plan: user.plan === 'familiar' ? 'Familiar' : 'Gratuito' })}</span>
+          <span className="bg-primary text-primary-foreground text-xs px-3 py-1 rounded-full font-medium">⭐ {currentRank?.name || user.rank}</span>
+          <span className="bg-muted text-muted-foreground text-xs px-3 py-1 rounded-full font-medium">{points.toLocaleString()} {t('profile.points')}</span>
+          <span className="bg-primary/10 text-primary text-xs px-3 py-1 rounded-full font-medium">{t('profile.plan', { plan: user.plan === 'familiar' ? 'Familiar' : (lang === 'ca' ? 'Gratuït' : 'Gratuito') })}</span>
         </div>
       </div>
 
@@ -250,8 +269,8 @@ const ProfilePage = () => {
         {[
           { label: lang === 'ca' ? 'Reports' : 'Reportes', val: mockStats.totalReports },
           { label: 'Val.', val: mockStats.totalValidations },
-          { label: lang === 'ca' ? 'Fotos' : 'Fotos', val: mockStats.totalPhotos },
-          { label: lang === 'ca' ? 'Coment.' : 'Coment.', val: mockStats.totalComments },
+          { label: 'Fotos', val: mockStats.totalPhotos },
+          { label: 'Coment.', val: mockStats.totalComments },
         ].map(s => (
           <Card key={s.label} className="text-center py-3">
             <p className="text-xl font-bold text-primary">{s.val}</p>
@@ -272,7 +291,6 @@ const ProfilePage = () => {
 
         {/* TAB 1: RESUMEN */}
         <TabsContent value="summary" className="space-y-6 mt-4">
-          {/* Rank progress */}
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-2 mb-3">
@@ -305,7 +323,6 @@ const ProfilePage = () => {
             </CardContent>
           </Card>
 
-          {/* Recent activity */}
           <Card>
             <CardContent className="pt-6">
               <h3 className="font-semibold text-foreground mb-3">{t('profile.recentActivity')}</h3>
@@ -314,8 +331,8 @@ const ProfilePage = () => {
                   <div key={i} className="flex items-start gap-3">
                     <span className="text-lg">{a.icon}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground">{lang === 'ca' ? a.text_ca : a.text_es}</p>
-                      <p className="text-xs text-muted-foreground">{lang === 'ca' ? a.time_ca : a.time_es}</p>
+                      <p className="text-sm text-foreground">{t(a.textKey, a.textParams)}</p>
+                      <p className="text-xs text-muted-foreground">{t('activity.ago', { time: a.timeKey })}</p>
                     </div>
                     <span className="text-xs font-semibold text-primary whitespace-nowrap">+{a.pts}</span>
                   </div>
@@ -360,7 +377,6 @@ const ProfilePage = () => {
 
           <Button variant="outline" size="sm" onClick={handleDemoUnlock} className="w-full">{t('profile.demoUnlock')} 🎉</Button>
 
-          {/* Badge detail modal */}
           <Dialog open={!!selectedBadge} onOpenChange={() => setSelectedBadge(null)}>
             <DialogContent>
               <DialogHeader>
@@ -409,7 +425,7 @@ const ProfilePage = () => {
                     <div>
                       <p className="font-semibold text-foreground">{zone.name}</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {t('profile.radius', { r: `${zone.radius_km}km` })} · {t('profile.alertIf', { level: thresholdLabels[zone.alert_threshold]?.label || 'Naranja' })}
+                        {t('profile.radius', { r: `${zone.radius_km}km` })} · {t('profile.alertIf', { level: t(thresholdLabels[zone.alert_threshold]?.labelKey || 'danger.orange') })}
                       </p>
                     </div>
                     <DangerBadge score={zone.current_danger_score} size="sm" />
@@ -425,7 +441,6 @@ const ProfilePage = () => {
             ))
           )}
 
-          {/* Delete zone confirm */}
           <Dialog open={!!deleteZoneId} onOpenChange={() => setDeleteZoneId(null)}>
             <DialogContent>
               <DialogHeader>
@@ -439,7 +454,6 @@ const ProfilePage = () => {
             </DialogContent>
           </Dialog>
 
-          {/* Add zone modal */}
           <Dialog open={addZoneOpen} onOpenChange={(o) => { if (!o) { setAddZoneOpen(false); zoneMapInstanceRef.current = null; } }}>
             <DialogContent className="max-w-md">
               <DialogHeader>
@@ -455,7 +469,7 @@ const ProfilePage = () => {
                   <div className="flex gap-2">
                     {[20, 40, 60, 80].map(v => (
                       <button key={v} onClick={() => setZoneThreshold(v)} className={`flex-1 text-xs py-2 rounded-lg border transition font-medium ${zoneThreshold === v ? 'border-primary bg-primary/10' : 'border-border'}`} style={{ color: thresholdLabels[v].color }}>
-                        {thresholdLabels[v].label}
+                        {t(thresholdLabels[v].labelKey)}
                       </button>
                     ))}
                   </div>
@@ -507,7 +521,6 @@ const ProfilePage = () => {
             })}
           </div>
 
-          {/* List 4-8 */}
           <div className="space-y-2">
             {mockRanking.slice(3).map((r, i) => {
               const isUser = r.name === user.name;
@@ -525,7 +538,6 @@ const ProfilePage = () => {
             })}
           </div>
 
-          {/* User position */}
           <Card className="bg-primary/5 border-primary/20">
             <CardContent className="py-3 text-center">
               <p className="text-sm font-medium text-foreground">{t('profile.yourPositionWeek', { pos: userRankIdx + 1, pts: user.weekly_points })}</p>
@@ -537,27 +549,25 @@ const ProfilePage = () => {
 
         {/* TAB 5: AJUSTES */}
         <TabsContent value="settings" className="mt-4 space-y-6">
-          {/* Profile */}
           <Card>
             <CardContent className="pt-6 space-y-3">
-              <h3 className="font-semibold text-foreground">{t('nav.profile')}</h3>
+              <h3 className="font-semibold text-foreground">{t('settingsSections.profile')}</h3>
               <Input value={editName} onChange={e => setEditName(e.target.value)} />
               <Input value={user.email} disabled className="opacity-60" />
               <Button size="sm" onClick={handleSaveProfile}>{t('profile.save')}</Button>
             </CardContent>
           </Card>
 
-          {/* Pet */}
           <Card>
             <CardContent className="pt-6 space-y-3">
-              <h3 className="font-semibold text-foreground">{t('profile.petSection')}</h3>
+              <h3 className="font-semibold text-foreground">{t('settingsSections.petFamily')}</h3>
               <Input placeholder={t('profile.petName')} value={petName} onChange={e => setPetName(e.target.value)} />
               <Select value={petType} onValueChange={setPetType}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="dog">🐕 {lang === 'ca' ? 'Gos' : 'Perro'}</SelectItem>
-                  <SelectItem value="cat">🐱 {lang === 'ca' ? 'Gat' : 'Gato'}</SelectItem>
-                  <SelectItem value="other">🐾 {lang === 'ca' ? 'Altre' : 'Otro'}</SelectItem>
+                  <SelectItem value="dog">🐕 {t('profile.dog')}</SelectItem>
+                  <SelectItem value="cat">🐱 {t('profile.cat')}</SelectItem>
+                  <SelectItem value="other">🐾 {t('profile.other')}</SelectItem>
                 </SelectContent>
               </Select>
               <div className="flex items-center justify-between">
@@ -568,10 +578,9 @@ const ProfilePage = () => {
             </CardContent>
           </Card>
 
-          {/* Language */}
           <Card>
             <CardContent className="pt-6 space-y-3">
-              <h3 className="font-semibold text-foreground">{t('settings.language')}</h3>
+              <h3 className="font-semibold text-foreground">{t('settingsSections.language')}</h3>
               <div className="flex gap-2">
                 <Button variant={lang === 'es' ? 'default' : 'outline'} size="sm" onClick={() => i18n.changeLanguage('es')}>🇪🇸 Español</Button>
                 <Button variant={lang === 'ca' ? 'default' : 'outline'} size="sm" onClick={() => i18n.changeLanguage('ca')}>🏴 Català</Button>
@@ -579,10 +588,9 @@ const ProfilePage = () => {
             </CardContent>
           </Card>
 
-          {/* Notifications */}
           <Card>
             <CardContent className="pt-6 space-y-3">
-              <h3 className="font-semibold text-foreground">{t('settings.notifications')}</h3>
+              <h3 className="font-semibold text-foreground">{t('settingsSections.notifications')}</h3>
               {(['danger', 'confirmed', 'stillActive', 'badge', 'weekly'] as const).map(key => (
                 <div key={key} className="flex items-center justify-between">
                   <span className="text-sm text-foreground">{t(`notificationTypes.${key === 'danger' ? 'dangerNearby' : key === 'confirmed' ? 'reportConfirmed' : key === 'stillActive' ? 'stillActive' : key === 'badge' ? 'newBadge' : 'weeklyRanking'}`)}</span>
@@ -597,10 +605,9 @@ const ProfilePage = () => {
             </CardContent>
           </Card>
 
-          {/* Subscription */}
           <Card>
             <CardContent className="pt-6 space-y-3">
-              <h3 className="font-semibold text-foreground">{t('settings.subscription')}</h3>
+              <h3 className="font-semibold text-foreground">{t('settingsSections.subscription')}</h3>
               <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
                 <p className="font-medium text-primary">{t('subscription.familiar')} ✓</p>
                 <p className="text-xs text-muted-foreground">{t('profile.renewal', { date: '28 abril 2026' })}</p>
@@ -610,7 +617,6 @@ const ProfilePage = () => {
             </CardContent>
           </Card>
 
-          {/* Cancel subscription dialog */}
           <Dialog open={cancelSubOpen} onOpenChange={setCancelSubOpen}>
             <DialogContent>
               <DialogHeader>
@@ -630,17 +636,15 @@ const ProfilePage = () => {
             </DialogContent>
           </Dialog>
 
-          {/* Privacy */}
           <Card>
             <CardContent className="pt-6 space-y-3">
-              <h3 className="font-semibold text-foreground">{t('settings.privacy')}</h3>
+              <h3 className="font-semibold text-foreground">{t('settingsSections.privacy')}</h3>
               <Button variant="outline" size="sm" onClick={() => toast({ title: t('profile.downloadDataToast') })}>{t('settings.downloadData')}</Button>
               <Button variant="outline" size="sm" onClick={() => { localStorage.removeItem('gdpr_shown'); window.location.reload(); }}>{t('profile.revokeConsent')}</Button>
               <Button variant="outline" size="sm" className="text-destructive border-destructive/30" onClick={() => setDeleteAccountOpen(true)}>{t('settings.deleteAccount')}</Button>
             </CardContent>
           </Card>
 
-          {/* Delete account dialog */}
           <Dialog open={deleteAccountOpen} onOpenChange={setDeleteAccountOpen}>
             <DialogContent>
               <DialogHeader>
@@ -657,12 +661,10 @@ const ProfilePage = () => {
             </DialogContent>
           </Dialog>
 
-          {/* Logout */}
-          <Button variant="destructive" className="w-full" onClick={handleLogout}>{t('settings.logout')}</Button>
+          <Button variant="destructive" className="w-full" onClick={handleLogout}>{t('settingsSections.logout')}</Button>
         </TabsContent>
       </Tabs>
 
-      {/* Badge unlock modal */}
       <BadgeUnlockModal badge={unlockBadge} onClose={() => setUnlockBadge(null)} />
     </div>
   );
