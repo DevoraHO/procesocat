@@ -113,7 +113,10 @@ const MapPage = () => {
     const map = mapRef.current;
     if (!map) return;
 
-    const handler = (e: L.LeafletMouseEvent) => {
+    let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+    let longPressCoords: [number, number] | null = null;
+
+    const clickHandler = (e: L.LeafletMouseEvent) => {
       if (safeWalkMode) {
         const newPoint: [number, number] = [e.latlng.lat, e.latlng.lng];
         setSafeWalkPoints(prev => [...prev, newPoint]);
@@ -122,9 +125,36 @@ const MapPage = () => {
         setMapClickMode(false);
       }
     };
-    map.on('click', handler);
-    return () => { map.off('click', handler); };
-  }, [mapClickMode, safeWalkMode]);
+
+    const mouseDownHandler = (e: L.LeafletMouseEvent) => {
+      if (safeWalkMode || mapClickMode) return;
+      longPressCoords = [e.latlng.lat, e.latlng.lng];
+      longPressTimer = setTimeout(() => {
+        if (longPressCoords) {
+          setSelectedCoords(longPressCoords);
+          setSelectedAlertType(null);
+          setReportStep(1);
+          setShowNewReport(true);
+          toast.info('📍 ' + t('map.locationCaptured'));
+        }
+      }, 800);
+    };
+
+    const mouseUpHandler = () => {
+      if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+    };
+
+    map.on('click', clickHandler);
+    map.on('mousedown', mouseDownHandler);
+    map.on('mouseup', mouseUpHandler);
+    map.on('mousemove', mouseUpHandler);
+    return () => {
+      map.off('click', clickHandler);
+      map.off('mousedown', mouseDownHandler);
+      map.off('mouseup', mouseUpHandler);
+      map.off('mousemove', mouseUpHandler);
+    };
+  }, [mapClickMode, safeWalkMode, t]);
 
   // Render safe walk markers and lines
   useEffect(() => {
