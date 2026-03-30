@@ -2,11 +2,12 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { mockReports, mockUser } from '@/data/mockData';
+import { mockReports, mockUser, ALERT_TYPES, type AlertTypeKey } from '@/data/mockData';
 import { calculateDangerScore, getDangerColor, getDangerLevel } from '@/utils/dangerScore';
 import { updateLifecycle, resetToActive, LIFECYCLE, getReportAge } from '@/utils/reportLifecycle';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Filter, Plus, X, ChevronLeft, ChevronRight, MapPin, Camera, Lock, Shield, Search, Trash2, RotateCcw } from 'lucide-react';
 import { useFreemium } from '@/hooks/useFreemium';
@@ -19,7 +20,8 @@ interface ReportWithScore {
 }
 
 const MapPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language;
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
@@ -41,7 +43,18 @@ const MapPage = () => {
   const [reportPhotos, setReportPhotos] = useState<File[]>([]);
   const [mapClickMode, setMapClickMode] = useState(false);
   const [validatedIds, setValidatedIds] = useState<Set<string>>(new Set());
+  const [selectedAlertType, setSelectedAlertType] = useState<AlertTypeKey | null>(null);
   const { isFree, canReport, reportsRemaining, incrementReportCount, upgradeOpen, upgradeTrigger, showUpgrade, closeUpgrade } = useFreemium();
+
+  // Filter state
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
+  const [filterTypes, setFilterTypes] = useState<Record<AlertTypeKey, boolean>>({ procesionaria: true, veneno: true, trampa: true, basura: true });
+  const [filterDanger, setFilterDanger] = useState<Record<string, boolean>>({ green: true, yellow: true, orange: true, red: true, purple: true });
+  const [filterTime, setFilterTime] = useState<'48h' | 'week' | 'month' | 'all'>('all');
+  const activeFilterCount = Object.values(filterTypes).filter(v => !v).length + Object.values(filterDanger).filter(v => !v).length + (filterTime !== 'all' ? 1 : 0);
+
+  // Legend state
+  const [legendTab, setLegendTab] = useState<'types' | 'danger'>('types');
 
   // Safe walk state
   const [safeWalkMode, setSafeWalkMode] = useState(false);
@@ -152,14 +165,38 @@ const MapPage = () => {
     }
   }, [safeWalkPoints, safeWalkResult, t]);
 
+  // Filter logic
+  const getFilteredReports = useCallback(() => {
+    const now = Date.now();
+    return scoredReports.filter(({ report, score }) => {
+      // Alert type filter
+      const alertType = (report as any).alert_type as AlertTypeKey | undefined;
+      if (alertType && !filterTypes[alertType]) return false;
+
+      // Danger level filter
+      const level = getDangerLevel(score);
+      if (!filterDanger[level]) return false;
+
+      // Time filter
+      const age = (now - new Date(report.created_at).getTime()) / (1000 * 60 * 60);
+      if (filterTime === '48h' && age > 48) return false;
+      if (filterTime === 'week' && age > 168) return false;
+      if (filterTime === 'month' && age > 720) return false;
+
+      return true;
+    });
+  }, [scoredReports, filterTypes, filterDanger, filterTime]);
+
   // Render markers & heatmap
   const renderMarkers = useCallback(() => {
     if (!markersLayerRef.current || !heatmapLayerRef.current) return;
     markersLayerRef.current.clearLayers();
     heatmapLayerRef.current.clearLayers();
 
-    scoredReports.forEach(({ report, score }) => {
-      const color = getDangerColor(score);
+    const filtered = getFilteredReports();
+
+    filtered.forEach(({ report, score }) => {
+      const dangerColor = getDangerColor(score);
       const level = getDangerLevel(score);
       const daysAgo = Math.floor((Date.now() - new Date(report.created_at).getTime()) / 86400000);
       const desc = report.description.length > 80 ? report.description.slice(0, 80) + '...' : report.description;
@@ -167,10 +204,18 @@ const MapPage = () => {
 
       if (report.status === LIFECYCLE.ARCHIVED || report.status === LIFECYCLE.INACTIVE) return;
 
+      // Use alert type color for marker
+      const alertType = (report as any).alert_type as AlertTypeKey | undefined;
+      const alertInfo = alertType ? ALERT_TYPES[alertType] : null;
+      const markerColor = alertInfo ? alertInfo.color : dangerColor;
+      const alertName = alertInfo ? (lang === 'ca' ? alertInfo.name_ca : alertInfo.name_es) : '';
+      const alertIcon = alertInfo ? alertInfo.icon : '';
+      const firstAid = alertInfo ? (lang === 'ca' ? alertInfo.first_aid_ca : alertInfo.first_aid_es) : '';
+
       const marker = L.circleMarker([report.lat, report.lng], {
         radius: 10,
-        color,
-        fillColor: color,
+        color: markerColor,
+        fillColor: markerColor,
         fillOpacity: report.status === LIFECYCLE.DECAYING ? 0.4 : 0.9,
         weight: 2,
         opacity: report.status === LIFECYCLE.DECAYING ? 0.5 : 1
@@ -187,12 +232,27 @@ const MapPage = () => {
         </div>
       ` : '';
 
+      const alertTypeHeader = alertInfo ? `
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;padding:4px 8px;border-radius:6px;background:${alertInfo.color_light}">
+          <span style="font-size:18px">${alertIcon}</span>
+          <span style="font-size:12px;font-weight:600;color:${alertInfo.color}">${alertName}</span>
+        </div>
+      ` : '';
+
+      const firstAidSection = firstAid ? `
+        <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:6px 8px;margin:0 0 8px;font-size:11px;color:#991b1b">
+          🚨 ${firstAid}
+        </div>
+      ` : '';
+
       const popupContent = `
         <div style="min-width:220px;font-family:system-ui,sans-serif">
+          ${alertTypeHeader}
           ${decayBar}
           <p style="margin:0 0 8px;font-size:13px;color:#333;line-height:1.4">${desc}</p>
+          ${firstAidSection}
           <div style="margin-bottom:8px">
-            <span style="display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;color:#fff;background:${color}">${score} — ${levelName}</span>
+            <span style="display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;color:#fff;background:${dangerColor}">${score} — ${levelName}</span>
           </div>
           <p style="margin:0 0 4px;font-size:12px;color:#666">✅ ${t('report.validatedBy', { count: report.validation_count })}</p>
           <p style="margin:0 0 10px;font-size:12px;color:#999">📍 ${report.comarca} · ${daysAgo}d</p>
@@ -250,15 +310,15 @@ const MapPage = () => {
 
       const heatCircle = L.circle([report.lat, report.lng], {
         radius: 800,
-        color,
-        fillColor: color,
+        color: markerColor,
+        fillColor: markerColor,
         fillOpacity: 0.15,
         opacity: 0,
         weight: 0
       });
       heatmapLayerRef.current!.addLayer(heatCircle);
     });
-  }, [scoredReports, t, validatedIds]);
+  }, [scoredReports, t, validatedIds, getFilteredReports, lang]);
 
   useEffect(() => {
     renderMarkers();
@@ -335,7 +395,7 @@ const MapPage = () => {
   };
 
   const handleSubmitReport = () => {
-    if (!selectedCoords) return;
+    if (!selectedCoords || !selectedAlertType) return;
     if (isFree && !canReport) {
       showUpgrade('reports');
       return;
@@ -351,6 +411,7 @@ const MapPage = () => {
       validation_count: 0,
       photos: [] as string[],
       comarca: 'Barcelonès',
+      alert_type: selectedAlertType,
       created_at: new Date().toISOString()
     };
     setReports(prev => [...prev, newReport]);
@@ -360,6 +421,7 @@ const MapPage = () => {
     setSelectedCoords(null);
     setReportDescription('');
     setReportPhotos([]);
+    setSelectedAlertType(null);
     toast.success(t('report.published') + ' 🎉');
   };
 
@@ -395,7 +457,6 @@ const MapPage = () => {
   const handleAnalyzeRoute = () => {
     setSafeWalkAnalyzing(true);
     setTimeout(() => {
-      // Simulate analysis: check which segments pass near reports
       const segments: any[] = [];
       let totalDistance = 0;
       let safeDistance = 0;
@@ -409,7 +470,6 @@ const MapPage = () => {
         const segDist = Math.sqrt(Math.pow((p2[0] - p1[0]) * 111, 2) + Math.pow((p2[1] - p1[1]) * 111 * Math.cos(p1[0] * Math.PI / 180), 2));
         totalDistance += segDist;
 
-        // Check proximity to reports
         let maxDanger = 0;
         let nearReport: any = null;
         scoredReports.forEach(({ report, score }) => {
@@ -440,7 +500,6 @@ const MapPage = () => {
       const safePercent = totalDistance > 0 ? Math.round((safeDistance / totalDistance) * 100) : 100;
       const overallLevel = riskyZones.some(z => z.level === 'red') ? 'PELIGROSA' : riskyZones.length > 0 ? 'PRECAUCIÓN' : 'SEGURA';
 
-      // Draw colored segments on map
       if (safeWalkResultLinesRef.current && mapRef.current) {
         safeWalkResultLinesRef.current.clearLayers();
         segments.forEach(seg => {
@@ -453,7 +512,6 @@ const MapPage = () => {
         });
       }
 
-      // Remove dashed line
       if (safeWalkLineRef.current && mapRef.current) {
         mapRef.current.removeLayer(safeWalkLineRef.current);
         safeWalkLineRef.current = null;
@@ -477,15 +535,28 @@ const MapPage = () => {
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
-  const activeCount = reports.filter(r => r.status === 'ACTIVE').length;
+  const handleApplyFilters = () => {
+    setShowFilterPanel(false);
+    renderMarkers();
+  };
 
-  const legendItems = [
+  const handleResetFilters = () => {
+    setFilterTypes({ procesionaria: true, veneno: true, trampa: true, basura: true });
+    setFilterDanger({ green: true, yellow: true, orange: true, red: true, purple: true });
+    setFilterTime('all');
+  };
+
+  const activeCount = getFilteredReports().filter(({ report }) => report.status === 'ACTIVE').length;
+
+  const legendDangerItems = [
     { color: '#22c55e', level: 'green', range: '0-20' },
     { color: '#eab308', level: 'yellow', range: '21-40' },
     { color: '#f97316', level: 'orange', range: '41-60' },
     { color: '#ef4444', level: 'red', range: '61-80' },
     { color: '#a855f7', level: 'purple', range: '81-100' },
   ];
+
+  const alertTypeKeys: AlertTypeKey[] = ['procesionaria', 'veneno', 'trampa', 'basura'];
 
   return (
     <div className="relative w-full" style={{ height: 'calc(100vh - 64px)' }}>
@@ -540,11 +611,81 @@ const MapPage = () => {
         <div className="bg-card/95 backdrop-blur-sm shadow-lg rounded-xl px-3 py-2 flex items-center gap-2 text-sm font-semibold text-foreground">
           🗺️ {t('map.activeReports', { count: activeCount })}
         </div>
-        <Button variant="outline" size="sm" className="bg-card/95 backdrop-blur-sm shadow-lg gap-1">
+        <Button
+          variant="outline"
+          size="sm"
+          className="bg-card/95 backdrop-blur-sm shadow-lg gap-1"
+          onClick={() => setShowFilterPanel(!showFilterPanel)}
+        >
           <Filter className="h-3.5 w-3.5" />
-          {t('map.filter')}
+          {t('map.filter')}{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
         </Button>
       </div>
+
+      {/* FILTER PANEL */}
+      {showFilterPanel && (
+        <div className="absolute top-[90px] left-3 z-[1001] bg-card/95 backdrop-blur-sm shadow-xl rounded-xl p-4 w-[280px] animate-fade-in space-y-4">
+          <h3 className="font-semibold text-foreground text-sm">{t('alertTypes.filterAlerts')}</h3>
+
+          {/* Alert type checkboxes */}
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-muted-foreground mb-1">{t('alertTypes.alertType')}</p>
+            {alertTypeKeys.map(key => {
+              const at = ALERT_TYPES[key];
+              return (
+                <label key={key} className="flex items-center gap-2 text-sm cursor-pointer py-1">
+                  <Checkbox
+                    checked={filterTypes[key]}
+                    onCheckedChange={(v) => setFilterTypes(prev => ({ ...prev, [key]: !!v }))}
+                  />
+                  <span>{at.icon} {lang === 'ca' ? at.name_ca : at.name_es}</span>
+                </label>
+              );
+            })}
+          </div>
+
+          {/* Danger level checkboxes */}
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-muted-foreground mb-1">{t('alertTypes.dangerLevel')}</p>
+            {[
+              { key: 'green', emoji: '🟢' },
+              { key: 'yellow', emoji: '🟡' },
+              { key: 'orange', emoji: '🟠' },
+              { key: 'red', emoji: '🔴' },
+              { key: 'purple', emoji: '🟣' },
+            ].map(item => (
+              <label key={item.key} className="flex items-center gap-2 text-sm cursor-pointer py-1">
+                <Checkbox
+                  checked={filterDanger[item.key]}
+                  onCheckedChange={(v) => setFilterDanger(prev => ({ ...prev, [item.key]: !!v }))}
+                />
+                <span>{item.emoji} {t(`danger.${item.key}`)}</span>
+              </label>
+            ))}
+          </div>
+
+          {/* Time filter */}
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-muted-foreground mb-1">{t('alertTypes.timeRange')}</p>
+            <div className="flex flex-wrap gap-1">
+              {(['48h', 'week', 'month', 'all'] as const).map(v => (
+                <button
+                  key={v}
+                  onClick={() => setFilterTime(v)}
+                  className={`text-xs px-2.5 py-1 rounded-full transition ${filterTime === v ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
+                >
+                  {t(`alertTypes.${v === '48h' ? 'last48h' : v === 'week' ? 'lastWeek' : v === 'month' ? 'lastMonth' : 'allTime'}`)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <Button size="sm" onClick={handleApplyFilters} className="flex-1">{t('alertTypes.applyFilters')}</Button>
+            <button onClick={handleResetFilters} className="text-xs text-muted-foreground hover:text-foreground">{t('alertTypes.resetFilters')}</button>
+          </div>
+        </div>
+      )}
 
       {/* TOP RIGHT: Heatmap toggle + safe walk */}
       <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-2">
@@ -600,17 +741,38 @@ const MapPage = () => {
         </div>
       )}
 
-      {/* BOTTOM LEFT: Legend */}
+      {/* BOTTOM LEFT: Legend with tabs */}
       <div className="absolute bottom-4 left-3 z-[1000] bg-card/95 backdrop-blur-sm shadow-lg rounded-xl p-2.5 hidden sm:block">
-        <p className="text-[11px] text-muted-foreground font-medium mb-1">
-          {t('map.legendTitle')}
-        </p>
-        {legendItems.map(item => (
-          <div key={item.color} className="flex items-center gap-1.5 py-0.5">
-            <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: item.color }} />
-            <span className="text-[11px] text-foreground">{t(`danger.${item.level}`)} ({item.range})</span>
-          </div>
-        ))}
+        <div className="flex gap-1 mb-1">
+          <button onClick={() => setLegendTab('types')} className={`text-[10px] px-2 py-0.5 rounded-full transition ${legendTab === 'types' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+            {t('alertTypes.alertType')}
+          </button>
+          <button onClick={() => setLegendTab('danger')} className={`text-[10px] px-2 py-0.5 rounded-full transition ${legendTab === 'danger' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+            {t('alertTypes.dangerLevel')}
+          </button>
+        </div>
+        {legendTab === 'types' ? (
+          <>
+            {alertTypeKeys.map(key => {
+              const at = ALERT_TYPES[key];
+              return (
+                <div key={key} className="flex items-center gap-1.5 py-0.5">
+                  <span className="text-sm">{at.icon}</span>
+                  <span className="text-[11px] text-foreground">{lang === 'ca' ? at.name_ca : at.name_es}</span>
+                </div>
+              );
+            })}
+          </>
+        ) : (
+          <>
+            {legendDangerItems.map(item => (
+              <div key={item.color} className="flex items-center gap-1.5 py-0.5">
+                <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: item.color }} />
+                <span className="text-[11px] text-foreground">{t(`danger.${item.level}`)} ({item.range})</span>
+              </div>
+            ))}
+          </>
+        )}
       </div>
 
       {/* BOTTOM RIGHT: FAB add report */}
@@ -642,7 +804,6 @@ const MapPage = () => {
       {safeWalkResult && (
         <div className="fixed inset-x-0 bottom-0 z-[2000] animate-slide-in-bottom">
           <div className="bg-card rounded-t-[20px] shadow-2xl max-h-[70vh] overflow-y-auto">
-            {/* Header */}
             <div className={`rounded-t-[20px] px-5 py-4 text-white ${
               safeWalkResult.overallLevel === 'SEGURA' ? 'bg-primary' :
               safeWalkResult.overallLevel === 'PRECAUCIÓN' ? 'bg-orange-500' : 'bg-destructive'
@@ -667,7 +828,6 @@ const MapPage = () => {
             </div>
 
             <div className="px-5 py-4 space-y-4">
-              {/* Stats pills */}
               <div className="flex gap-2">
                 <div className="flex-1 bg-muted rounded-xl py-2 text-center">
                   <p className="text-xs text-muted-foreground">📏</p>
@@ -683,14 +843,12 @@ const MapPage = () => {
                 </div>
               </div>
 
-              {/* Route colored bar */}
               <div className="flex h-3 rounded-full overflow-hidden">
                 {safeWalkResult.segments.map((seg: any, i: number) => (
                   <div key={i} className="h-full" style={{ backgroundColor: seg.color, flex: seg.distance }} />
                 ))}
               </div>
 
-              {/* Risky zones */}
               {safeWalkResult.riskyZones.length > 0 && (
                 <div className="space-y-2">
                   {safeWalkResult.riskyZones.map((zone: any, i: number) => (
@@ -705,7 +863,6 @@ const MapPage = () => {
                 </div>
               )}
 
-              {/* Pet recommendation */}
               <div className="bg-primary/5 border border-primary/20 rounded-xl p-3">
                 <p className="text-sm text-foreground">
                   {safeWalkResult.riskyZones.length > 0
@@ -715,7 +872,6 @@ const MapPage = () => {
                 <p className="text-xs text-muted-foreground mt-1">{t('safeWalk.petNote')}</p>
               </div>
 
-              {/* Action buttons */}
               <div className="flex flex-col gap-2 pb-4">
                 <Button variant="outline" onClick={() => { setSafeWalkResult(null); handleClearRoute(); }} className="gap-2">
                   <RotateCcw className="h-4 w-4" /> {t('safeWalk.tryAnother')}
@@ -733,7 +889,6 @@ const MapPage = () => {
       {showSafeWalkUpgrade && (
         <div className="fixed inset-0 z-[2000] bg-black/60 flex items-center justify-center p-4">
           <div className="bg-card rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden animate-scale-in">
-            {/* Blurred demo preview */}
             <div className="relative bg-muted p-4">
               <div className="blur-[4px] pointer-events-none">
                 <div className="bg-primary rounded-xl p-3 text-white text-sm mb-2">✅ Ruta segura para {mockUser.pet_name}</div>
@@ -815,24 +970,56 @@ const MapPage = () => {
       {/* NEW REPORT BOTTOM SHEET */}
       {showNewReport && (
         <div className="fixed inset-0 z-[2000]">
-          <div className="absolute inset-0 bg-black/50" onClick={() => { setShowNewReport(false); setReportStep(1); setSelectedCoords(null); setReportDescription(''); setReportPhotos([]); }} />
-          <div className="absolute bottom-0 left-0 right-0 bg-card rounded-t-[20px] shadow-2xl" style={{ height: '60vh' }}>
+          <div className="absolute inset-0 bg-black/50" onClick={() => { setShowNewReport(false); setReportStep(1); setSelectedCoords(null); setReportDescription(''); setReportPhotos([]); setSelectedAlertType(null); }} />
+          <div className="absolute bottom-0 left-0 right-0 bg-card rounded-t-[20px] shadow-2xl" style={{ height: '70vh' }}>
             <div className="flex justify-center pt-3 pb-1">
               <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
             </div>
 
             <div className="px-5 pb-5 h-full overflow-y-auto">
-              <button onClick={() => { setShowNewReport(false); setReportStep(1); setSelectedCoords(null); setReportDescription(''); setReportPhotos([]); }} className="absolute top-4 right-4 text-muted-foreground">
+              <button onClick={() => { setShowNewReport(false); setReportStep(1); setSelectedCoords(null); setReportDescription(''); setReportPhotos([]); setSelectedAlertType(null); }} className="absolute top-4 right-4 text-muted-foreground">
                 <X className="h-5 w-5" />
               </button>
 
               <div className="flex items-center gap-2 mb-4 mt-1">
-                {[1, 2, 3].map(s => (
+                {[1, 2, 3, 4].map(s => (
                   <div key={s} className={`h-1 flex-1 rounded-full ${s <= reportStep ? 'bg-primary' : 'bg-muted'}`} />
                 ))}
               </div>
 
+              {/* Step 1: Alert Type */}
               {reportStep === 1 && (
+                <div>
+                  <h3 className="text-lg font-bold text-foreground mb-4">⚠️ {t('alertTypes.selectType')}</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    {alertTypeKeys.map(key => {
+                      const at = ALERT_TYPES[key];
+                      const selected = selectedAlertType === key;
+                      return (
+                        <button
+                          key={key}
+                          onClick={() => setSelectedAlertType(key)}
+                          className="p-4 rounded-xl border-2 text-left transition-all"
+                          style={{
+                            borderColor: selected ? at.color : 'hsl(var(--border))',
+                            backgroundColor: selected ? at.color_light : 'transparent',
+                          }}
+                        >
+                          <span className="text-3xl block mb-2">{at.icon}</span>
+                          <p className="text-sm font-semibold text-foreground">{lang === 'ca' ? at.name_ca : at.name_es}</p>
+                          <p className="text-[11px] text-muted-foreground mt-1 leading-tight">{lang === 'ca' ? at.description_ca : at.description_es}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <Button onClick={() => setReportStep(2)} disabled={!selectedAlertType} className="w-full mt-4 gap-1">
+                    {t('map.next')} <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+
+              {/* Step 2: Location */}
+              {reportStep === 2 && (
                 <div>
                   <h3 className="text-lg font-bold text-foreground mb-4">📍 {t('map.step1')}</h3>
                   <Button onClick={handleGetLocationForReport} className="w-full mb-3 gap-2">
@@ -850,13 +1037,19 @@ const MapPage = () => {
                       ✅ {t('map.locationCaptured')}: {selectedCoords[0].toFixed(2)}°, {selectedCoords[1].toFixed(2)}°
                     </div>
                   )}
-                  <Button onClick={() => setReportStep(2)} disabled={!selectedCoords} className="w-full gap-1">
-                    {t('map.next')} <ChevronRight className="h-4 w-4" />
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => setReportStep(1)} className="flex-1 gap-1">
+                      <ChevronLeft className="h-4 w-4" /> {t('map.previous')}
+                    </Button>
+                    <Button onClick={() => setReportStep(3)} disabled={!selectedCoords} className="flex-1 gap-1">
+                      {t('map.next')} <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               )}
 
-              {reportStep === 2 && (
+              {/* Step 3: Details */}
+              {reportStep === 3 && (
                 <div>
                   <h3 className="text-lg font-bold text-foreground mb-4">📝 {t('map.step2')}</h3>
                   <Textarea
@@ -891,26 +1084,30 @@ const MapPage = () => {
                   </div>
 
                   <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => setReportStep(1)} className="flex-1 gap-1">
+                    <Button variant="outline" onClick={() => setReportStep(2)} className="flex-1 gap-1">
                       <ChevronLeft className="h-4 w-4" /> {t('map.previous')}
                     </Button>
-                    <Button onClick={() => setReportStep(3)} disabled={reportDescription.length < 10} className="flex-1 gap-1">
+                    <Button onClick={() => setReportStep(4)} disabled={reportDescription.length < 10} className="flex-1 gap-1">
                       {t('map.next')} <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
               )}
 
-              {reportStep === 3 && (
+              {/* Step 4: Confirm */}
+              {reportStep === 4 && (
                 <div>
                   <h3 className="text-lg font-bold text-foreground mb-4">✅ {t('map.step3')}</h3>
                   <div className="bg-muted rounded-xl p-4 mb-4 space-y-2 text-sm text-foreground">
+                    {selectedAlertType && (
+                      <p>{ALERT_TYPES[selectedAlertType].icon} {lang === 'ca' ? ALERT_TYPES[selectedAlertType].name_ca : ALERT_TYPES[selectedAlertType].name_es}</p>
+                    )}
                     <p>📍 {t('map.location')}: {selectedCoords?.[0].toFixed(4)}, {selectedCoords?.[1].toFixed(4)}</p>
                     <p>📝 {reportDescription.length > 100 ? reportDescription.slice(0, 100) + '...' : reportDescription}</p>
                     <p>📷 {reportPhotos.length} {t('map.photosAttached')}</p>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => setReportStep(2)} className="flex-1 gap-1">
+                    <Button variant="outline" onClick={() => setReportStep(3)} className="flex-1 gap-1">
                       <ChevronLeft className="h-4 w-4" /> {t('map.previous')}
                     </Button>
                     <Button onClick={handleSubmitReport} className="flex-1">
