@@ -20,6 +20,8 @@ import RegisterPage from "@/pages/RegisterPage";
 import PrivacyPage from "@/pages/PrivacyPage";
 import TermsPage from "@/pages/TermsPage";
 import ReportSharePage from "@/pages/ReportSharePage";
+import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
+import GDPRModal from "@/components/GDPRModal";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,11 +32,13 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <GDPRModal />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Navigate to="/map" replace />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/privacy" element={<AppLayout><PrivacyPage /></AppLayout>} />
             <Route path="/terms" element={<AppLayout><TermsPage /></AppLayout>} />
             <Route path="/r/:id" element={<ReportSharePage />} />
