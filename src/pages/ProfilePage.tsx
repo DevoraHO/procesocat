@@ -372,6 +372,53 @@ const ProfilePage = () => {
             </CardContent>
           </Card>
 
+          {/* Analytics Summary */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <BarChart3 size={18} className="text-primary" />
+                  <h3 className="font-semibold text-foreground">{t('analytics.summaryTitle')}</h3>
+                </div>
+                <Button variant="ghost" size="sm" className="text-xs text-primary" onClick={() => navigate('/analytics')}>
+                  {t('analytics.viewAll')} →
+                </Button>
+              </div>
+              {isFree ? (
+                <div className="relative">
+                  <div className="filter blur-md pointer-events-none select-none opacity-60">
+                    <ResponsiveContainer width="100%" height={120}>
+                      <AreaChart data={mockDangerEvolution}>
+                        <Area type="monotone" dataKey="score" stroke="#ef4444" fill="rgba(239,68,68,0.15)" strokeWidth={2} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <Lock className="h-5 w-5 text-primary mb-1" />
+                    <p className="text-xs font-medium text-foreground">{t('analytics.locked')}</p>
+                    <Button size="sm" variant="outline" className="mt-2 text-xs h-7" onClick={() => navigate('/analytics')}>
+                      {t('analytics.upgradeCta')}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={120}>
+                  <AreaChart data={mockDangerEvolution}>
+                    <XAxis dataKey="week" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} />
+                    <Tooltip />
+                    <defs>
+                      <linearGradient id="dangerGradProfile" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <Area type="monotone" dataKey="score" stroke="#ef4444" fill="url(#dangerGradProfile)" strokeWidth={2} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Route History */}
           <Card>
             <CardContent className="pt-6">
