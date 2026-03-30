@@ -172,7 +172,7 @@ export const ValidationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const record: ValidationRecord = {
       id: `v${Date.now()}`,
       report_id: reportId,
-      user_id: mockUser.id,
+      user_id: user?.id || 'anonymous',
       trust_score: trustScore,
       distance_meters: Math.round(distance),
       type: vType,
