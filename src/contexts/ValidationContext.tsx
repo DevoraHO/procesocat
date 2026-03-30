@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { VALIDATION_CONFIG as VC, mockUser } from '@/data/mockData';
+import { VALIDATION_CONFIG as VC } from '@/data/mockData';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   calculateDistance,
   getValidationType,
