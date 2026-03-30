@@ -27,11 +27,18 @@ const MONTH_DATA = [
 ];
 
 const VIDEOS = [
-  { icon: '🐕', title_es: 'Si tu perro la ha tocado', title_ca: 'Si el teu gos l\'ha tocat', src_es: 'Col·legi de Veterinaris de Catalunya', src_ca: 'Col·legi de Veterinaris de Catalunya', videoId: 'dQw4w9WgXcQ' },
-  { icon: '👶', title_es: 'Si un niño la ha tocado', title_ca: 'Si un nen l\'ha tocat', src_es: 'Cruz Roja España', src_ca: 'Creu Roja Espanya', videoId: 'dQw4w9WgXcQ' },
-  { icon: '🔍', title_es: 'Cómo identificar un nido', title_ca: 'Com identificar un niu', src_es: 'Generalitat de Catalunya', src_ca: 'Generalitat de Catalunya', videoId: 'dQw4w9WgXcQ' },
-  { icon: '🌲', title_es: 'Qué es la procesionaria', title_ca: 'Què és la processionària', src_es: 'Universitat Autònoma de Barcelona', src_ca: 'Universitat Autònoma de Barcelona', videoId: 'dQw4w9WgXcQ' },
-  { icon: '🏡', title_es: 'Prevención y tratamiento', title_ca: 'Prevenció i tractament', src_es: 'Ministerio de Medio Ambiente', src_ca: 'Ministeri de Medi Ambient', videoId: 'dQw4w9WgXcQ' },
+  { icon: '🐕', title_es: 'Si tu perro la ha tocado', title_ca: 'Si el teu gos l\'ha tocat', src_es: 'Col·legi de Veterinaris de Catalunya', src_ca: 'Col·legi de Veterinaris de Catalunya', videoId: 'placeholder1' },
+  { icon: '👶', title_es: 'Si un niño la ha tocado', title_ca: 'Si un nen l\'ha tocat', src_es: 'Cruz Roja España', src_ca: 'Creu Roja Espanya', videoId: 'placeholder2' },
+  { icon: '🔍', title_es: 'Cómo identificar un nido', title_ca: 'Com identificar un niu', src_es: 'Generalitat de Catalunya', src_ca: 'Generalitat de Catalunya', videoId: 'placeholder3' },
+  { icon: '🌲', title_es: 'Qué es la procesionaria', title_ca: 'Què és la processionària', src_es: 'Universitat Autònoma de Barcelona', src_ca: 'Universitat Autònoma de Barcelona', videoId: 'placeholder4' },
+  { icon: '🏡', title_es: 'Prevención y tratamiento', title_ca: 'Prevenció i tractament', src_es: 'Ministerio de Medio Ambiente', src_ca: 'Ministeri de Medi Ambient', videoId: 'placeholder5' },
+];
+
+const OFFICIAL_RESOURCES = [
+  { name: 'Generalitat de Catalunya — Sanitat Forestal', url: 'https://agricultura.gencat.cat', domain: 'gencat.cat' },
+  { name_es: 'Agents Rurals Catalunya', name_ca: 'Agents Rurals Catalunya', url: 'tel:900050051', domain: '900 050 051 (gratuït/gratuito)' },
+  { name: 'Col·legi de Veterinaris de Barcelona', url: 'https://www.covb.cat', domain: 'covb.cat' },
+  { name_es: 'Cruz Roja España — Primeros auxilios', name_ca: 'Creu Roja Espanya — Primers auxilis', url: 'https://www.cruzroja.es', domain: 'cruzroja.es' },
 ];
 
 const InfoPage = () => {
@@ -202,10 +209,10 @@ const InfoPage = () => {
         </div>
       </section>
 
-      {/* SECTION 5: VIDEOS */}
+      {/* SECTION 5: VIDEOS — FREE FOR ALL USERS */}
       <section className="space-y-3">
         <h2 className="text-lg font-bold text-foreground">🎥 {t('info.videosTitle')}</h2>
-        <p className="text-xs text-muted-foreground">{t('info.videosDisclaimer')}</p>
+        <p className="text-xs text-primary font-medium">{t('info.videosFreeNote')}</p>
         {VIDEOS.map((v, i) => (
           <Collapsible key={i} open={!!openVideos[i]} onOpenChange={o => setOpenVideos(prev => ({ ...prev, [i]: o }))}>
             <CollapsibleTrigger className="w-full">
@@ -221,8 +228,11 @@ const InfoPage = () => {
                 {openVideos[i] && (
                   <iframe
                     src={`https://www.youtube-nocookie.com/embed/${v.videoId}`}
-                    className="w-full h-[200px] rounded-lg"
-                    style={{ border: 'none' }}
+                    width="100%"
+                    height="215"
+                    frameBorder="0"
+                    className="rounded-lg"
+                    style={{ border: 'none', borderRadius: '8px' }}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                     loading="lazy"
@@ -234,10 +244,32 @@ const InfoPage = () => {
             </CollapsibleContent>
           </Collapsible>
         ))}
-        <p className="text-xs text-muted-foreground">
-          {t('info.moreInfo')}{' '}
-          <a href="https://agricultura.gencat.cat" target="_blank" rel="noopener noreferrer" className="text-primary underline">gencat.cat</a>
-        </p>
+        {/* Disclaimer */}
+        <div className="bg-muted/50 border border-border rounded-xl p-4 flex gap-2 text-xs text-muted-foreground">
+          <span>ℹ️</span>
+          <span>{t('info.videosFullDisclaimer')}</span>
+        </div>
+      </section>
+
+      {/* SECTION 5b: OFFICIAL RESOURCES */}
+      <section className="space-y-3">
+        <h2 className="text-lg font-bold text-foreground">🔗 {t('info.officialResources')}</h2>
+        <div className="space-y-2">
+          {OFFICIAL_RESOURCES.map((r, i) => (
+            <a
+              key={i}
+              href={r.url}
+              target={r.url.startsWith('tel:') ? '_self' : '_blank'}
+              rel="noopener noreferrer"
+              className="flex items-center justify-between p-3 bg-muted/30 border border-border rounded-xl hover:bg-muted/50 transition"
+            >
+              <span className="text-sm font-medium text-foreground">
+                {(r as any).name || (lang === 'ca' ? (r as any).name_ca : (r as any).name_es)}
+              </span>
+              <span className="text-xs text-primary">{r.domain}</span>
+            </a>
+          ))}
+        </div>
       </section>
 
       {/* SECTION 6: ABOUT */}
