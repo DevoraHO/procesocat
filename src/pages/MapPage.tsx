@@ -8,7 +8,9 @@ import { updateLifecycle, resetToActive, LIFECYCLE, getReportAge } from '@/utils
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Filter, Plus, X, ChevronLeft, ChevronRight, MapPin, Camera } from 'lucide-react';
+import { Filter, Plus, X, ChevronLeft, ChevronRight, MapPin, Camera, Lock } from 'lucide-react';
+import { useFreemium } from '@/hooks/useFreemium';
+import UpgradeModal from '@/components/UpgradeModal';
 
 interface ReportWithScore {
   report: typeof mockReports[0] & { last_activity_at?: string };
@@ -38,6 +40,7 @@ const MapPage = () => {
   const [reportPhotos, setReportPhotos] = useState<File[]>([]);
   const [mapClickMode, setMapClickMode] = useState(false);
   const [validatedIds, setValidatedIds] = useState<Set<string>>(new Set());
+  const { isFree, canReport, reportsRemaining, incrementReportCount, upgradeOpen, upgradeTrigger, showUpgrade, closeUpgrade } = useFreemium();
 
   // Calculate scores
   useEffect(() => {
