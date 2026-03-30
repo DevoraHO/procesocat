@@ -106,17 +106,31 @@ const MapPage = () => {
       const desc = report.description.length > 80 ? report.description.slice(0, 80) + '...' : report.description;
       const levelName = t(`danger.${level}`);
 
+      if (report.status === LIFECYCLE.ARCHIVED || report.status === LIFECYCLE.INACTIVE) return;
+
       const marker = L.circleMarker([report.lat, report.lng], {
         radius: 10,
         color,
         fillColor: color,
-        fillOpacity: 0.9,
+        fillOpacity: report.status === LIFECYCLE.DECAYING ? 0.4 : 0.9,
         weight: 2,
-        opacity: report.status === 'DECAYING' ? 0.4 : 1
+        opacity: report.status === LIFECYCLE.DECAYING ? 0.5 : 1
       });
+
+      const decayDays = Math.floor(getReportAge(report.created_at));
+      const decayBar = report.status === LIFECYCLE.DECAYING ? `
+        <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:6px 8px;margin:0 0 8px;font-size:11px;color:#92400e">
+          ⏰ ${t('map.decayWarning', { days: decayDays })}
+        </div>
+        <div style="display:flex;gap:4px;margin-bottom:8px">
+          <button data-action="reactivate" data-id="${report.id}" style="flex:1;padding:5px 0;border:none;border-radius:6px;background:#2D6A4F;color:#fff;font-size:11px;cursor:pointer">✅ ${t('map.confirmStillActive')}</button>
+          <button data-action="resolve" data-id="${report.id}" style="flex:1;padding:5px 0;border:1px solid #999;border-radius:6px;background:#fff;color:#333;font-size:11px;cursor:pointer">❌ ${t('map.confirmGone')}</button>
+        </div>
+      ` : '';
 
       const popupContent = `
         <div style="min-width:220px;font-family:system-ui,sans-serif">
+          ${decayBar}
           <p style="margin:0 0 8px;font-size:13px;color:#333;line-height:1.4">${desc}</p>
           <div style="margin-bottom:8px">
             <span style="display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;color:#fff;background:${color}">${score} — ${levelName}</span>
