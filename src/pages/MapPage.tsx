@@ -24,6 +24,7 @@ interface ReportWithScore {
 const MapPage = () => {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
+  const location = useLocation();
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
