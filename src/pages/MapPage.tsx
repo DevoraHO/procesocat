@@ -516,10 +516,9 @@ const MapPage = () => {
     incrementReportCount();
     setShowNewReport(false);
     setReportStep(1);
-    setSelectedCoords(null);
     setReportDescription('');
     setReportPhotos([]);
-    setSelectedAlertType(null);
+
     const typeToasts: Record<string, string> = {
       procesionaria: '🐛 ' + t('report.publishedType.procesionaria'),
       veneno: '☠️ ' + t('report.publishedType.veneno'),
@@ -527,6 +526,25 @@ const MapPage = () => {
       basura: '🗑️ ' + t('report.publishedType.basura'),
     };
     toast.success(typeToasts[selectedAlertType!] || t('report.published') + ' 🎉');
+
+    // Fly to new marker and open popup after markers re-render
+    setTimeout(() => {
+      if (mapRef.current) {
+        mapRef.current.flyTo(selectedCoords!, 15, { duration: 1 });
+        setTimeout(() => {
+          markersLayerRef.current?.eachLayer(layer => {
+            if (layer instanceof L.Marker) {
+              const ll = layer.getLatLng();
+              if (Math.abs(ll.lat - selectedCoords![0]) < 0.0001 && Math.abs(ll.lng - selectedCoords![1]) < 0.0001) {
+                layer.openPopup();
+              }
+            }
+          });
+        }, 1200);
+      }
+      setSelectedCoords(null);
+      setSelectedAlertType(null);
+    }, 100);
   };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
