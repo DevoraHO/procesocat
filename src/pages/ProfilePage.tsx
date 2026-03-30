@@ -201,6 +201,47 @@ const ProfilePage = () => {
     };
   }, [addZoneOpen]);
 
+  const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      toast({ title: lang === 'ca' ? 'Format no permès. Només JPG, PNG, WEBP.' : 'Formato no permitido. Solo JPG, PNG, WEBP.', variant: 'destructive' });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: lang === 'ca' ? 'Imatge massa gran. Màx 5MB.' : 'Imagen demasiado grande. Máx 5MB.', variant: 'destructive' });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setBannerImage(dataUrl);
+      updateProfile({ banner_image: dataUrl });
+      toast({ title: t('profile.bannerSaved') });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      toast({ title: lang === 'ca' ? 'Format no permès' : 'Formato no permitido', variant: 'destructive' });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: lang === 'ca' ? 'Imatge massa gran' : 'Imagen demasiado grande', variant: 'destructive' });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      updateProfile({ avatar_url: dataUrl });
+      toast({ title: t('profile.profileUpdated') });
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSaveBanner = () => {
     updateProfile({ banner_color: bannerColor });
     setBannerEditorOpen(false);
