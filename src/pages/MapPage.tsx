@@ -785,15 +785,18 @@ const MapPage = () => {
         </div>
         {legendTab === 'types' ? (
           <>
-            {alertTypeKeys.map(key => {
-              const at = ALERT_TYPES[key];
-              return (
-                <div key={key} className="flex items-center gap-1.5 py-0.5">
-                  <span className="text-sm">{at.icon}</span>
-                  <span className="text-[11px] text-foreground">{lang === 'ca' ? at.name_ca : at.name_es}</span>
-                </div>
-              );
-            })}
+            {[
+              { key: 'procesionaria', shape: '●', color: '#a855f7' },
+              { key: 'veneno', shape: '▲', color: '#ef4444' },
+              { key: 'trampa', shape: '■', color: '#f97316' },
+              { key: 'basura', shape: '◆', color: '#eab308' },
+            ].map(item => (
+              <div key={item.key} className="flex items-center gap-1.5 py-0.5">
+                <span className="text-xs font-bold" style={{ color: item.color }}>{item.shape}</span>
+                <span className="text-[11px] text-foreground">{lang === 'ca' ? ALERT_TYPES[item.key as AlertTypeKey].name_ca : ALERT_TYPES[item.key as AlertTypeKey].name_es}</span>
+              </div>
+            ))}
+            <p className="text-[9px] text-muted-foreground mt-1">{lang === 'ca' ? 'Mida = nivell de perill' : 'Tamaño = nivel de peligro'}</p>
           </>
         ) : (
           <>
