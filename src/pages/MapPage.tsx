@@ -127,6 +127,33 @@ const MapPage = () => {
     };
   }, []);
 
+  // Fly to location from navigation state (e.g. from profile zones)
+  useEffect(() => {
+    const state = location.state as { flyTo?: { lat: number; lng: number; zoom?: number } } | null;
+    if (state?.flyTo && mapRef.current) {
+      const { lat, lng, zoom } = state.flyTo;
+      mapRef.current.flyTo([lat, lng], zoom || 15, { duration: 1.2 });
+      setTimeout(() => {
+        if (!markersLayerRef.current) return;
+        let closest: L.Marker | null = null;
+        let minDist = Infinity;
+        markersLayerRef.current.eachLayer((layer) => {
+          if (layer instanceof L.Marker) {
+            const d = mapRef.current!.distance([lat, lng], layer.getLatLng());
+            if (d < minDist) {
+              minDist = d;
+              closest = layer;
+            }
+          }
+        });
+        if (closest && minDist < 5000) {
+          (closest as L.Marker).openPopup();
+        }
+      }, 1400);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
+
   // Handle map click for report placement OR safe walk
   useEffect(() => {
     const map = mapRef.current;
