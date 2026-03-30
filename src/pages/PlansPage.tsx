@@ -349,23 +349,18 @@ POST your_webhook_url
           </div>
         </div>
 
-        {/* API PREVIEW */}
-        <Collapsible open={apiOpen} onOpenChange={setApiOpen}>
-          <CollapsibleTrigger className="w-full">
-            <Card className="cursor-pointer hover:shadow-md transition">
-              <CardContent className="py-3 flex items-center justify-between">
-                <h2 className="text-sm font-bold text-foreground">🔌 {lang === 'ca' ? "Vista prèvia de l'API" : 'Vista previa de la API'}</h2>
-                <ChevronDown className={`text-muted-foreground transition-transform ${apiOpen ? 'rotate-180' : ''}`} size={18} />
-              </CardContent>
-            </Card>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <pre className="bg-gray-900 text-green-400 rounded-xl p-4 text-xs overflow-x-auto leading-relaxed whitespace-pre-wrap mt-2">{apiPreview}</pre>
-            <Button variant="outline" size="sm" className="mt-2" onClick={() => window.location.href = 'mailto:api@procesocat.es'}>
-              📧 {lang === 'ca' ? "Sol·licitar accés API" : 'Solicitar acceso API'}
+        {/* API INFO */}
+        <Card className="border-[#1a3a5c]/20 bg-[#f8fafc]">
+          <CardContent className="py-4 text-center space-y-2">
+            <h2 className="text-sm font-bold text-foreground">🔌 {lang === 'ca' ? "Integració API REST" : 'Integración API REST'}</h2>
+            <p className="text-xs text-muted-foreground">
+              {lang === 'ca' ? "Disponible al Pla Municipi. Contacta amb nosaltres per a més informació." : 'Disponible en el Plan Municipi. Contacta con nosotros para más información.'}
+            </p>
+            <Button variant="outline" size="sm" onClick={() => window.location.href = 'mailto:api@procesocat.es'}>
+              📧 {lang === 'ca' ? "Contactar per API" : 'Contactar por API'}
             </Button>
-          </CollapsibleContent>
-        </Collapsible>
+          </CardContent>
+        </Card>
 
         {/* FAQ */}
         <div>
