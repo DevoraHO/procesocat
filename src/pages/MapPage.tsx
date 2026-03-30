@@ -4,13 +4,14 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { mockReports, mockUser } from '@/data/mockData';
 import { calculateDangerScore, getDangerColor, getDangerLevel } from '@/utils/dangerScore';
+import { updateLifecycle, resetToActive, LIFECYCLE, getReportAge } from '@/utils/reportLifecycle';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Filter, Plus, X, ChevronLeft, ChevronRight, MapPin, Camera } from 'lucide-react';
 
 interface ReportWithScore {
-  report: typeof mockReports[0];
+  report: typeof mockReports[0] & { last_activity_at?: string };
   score: number;
 }
 
@@ -23,8 +24,10 @@ const MapPage = () => {
   const userMarkerRef = useRef<L.CircleMarker | null>(null);
 
   const [reports, setReports] = useState(() =>
-    mockReports.map(r => ({ ...r, validation_count: r.validation_count }))
+    updateLifecycle(mockReports.map(r => ({ ...r, validation_count: r.validation_count })))
   );
+  const [showSeasonBanner, setShowSeasonBanner] = useState(!localStorage.getItem('annual_reset_shown'));
+  const [nearbyDecay, setNearbyDecay] = useState<typeof reports[0] | null>(null);
   const [scoredReports, setScoredReports] = useState<ReportWithScore[]>([]);
   const [heatmapVisible, setHeatmapVisible] = useState(true);
   const [showLocationModal, setShowLocationModal] = useState(false);
