@@ -131,9 +131,24 @@ const ProfilePage = () => {
 
   // Filtered badges
   const filteredBadges = useMemo(() => {
-    if (badgeCategory === 'all') return mockBadges;
-    return mockBadges.filter(b => b.category === badgeCategory);
-  }, [badgeCategory]);
+    let result = mockBadges;
+    if (badgeCategory !== 'all') result = result.filter(b => b.category === badgeCategory);
+    if (badgeRarity !== 'all') result = result.filter(b => b.rarity === badgeRarity);
+    // Smart sorting
+    return [...result].sort((a, b) => {
+      const aNearly = !a.earned && a.progress !== undefined && a.total !== undefined && a.total > 0 && (a.progress / a.total) > 0.7;
+      const bNearly = !b.earned && b.progress !== undefined && b.total !== undefined && b.total > 0 && (b.progress / b.total) > 0.7;
+      if (aNearly && !bNearly) return -1;
+      if (!aNearly && bNearly) return 1;
+      if (a.earned && !b.earned) return aNearly ? 1 : -1;
+      if (!a.earned && b.earned) return bNearly ? -1 : 1;
+      if (a.earned && b.earned) return (b.earned_at || '').localeCompare(a.earned_at || '');
+      if (a.progress !== undefined && b.progress !== undefined && a.total && b.total) {
+        return (b.progress / b.total) - (a.progress / a.total);
+      }
+      return 0;
+    });
+  }, [badgeCategory, badgeRarity]);
 
   // Days until Monday
   const daysUntilMonday = useMemo(() => {
