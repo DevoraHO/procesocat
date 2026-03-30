@@ -430,19 +430,33 @@ const MapPage = () => {
           if (!container) return;
 
           container.querySelector('[data-action="validate"]')?.addEventListener('click', () => {
-            if (report.user_id === mockUser.id) {
-              toast.error(t('report.ownReport'));
+            const effectiveGPS = mockGPS || (userGPS ? { lat: userGPS.lat, lng: userGPS.lng } : null);
+            if (!effectiveGPS) {
+              toast.error(t('validation.activateGPS'));
               return;
             }
-            if (validatedIds.has(report.id)) {
-              toast.info(t('report.alreadyValidated'));
-              return;
+            const record = submitValidation(report.id, effectiveGPS.lat, effectiveGPS.lng, report.lat, report.lng);
+            if (record) {
+              setValidatedIds(prev => new Set(prev).add(report.id));
+              setReports(prev => prev.map(r =>
+                r.id === report.id ? { ...r, validation_count: r.validation_count + 1 } : r
+              ));
+              if (record.type === 'in_situ') {
+                toast.success(t('validation.successInSitu'));
+              } else {
+                toast.success(t('validation.successRemote'));
+              }
+              marker.closePopup();
             }
-            setValidatedIds(prev => new Set(prev).add(report.id));
-            setReports(prev => prev.map(r =>
-              r.id === report.id ? { ...r, validation_count: r.validation_count + 1 } : r
-            ));
-            toast.success(t('report.confirmed'));
+          });
+
+          container.querySelector('[data-action="activate-gps"]')?.addEventListener('click', () => {
+            // Check if education shown
+            if (!localStorage.getItem('validation_explained')) {
+              setShowEducation(true);
+            } else {
+              requestGPSForValidation();
+            }
             marker.closePopup();
           });
 
