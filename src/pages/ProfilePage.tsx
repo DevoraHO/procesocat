@@ -338,7 +338,7 @@ const ProfilePage = () => {
             ))}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => toast({ title: t('profile.comingSoon') })}>{t('profile.uploadImage')}</Button>
+            <Button variant="outline" size="sm" onClick={() => bannerInputRef.current?.click()}>{t('profile.uploadImage')}</Button>
             <Button size="sm" onClick={handleSaveBanner}>{t('profile.save')}</Button>
           </div>
         </div>
