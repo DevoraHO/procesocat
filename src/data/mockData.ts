@@ -301,3 +301,63 @@ export const mockDangerEvolution = [
   { week: 'S1 Abr', score: 55 },
   { week: 'S2 Abr', score: 42 },
 ];
+
+// ═══════════════════════════════
+// WEEKLY REPORTS DATA
+// ═══════════════════════════════
+
+export const mockWeeklyData = {
+  week: '24-30 març 2026',
+  zones: [
+    { name: 'Parc prop de casa', data: [45, 52, 48, 65, 71, 68, 85], color: '#ef4444' },
+    { name: 'Ruta del gos', data: [20, 18, 22, 25, 20, 15, 18], color: '#22c55e' },
+    { name: 'Col·legi nens', data: [10, 12, 8, 10, 15, 12, 10], color: '#3b82f6' },
+  ],
+  alertTypes: { procesionaria: 12, veneno: 2, trampa: 1, basura: 3 },
+  weeklyComparison: [
+    { week: 'Fa 4 setm.', avg: 35 },
+    { week: 'Fa 3 setm.', avg: 42 },
+    { week: 'Fa 2 setm.', avg: 58 },
+    { week: 'Aquesta setm.', avg: 67 },
+  ],
+  personalActivity: { reports: 8, validations: 23, photos: 5, shares: 12 },
+  weekAlerts: [
+    { id: 'wa1', type: 'procesionaria', zone: 'Parc prop de casa', level: 85, date: '2026-03-28', status: 'ACTIVE', description: 'Niu gran al pi central' },
+    { id: 'wa2', type: 'veneno', zone: 'Parc prop de casa', level: 88, date: '2026-03-26', status: 'ACTIVE', description: 'Esquer sospitós prop del contenidor' },
+    { id: 'wa3', type: 'procesionaria', zone: 'Ruta del gos', level: 35, date: '2026-03-25', status: 'RESOLVED', description: 'Processó activa al camí principal' },
+  ],
+  recommendations: [
+    { icon: '⚠️', text_es: 'El peligro en tu zona principal ha aumentado un 23% esta semana.', text_ca: 'El perill a la teva zona principal ha augmentat un 23% aquesta setmana.' },
+    { icon: '🐕', text_es: 'Recomendamos evitar los pinos del Parc prop de casa con Max esta semana.', text_ca: 'Recomanem evitar els pins del Parc prop de casa amb Max aquesta setmana.' },
+    { icon: '🌡️', text_es: 'Marzo es el mes de máximo riesgo. Extrema precaución en zonas arboladas.', text_ca: 'Març és el mes de màxim risc. Extrema precaució en zones arbrades.' },
+  ],
+};
+
+export const mockMunicipiData = {
+  municipality: 'Mollet del Vallès',
+  comarca: 'Vallès Oriental',
+  week: '24-30 març 2026',
+  ref: 'PA-2026-W13-MOLLET',
+  totalAlerts: 23,
+  resolvedAlerts: 8,
+  activeAlerts: 15,
+  criticalZones: 3,
+  avgDangerScore: 67,
+  previousWeekAvg: 54,
+  trend: 'increasing' as const,
+  topZones: [
+    { name: 'Parc de Can Borrell', alerts: 8, avgScore: 82 },
+    { name: 'Zona Residencial Nord', alerts: 6, avgScore: 71 },
+    { name: 'Camí de la Riera', alerts: 4, avgScore: 65 },
+    { name: 'Parc dels Pinetons', alerts: 3, avgScore: 58 },
+    { name: 'Carrer dels Pins', alerts: 2, avgScore: 42 },
+  ],
+  hourlyData: [0,0,0,0,0,1,2,4,6,8,7,5,4,6,8,9,7,5,4,3,2,1,0,0],
+  monthlyTrend: [
+    { month: 'Gen', alerts: 8 },
+    { month: 'Feb', alerts: 14 },
+    { month: 'Mar', alerts: 23 },
+    { month: 'Abr (prev)', alerts: 28 },
+  ],
+  alertTypeBreakdown: { procesionaria: 18, veneno: 2, trampa: 1, basura: 2 },
+};

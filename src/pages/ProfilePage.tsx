@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
+import WeeklyCharts from '@/components/WeeklyCharts';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -433,6 +434,9 @@ const ProfilePage = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Weekly Charts Section */}
+          <WeeklyCharts />
 
           {/* Route History */}
           <Card>

@@ -30,6 +30,9 @@ import AnalyticsPage from "@/pages/AnalyticsPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import GDPRModal from "@/components/GDPRModal";
 import NotFound from "@/pages/NotFound";
+import ReportsPage from "@/pages/ReportsPage";
+import MunicipiDashboard from "@/pages/MunicipiDashboard";
+import PDFPreview from "@/pages/PDFPreview";
 
 const queryClient = new QueryClient();
 
@@ -81,6 +84,9 @@ const App = () => {
                 <Route path="/alerts" element={<AppLayout><ProtectedRoute><AlertsPage /></ProtectedRoute></AppLayout>} />
                 <Route path="/profile" element={<AppLayout><ProtectedRoute><ProfilePage /></ProtectedRoute></AppLayout>} />
                 <Route path="/admin" element={<AppLayout><ProtectedRoute><AdminPage /></ProtectedRoute></AppLayout>} />
+                <Route path="/reports" element={<AppLayout><ProtectedRoute><ReportsPage /></ProtectedRoute></AppLayout>} />
+                <Route path="/municipi" element={<AppLayout><ProtectedRoute><MunicipiDashboard /></ProtectedRoute></AppLayout>} />
+                <Route path="/pdf-preview" element={<AppLayout><ProtectedRoute><PDFPreview /></ProtectedRoute></AppLayout>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
