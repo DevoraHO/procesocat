@@ -509,7 +509,7 @@ const MapPage = () => {
       });
       heatmapLayerRef.current!.addLayer(heatCircle);
     });
-  }, [scoredReports, t, validatedIds, getFilteredReports, lang]);
+  }, [scoredReports, t, validatedIds, getFilteredReports, lang, mockGPS, userGPS, canValidate, submitValidation, dailyCount, dailyLimit, requestGPSForValidation]);
 
   useEffect(() => {
     renderMarkers();
