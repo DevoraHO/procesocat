@@ -711,6 +711,7 @@ const ProfilePage = () => {
       </Tabs>
 
       <BadgeUnlockModal badge={unlockBadge} onClose={() => setUnlockBadge(null)} />
+      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} trigger="zones" />
     </div>
   );
 };
