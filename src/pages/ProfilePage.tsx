@@ -435,6 +435,9 @@ const ProfilePage = () => {
             </CardContent>
           </Card>
 
+          {/* Weekly Charts Section */}
+          <WeeklyCharts />
+
           {/* Route History */}
           <Card>
             <CardContent className="pt-6">
