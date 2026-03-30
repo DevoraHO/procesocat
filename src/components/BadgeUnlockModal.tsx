@@ -38,8 +38,8 @@ const BadgeUnlockModal = ({ badge, onClose }: BadgeUnlockModalProps) => {
 
   const shareWhatsApp = () => {
     const msg = lang === 'ca'
-      ? `He aconseguit la medalla ${badge.icon} ${name} a ProcesoAlert! 🏅 procesoalert.es`
-      : `¡He conseguido la medalla ${badge.icon} ${name} en ProcesoAlert! 🏅 procesoalert.es`;
+      ? `He aconseguit la medalla ${badge.icon} ${name} a ProcesoCat! 🏅 procesocat.es`
+      : `¡He conseguido la medalla ${badge.icon} ${name} en ProcesoCat! 🏅 procesocat.es`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
@@ -99,7 +99,7 @@ const BadgeUnlockModal = ({ badge, onClose }: BadgeUnlockModalProps) => {
         </p>
         <p className="text-lg font-semibold text-foreground mb-1">{name}</p>
         <p className="text-sm text-muted-foreground mb-3">{desc}</p>
-        {isLlegenda && <p className="text-sm text-amber-500 italic mb-3">Ets a l'Hall of Fame de ProcesoAlert</p>}
+        {isLlegenda && <p className="text-sm text-amber-500 italic mb-3">Ets a l'Hall of Fame de ProcesoCat</p>}
         {badge.points_bonus > 0 && (
           <p className="text-orange-500 font-bold mb-4">+{badge.points_bonus} {lang === 'ca' ? 'punts bonus' : 'puntos bonus'}</p>
         )}

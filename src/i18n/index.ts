@@ -14,7 +14,7 @@ i18n
     },
     fallbackLng: 'es',
     detection: {
-      lookupLocalStorage: 'procesoalert_lang',
+      lookupLocalStorage: 'procesocat_lang',
       order: ['localStorage', 'navigator'],
       caches: ['localStorage']
     },

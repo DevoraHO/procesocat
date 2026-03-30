@@ -55,8 +55,8 @@ const RankingPage = () => {
   const arrows = useMemo(() => mockRanking.map(() => Math.random() > 0.5), []);
 
   const whatsappMsg = lang === 'ca'
-    ? `Aquesta setmana sóc el #${userPos} a ProcesoAlert 🌲 He reportat processionària a Catalunya per protegir mascotes i famílies. Uneix-te: procesoalert.es`
-    : `Esta semana soy el #${userPos} en ProcesoAlert 🌲 He reportado procesionaria en Cataluña para proteger mascotas y familias. Únete: procesoalert.es`;
+    ? `Aquesta setmana sóc el #${userPos} a ProcesoCat 🌲 He reportat processionària a Catalunya per protegir mascotes i famílies. Uneix-te: procesocat.es`
+    : `Esta semana soy el #${userPos} en ProcesoCat 🌲 He reportado procesionaria en Cataluña para proteger mascotas y familias. Únete: procesocat.es`;
 
   return (
     <div className="pb-24 max-w-lg mx-auto px-4">
@@ -219,7 +219,7 @@ const RankingPage = () => {
 
           {/* Preview card */}
           <div className="rounded-xl p-5 text-center text-white" style={{ background: '#1B4332' }}>
-            <p className="font-bold text-lg mb-3">🌲 ProcesoAlert</p>
+            <p className="font-bold text-lg mb-3">🌲 ProcesoCat</p>
             <div className="flex justify-center mb-2">
               <div className="border-2 border-white rounded-full">
                 <UserAvatar name={mockUser.name} avatar_url={null} size="lg" />
@@ -232,14 +232,14 @@ const RankingPage = () => {
               {mockStats.totalReports} {lang === 'ca' ? 'reports' : 'reportes'} · {mockStats.totalValidations} {lang === 'ca' ? 'validacions' : 'validaciones'} · {mockRanking[userIdx]?.rank}
             </p>
             <span className="inline-block mt-2 bg-primary text-primary-foreground text-xs px-3 py-1 rounded-full">{mockUser.weekly_points} pts {lang === 'ca' ? 'aquesta setmana' : 'esta semana'}</span>
-            <p className="text-[10px] opacity-60 mt-3">procesoalert.es</p>
+            <p className="text-[10px] opacity-60 mt-3">procesocat.es</p>
           </div>
 
           <div className="space-y-2">
             <Button className="w-full" onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(whatsappMsg)}`, '_blank')}>
               📱 {lang === 'ca' ? 'Compartir a WhatsApp' : 'Compartir en WhatsApp'}
             </Button>
-            <Button variant="outline" className="w-full" onClick={() => { navigator.clipboard.writeText('procesoalert.es'); toast({ title: lang === 'ca' ? 'Enllaç copiat!' : '¡Enlace copiado!' }); }}>
+            <Button variant="outline" className="w-full" onClick={() => { navigator.clipboard.writeText('procesocat.es'); toast({ title: lang === 'ca' ? 'Enllaç copiat!' : '¡Enlace copiado!' }); }}>
               <Copy size={14} /> {lang === 'ca' ? 'Copiar enllaç' : 'Copiar enlace'}
             </Button>
             <Button variant="ghost" className="w-full" onClick={() => setShareOpen(false)}>

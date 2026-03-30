@@ -76,7 +76,7 @@ const ReportSharePage = () => {
 
   const shareNative = () => {
     if (navigator.share) {
-      navigator.share({ title: 'ProcesoAlert', text: t('publicReport.whatsappText', { comarca: report.comarca, id: report.id }), url: `${window.location.origin}/r/${report.id}` });
+      navigator.share({ title: 'ProcesoCat', text: t('publicReport.whatsappText', { comarca: report.comarca, id: report.id }), url: `${window.location.origin}/r/${report.id}` });
     }
   };
 
@@ -88,7 +88,7 @@ const ReportSharePage = () => {
       <div className="bg-card border-b px-4 py-3 flex items-center justify-between max-w-[480px] mx-auto">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm" style={{ background: '#2D6A4F' }}>🌲</div>
-          <span className="font-bold text-foreground">ProcesoAlert</span>
+          <span className="font-bold text-foreground">ProcesoCat</span>
         </div>
         <Button size="sm" onClick={() => navigate('/register')}>{t('publicReport.downloadApp')}</Button>
       </div>

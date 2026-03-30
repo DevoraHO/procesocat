@@ -83,7 +83,7 @@ const PricingPage = () => {
   ];
 
   const apiPreview = `// ${t('pricing.api_auth')}
-GET https://api.procesoalert.es/v1/reports
+GET https://api.procesocat.es/v1/reports
 Headers:
   X-API-Key: your_municipality_api_key
   Content-Type: application/json
@@ -262,7 +262,7 @@ POST your_webhook_url
                 </div>
               ))}
             </div>
-            <Button className="w-full" style={{ backgroundColor: '#1a3a5c' }} onClick={() => window.location.href = 'mailto:municipis@procesoalert.es?subject=' + encodeURIComponent(t('pricing.mun_email_subject'))}>
+            <Button className="w-full" style={{ backgroundColor: '#1a3a5c' }} onClick={() => window.location.href = 'mailto:municipis@procesocat.es?subject=' + encodeURIComponent(t('pricing.mun_email_subject'))}>
               📧 {t('pricing.contact_us')}
             </Button>
             <p className="text-xs text-center text-muted-foreground">{t('pricing.also_diputacions')}</p>
@@ -286,7 +286,7 @@ POST your_webhook_url
             <div className="mt-2 space-y-3">
               <pre className="bg-gray-900 text-green-400 rounded-xl p-4 text-xs overflow-x-auto leading-relaxed whitespace-pre-wrap">{apiPreview}</pre>
               <p className="text-xs text-muted-foreground">{t('pricing.api_docs_note')}</p>
-              <Button variant="outline" onClick={() => window.location.href = 'mailto:api@procesoalert.es'} className="gap-2">
+              <Button variant="outline" onClick={() => window.location.href = 'mailto:api@procesocat.es'} className="gap-2">
                 📧 {t('pricing.api_request')}
               </Button>
             </div>
@@ -329,7 +329,7 @@ POST your_webhook_url
       <div className="mt-12 bg-primary rounded-2xl p-8 text-center text-primary-foreground">
         <h3 className="text-xl font-bold">{t('pricing.bottom_title')}</h3>
         <p className="text-sm opacity-90 mt-2 max-w-md mx-auto">{t('pricing.bottom_subtitle')}</p>
-        <Button variant="secondary" className="mt-4 bg-white text-primary hover:bg-white/90" onClick={() => window.location.href = 'mailto:municipis@procesoalert.es'}>
+        <Button variant="secondary" className="mt-4 bg-white text-primary hover:bg-white/90" onClick={() => window.location.href = 'mailto:municipis@procesocat.es'}>
           📧 {t('pricing.contact_us')}
         </Button>
       </div>

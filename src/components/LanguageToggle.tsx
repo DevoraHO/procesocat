@@ -8,7 +8,7 @@ const LanguageToggle = () => {
   const toggle = () => {
     const next = current === 'es' ? 'ca' : 'es';
     i18n.changeLanguage(next);
-    localStorage.setItem('procesoalert_lang', next);
+    localStorage.setItem('procesocat_lang', next);
   };
 
   return (

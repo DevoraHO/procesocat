@@ -26,7 +26,7 @@ const TopNavbar = () => {
         style={{ color: '#2D6A4F' }}
         onClick={() => navigate('/map')}
       >
-        🐛 ProcesoAlert
+        🐛 ProcesoCat
       </span>
       <nav className="flex items-center gap-1 flex-1">
         {tabs.map(({ key, path, icon: Icon }) => {

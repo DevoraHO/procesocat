@@ -16,9 +16,9 @@ const PDFPreview = () => {
       <div className="h-full flex flex-col p-6 text-sm">
         <div className="flex-1">{children}</div>
         <div className="flex items-center justify-between text-[10px] text-gray-400 border-t pt-2 mt-4">
-          <span>🌲 ProcesoAlert</span>
+          <span>🌲 ProcesoCat</span>
           <span>{page}/{total}</span>
-          <span>procesoalert.es</span>
+          <span>procesocat.es</span>
         </div>
       </div>
     </div>
@@ -33,7 +33,7 @@ const PDFPreview = () => {
       <h2 className="text-lg font-semibold text-foreground mb-3">{lang === 'ca' ? 'Informe Familiar' : 'Informe Familiar'}</h2>
       <PageWrapper page={1} total={4}>
         <div className="flex items-center justify-between mb-4">
-          <span className="text-lg font-bold text-green-800">🌲 ProcesoAlert</span>
+          <span className="text-lg font-bold text-green-800">🌲 ProcesoCat</span>
           <span className="text-lg font-bold text-gray-700">{lang === 'ca' ? 'INFORME SETMANAL' : 'INFORME SEMANAL'}</span>
         </div>
         <div className="h-0.5 bg-green-700 mb-6" />
@@ -65,7 +65,7 @@ const PDFPreview = () => {
           ))}
         </div>
         <div className="mt-auto bg-green-700 text-white text-center py-2 rounded-lg text-[10px] mt-6">
-          {lang === 'ca' ? 'Generat el' : 'Generado el'} 30/03/2026 · procesoalert.es
+          {lang === 'ca' ? 'Generat el' : 'Generado el'} 30/03/2026 · procesocat.es
         </div>
       </PageWrapper>
 
@@ -144,7 +144,7 @@ const PDFPreview = () => {
       <h2 className="text-lg font-semibold text-foreground mb-3 mt-8">{lang === 'ca' ? 'Informe Municipal' : 'Informe Municipal'}</h2>
       <PageWrapper page={1} total={5}>
         <div className="flex items-center justify-between mb-4">
-          <span className="text-lg font-bold text-green-800">🌲 ProcesoAlert</span>
+          <span className="text-lg font-bold text-green-800">🌲 ProcesoCat</span>
           <span className="text-sm font-bold text-gray-500">🏛️ {lang === 'ca' ? 'Ajuntament' : 'Ayuntamiento'}</span>
         </div>
         <div className="h-0.5 bg-green-700 mb-6" />
@@ -182,7 +182,7 @@ const PDFPreview = () => {
         </div>
         <p className="text-center text-[10px] text-gray-400 mb-8">{lang === 'ca' ? "Escaneja per accedir a les dades en temps real" : 'Escanea para acceder a los datos en tiempo real'}</p>
         <div className="border-t pt-4 text-center space-y-1 text-[10px] text-gray-500">
-          <p className="font-medium">{lang === 'ca' ? 'Document generat per ProcesoAlert' : 'Documento generado por ProcesoAlert'}</p>
+          <p className="font-medium">{lang === 'ca' ? 'Document generat per ProcesoCat' : 'Documento generado por ProcesoCat'}</p>
           <p>{lang === 'ca' ? 'Dades validades per la comunitat' : 'Datos validados por la comunidad'}</p>
           <p>CREAF · iNaturalist</p>
           <p>{m.ref} · {new Date().toLocaleDateString()}</p>

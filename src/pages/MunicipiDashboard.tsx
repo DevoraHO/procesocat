@@ -48,7 +48,7 @@ const MunicipiDashboard = () => {
       <div className="py-6">
         <div className="flex items-center gap-2 mb-1">
           <span className="text-xl font-bold text-primary">🌲</span>
-          <h1 className="text-xl font-bold text-foreground">ProcesoAlert · {lang === 'ca' ? 'Panel Municipal' : 'Panel Municipal'}</h1>
+          <h1 className="text-xl font-bold text-foreground">ProcesoCat · {lang === 'ca' ? 'Panel Municipal' : 'Panel Municipal'}</h1>
         </div>
         <p className="text-sm text-muted-foreground">{d.municipality} — {d.comarca}</p>
         <div className="flex items-center gap-2 mt-3">
