@@ -1,16 +1,17 @@
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Map, Info, Trophy, Bell, User } from 'lucide-react';
+import { Map, Info, Trophy, Bell, User, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import LanguageToggle from './LanguageToggle';
 import { useAuth } from '@/contexts/AuthContext';
 
 const tabs = [
-  { key: 'map', path: '/map', icon: Map },
-  { key: 'info', path: '/info', icon: Info },
-  { key: 'ranking', path: '/ranking', icon: Trophy },
-  { key: 'alerts', path: '/alerts', icon: Bell },
-  { key: 'profile', path: '/profile', icon: User },
+  { key: 'map', path: '/map', icon: Map, activeColor: '#2D6A4F' },
+  { key: 'info', path: '/info', icon: Info, activeColor: '#2D6A4F' },
+  { key: 'ranking', path: '/ranking', icon: Trophy, activeColor: '#2D6A4F' },
+  { key: 'alerts', path: '/alerts', icon: Bell, activeColor: '#2D6A4F' },
+  { key: 'plans', path: '/plans', icon: Shield, activeColor: '#F59E0B' },
+  { key: 'profile', path: '/profile', icon: User, activeColor: '#2D6A4F' },
 ];
 
 const TopNavbar = () => {
@@ -29,7 +30,7 @@ const TopNavbar = () => {
         🐛 ProcesoCat
       </span>
       <nav className="flex items-center gap-1 flex-1">
-        {tabs.map(({ key, path, icon: Icon }) => {
+        {tabs.map(({ key, path, icon: Icon, activeColor }) => {
           const active = location.pathname === path;
           return (
             <button
@@ -39,7 +40,7 @@ const TopNavbar = () => {
                 'flex items-center gap-1.5 px-3 py-2 rounded-md text-sm transition-colors',
                 active ? 'font-semibold' : 'text-muted-foreground hover:text-foreground'
               )}
-              style={active ? { color: '#2D6A4F' } : undefined}
+              style={active ? { color: activeColor } : undefined}
             >
               <Icon size={18} />
               {t(`nav.${key}`)}
