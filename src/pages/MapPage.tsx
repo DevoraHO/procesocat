@@ -403,7 +403,7 @@ const MapPage = () => {
       lng: selectedCoords[1],
       description: reportDescription,
       status: 'ACTIVE' as const,
-      danger_score: 50,
+      danger_score: selectedAlertType === 'veneno' ? 85 : selectedAlertType === 'trampa' ? 65 : selectedAlertType === 'basura' ? 35 : 50,
       validation_count: 0,
       photos: [] as string[],
       comarca: 'Barcelonès',
