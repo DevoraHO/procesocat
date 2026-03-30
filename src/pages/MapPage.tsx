@@ -218,10 +218,21 @@ const MapPage = () => {
   // Recalculate every 5 min
   useEffect(() => {
     const interval = setInterval(() => {
-      setReports(prev => [...prev]);
+      setReports(prev => updateLifecycle([...prev]));
     }, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Simulate nearby decay detection
+  useEffect(() => {
+    const dismissed = localStorage.getItem('decay_dismissed');
+    if (dismissed && Date.now() - parseInt(dismissed) < 86400000) return;
+    const decaying = reports.find(r => r.status === LIFECYCLE.DECAYING);
+    if (decaying) {
+      const timer = setTimeout(() => setNearbyDecay(decaying), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [reports]);
 
   const shareToWhatsApp = (report: any, score: number) => {
     const level = score > 60 ? t('map.dangerHigh') : score > 40 ? t('map.caution') : t('map.safeZone');
