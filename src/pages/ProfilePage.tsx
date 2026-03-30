@@ -626,7 +626,7 @@ const ProfilePage = () => {
                     <DangerBadge score={zone.current_danger_score} size="sm" />
                   </div>
                   <div className="flex gap-2 mt-3">
-                    <Button variant="outline" size="sm" onClick={() => navigate('/map')}>{t('profile.viewOnMap')}</Button>
+                    <Button variant="outline" size="sm" onClick={() => navigate('/map', { state: { flyTo: { lat: zone.lat, lng: zone.lng, zoom: 15 } } })}>{t('profile.viewOnMap')}</Button>
                     <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setDeleteZoneId(zone.id)}>
                       <Trash2 size={14} />
                     </Button>

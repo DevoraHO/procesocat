@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { mockReports, mockUser, ALERT_TYPES, type AlertTypeKey } from '@/data/mockData';
@@ -23,6 +24,7 @@ interface ReportWithScore {
 const MapPage = () => {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
+  const location = useLocation();
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
@@ -124,6 +126,33 @@ const MapPage = () => {
       mapRef.current = null;
     };
   }, []);
+
+  // Fly to location from navigation state (e.g. from profile zones)
+  useEffect(() => {
+    const state = location.state as { flyTo?: { lat: number; lng: number; zoom?: number } } | null;
+    if (state?.flyTo && mapRef.current) {
+      const { lat, lng, zoom } = state.flyTo;
+      mapRef.current.flyTo([lat, lng], zoom || 15, { duration: 1.2 });
+      setTimeout(() => {
+        if (!markersLayerRef.current) return;
+        let closest: L.Marker | null = null;
+        let minDist = Infinity;
+        markersLayerRef.current.eachLayer((layer) => {
+          if (layer instanceof L.Marker) {
+            const d = mapRef.current!.distance([lat, lng], layer.getLatLng());
+            if (d < minDist) {
+              minDist = d;
+              closest = layer;
+            }
+          }
+        });
+        if (closest && minDist < 5000) {
+          (closest as L.Marker).openPopup();
+        }
+      }, 1400);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // Handle map click for report placement OR safe walk
   useEffect(() => {
