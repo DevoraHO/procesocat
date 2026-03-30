@@ -238,3 +238,66 @@ export const PLAN_LIMITS = {
     municipality_dashboard: true
   }
 };
+
+// ═══════════════════════════════
+// ANALYTICS DATA
+// ═══════════════════════════════
+
+export const mockWeeklyReports = [
+  { week: 'S1 Mar', procesionaria: 12, veneno: 2, trampa: 1, basura: 3 },
+  { week: 'S2 Mar', procesionaria: 18, veneno: 3, trampa: 0, basura: 5 },
+  { week: 'S3 Mar', procesionaria: 25, veneno: 1, trampa: 2, basura: 4 },
+  { week: 'S4 Mar', procesionaria: 31, veneno: 4, trampa: 1, basura: 6 },
+  { week: 'S1 Abr', procesionaria: 22, veneno: 2, trampa: 3, basura: 2 },
+  { week: 'S2 Abr', procesionaria: 15, veneno: 1, trampa: 0, basura: 3 },
+];
+
+export const mockTemporalHeatmap = [
+  // hour (0-23) x day (0=Mon..6=Sun) x intensity (0-100)
+  { hour: 7, day: 0, intensity: 20 }, { hour: 8, day: 0, intensity: 45 },
+  { hour: 9, day: 0, intensity: 60 }, { hour: 10, day: 0, intensity: 55 },
+  { hour: 17, day: 0, intensity: 70 }, { hour: 18, day: 0, intensity: 65 },
+  { hour: 7, day: 1, intensity: 15 }, { hour: 8, day: 1, intensity: 40 },
+  { hour: 9, day: 1, intensity: 55 }, { hour: 10, day: 1, intensity: 50 },
+  { hour: 17, day: 1, intensity: 60 }, { hour: 18, day: 1, intensity: 55 },
+  { hour: 7, day: 2, intensity: 25 }, { hour: 8, day: 2, intensity: 50 },
+  { hour: 9, day: 2, intensity: 65 }, { hour: 10, day: 2, intensity: 60 },
+  { hour: 17, day: 2, intensity: 75 }, { hour: 18, day: 2, intensity: 70 },
+  { hour: 7, day: 3, intensity: 18 }, { hour: 8, day: 3, intensity: 42 },
+  { hour: 9, day: 3, intensity: 58 }, { hour: 10, day: 3, intensity: 52 },
+  { hour: 17, day: 3, intensity: 68 }, { hour: 18, day: 3, intensity: 62 },
+  { hour: 7, day: 4, intensity: 22 }, { hour: 8, day: 4, intensity: 48 },
+  { hour: 9, day: 4, intensity: 62 }, { hour: 10, day: 4, intensity: 58 },
+  { hour: 17, day: 4, intensity: 72 }, { hour: 18, day: 4, intensity: 68 },
+  { hour: 9, day: 5, intensity: 80 }, { hour: 10, day: 5, intensity: 85 },
+  { hour: 11, day: 5, intensity: 90 }, { hour: 12, day: 5, intensity: 75 },
+  { hour: 17, day: 5, intensity: 82 }, { hour: 18, day: 5, intensity: 78 },
+  { hour: 9, day: 6, intensity: 75 }, { hour: 10, day: 6, intensity: 88 },
+  { hour: 11, day: 6, intensity: 92 }, { hour: 12, day: 6, intensity: 80 },
+  { hour: 17, day: 6, intensity: 70 }, { hour: 18, day: 6, intensity: 65 },
+];
+
+export const mockAlertDistribution = [
+  { type: 'procesionaria', count: 123, percentage: 68 },
+  { type: 'veneno', count: 13, percentage: 7 },
+  { type: 'trampa', count: 7, percentage: 4 },
+  { type: 'basura', count: 23, percentage: 13 },
+];
+
+export const mockMunicipalWeekly = [
+  { week: 'S1 Mar', reportes: 45, resueltos: 12, tiempo_medio_h: 48 },
+  { week: 'S2 Mar', reportes: 62, resueltos: 28, tiempo_medio_h: 36 },
+  { week: 'S3 Mar', reportes: 78, resueltos: 45, tiempo_medio_h: 24 },
+  { week: 'S4 Mar', reportes: 55, resueltos: 38, tiempo_medio_h: 18 },
+  { week: 'S1 Abr', reportes: 41, resueltos: 30, tiempo_medio_h: 16 },
+  { week: 'S2 Abr', reportes: 33, resueltos: 25, tiempo_medio_h: 14 },
+];
+
+export const mockDangerEvolution = [
+  { week: 'S1 Mar', score: 35 },
+  { week: 'S2 Mar', score: 48 },
+  { week: 'S3 Mar', score: 62 },
+  { week: 'S4 Mar', score: 71 },
+  { week: 'S1 Abr', score: 55 },
+  { week: 'S2 Abr', score: 42 },
+];
