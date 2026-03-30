@@ -12,7 +12,8 @@ export const mockUser = {
   pet_name: 'Max',
   pet_type: 'dog',
   referral_code: 'PERE01',
-  created_at: '2026-01-15'
+  created_at: '2026-01-15',
+  municipality_id: 'mollet'
 };
 
 export const ALERT_TYPES = {
