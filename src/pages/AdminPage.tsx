@@ -111,6 +111,10 @@ const AdminPage = () => {
         <h1 className="text-xl font-bold text-foreground">{lang === 'ca' ? "Panell d'Administració" : 'Panel de Administración'}</h1>
       </div>
 
+      <Button variant="outline" className="mb-4 w-full" onClick={() => navigate('/municipi')}>
+        📊 {lang === 'ca' ? 'Dashboard Municipal' : 'Dashboard Municipal'}
+      </Button>
+
       <Tabs defaultValue="summary">
         <TabsList className="w-full grid grid-cols-4">
           <TabsTrigger value="summary">{lang === 'ca' ? 'Resum' : 'Resumen'}</TabsTrigger>
