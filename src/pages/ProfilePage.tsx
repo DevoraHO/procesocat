@@ -662,6 +662,10 @@ const ProfilePage = () => {
           </Dialog>
 
           <Button variant="destructive" className="w-full" onClick={handleLogout}>{t('settingsSections.logout')}</Button>
+
+          <button onClick={() => navigate('/admin')} className="w-full text-center text-xs text-muted-foreground mt-4 hover:text-primary transition">
+            🛡️ Panel Admin
+          </button>
         </TabsContent>
       </Tabs>
 
