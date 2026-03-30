@@ -121,6 +121,22 @@ const ProfilePage = () => {
   const municipalityResults = searchMunicipalities(municipalityQuery);
   const currentMunicipality = selectedMunicipalityId ? getMunicipalityById(selectedMunicipalityId) : undefined;
 
+  // Security state
+  const [sessions, setSessions] = useState<SessionInfo[]>([]);
+  const [securityLogs, setSecurityLogs] = useState<SecurityLog[]>([]);
+  const [currentPwd, setCurrentPwd] = useState('');
+  const [newPwd, setNewPwd] = useState('');
+  const [confirmPwd, setConfirmPwd] = useState('');
+  const pwdValidation = useMemo(() => validatePassword(newPwd), [newPwd]);
+
+  const loadSecurityData = useCallback(() => {
+    const s = getActiveSessions();
+    setSessions(s.length > 0 ? s : mockSessions);
+    setSecurityLogs(getSecurityLogs());
+  }, []);
+
+  useEffect(() => { loadSecurityData(); }, [loadSecurityData]);
+
   const isFree = user?.plan === 'free';
   // Ranking sub-tab
   const [rankingTab, setRankingTab] = useState<'comarca' | 'catalunya'>('comarca');
