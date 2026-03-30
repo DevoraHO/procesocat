@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import LanguageToggle from '@/components/LanguageToggle';
 import { Mail, Loader2, ArrowLeft } from 'lucide-react';
+import logo from '@/assets/logoprocesocat.png';
 
 const ForgotPasswordPage = () => {
   const { i18n } = useTranslation();
