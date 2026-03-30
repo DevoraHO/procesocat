@@ -597,27 +597,45 @@ const MapPage = () => {
     );
   };
 
-  const handleSubmitReport = () => {
-    if (!selectedCoords || !selectedAlertType) return;
+  const handleSubmitReport = async () => {
+    if (!selectedCoords || !selectedAlertType || !user) return;
     if (isFree && !canReport) {
       showUpgrade('reports');
       return;
     }
-    const newReport = {
-      id: `r${Date.now()}`,
-      user_id: user?.id,
+    const dangerScore = selectedAlertType === 'veneno' ? 85 : selectedAlertType === 'trampa' ? 65 : selectedAlertType === 'basura' ? 35 : 50;
+    
+    // Save to Supabase
+    const saved = await createReportDB({
+      user_id: user.id,
       lat: selectedCoords[0],
       lng: selectedCoords[1],
       description: reportDescription,
-      status: 'ACTIVE' as const,
-      danger_score: selectedAlertType === 'veneno' ? 85 : selectedAlertType === 'trampa' ? 65 : selectedAlertType === 'basura' ? 35 : 50,
-      validation_count: 0,
-      photos: [] as string[],
-      comarca: 'Barcelonès',
       alert_type: selectedAlertType,
-      created_at: new Date().toISOString()
-    };
-    setReports(prev => [...prev, newReport]);
+      danger_score: dangerScore,
+      comarca: 'Barcelonès',
+    });
+    
+    if (saved) {
+      setReports(prev => [...prev, saved as any]);
+    } else {
+      // Fallback: add locally
+      const newReport = {
+        id: `r${Date.now()}`,
+        user_id: user.id,
+        lat: selectedCoords[0],
+        lng: selectedCoords[1],
+        description: reportDescription,
+        status: 'ACTIVE' as const,
+        danger_score: dangerScore,
+        validation_count: 0,
+        photos: [] as string[],
+        comarca: 'Barcelonès',
+        alert_type: selectedAlertType,
+        created_at: new Date().toISOString()
+      };
+      setReports(prev => [...prev, newReport]);
+    }
     incrementReportCount();
     setShowNewReport(false);
     setReportStep(1);
