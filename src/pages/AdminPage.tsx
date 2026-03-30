@@ -14,7 +14,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useToast } from '@/hooks/use-toast';
 import UserAvatar from '@/components/UserAvatar';
 import DangerBadge from '@/components/DangerBadge';
-import { Shield, Users, MapPin, CreditCard, TrendingUp, MoreHorizontal, Copy } from 'lucide-react';
+import { Shield, Users, MapPin, CreditCard, TrendingUp, MoreHorizontal, Copy, ShieldAlert, AlertTriangle, Lock } from 'lucide-react';
+import { getSecurityLogs, type SecurityLog } from '@/utils/security';
 
 const AdminPage = () => {
   const { t, i18n } = useTranslation();
