@@ -100,7 +100,7 @@ const LoginPage = () => {
         {/* Divider */}
         <div className="flex items-center gap-3">
           <div className="flex-1 h-px bg-border" />
-          <span className="text-xs text-muted-foreground">o</span>
+          <span className="text-xs text-muted-foreground">{t('auth.or')}</span>
           <div className="flex-1 h-px bg-border" />
         </div>
 
