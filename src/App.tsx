@@ -27,6 +27,7 @@ import PrivacyPage from "@/pages/PrivacyPage";
 import TermsPage from "@/pages/TermsPage";
 import ReportSharePage from "@/pages/ReportSharePage";
 import PricingPage from "@/pages/PricingPage";
+import PlansPage from "@/pages/PlansPage";
 import AnalyticsPage from "@/pages/AnalyticsPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import GDPRModal from "@/components/GDPRModal";
@@ -80,6 +81,7 @@ const App = () => {
                 <Route path="/r/:id" element={<ReportSharePage />} />
                 <Route path="/info" element={<AppLayout><InfoPage /></AppLayout>} />
                 <Route path="/pricing" element={<AppLayout><PricingPage /></AppLayout>} />
+                <Route path="/plans" element={<AppLayout><ProtectedRoute><PlansPage /></ProtectedRoute></AppLayout>} />
                 <Route path="/map" element={<AppLayout><ProtectedRoute><MapPage /></ProtectedRoute></AppLayout>} />
                 <Route path="/analytics" element={<AppLayout><ProtectedRoute><AnalyticsPage /></ProtectedRoute></AppLayout>} />
                 <Route path="/ranking" element={<AppLayout><ProtectedRoute><RankingPage /></ProtectedRoute></AppLayout>} />
