@@ -170,6 +170,20 @@ const MapPage = () => {
           container.querySelector('[data-action="share"]')?.addEventListener('click', () => {
             shareToWhatsApp(report, score);
           });
+
+          container.querySelector('[data-action="reactivate"]')?.addEventListener('click', () => {
+            setReports(prev => prev.map(r =>
+              r.id === report.id ? resetToActive(r) : r
+            ));
+            toast.success(t('map.reactivated'));
+            marker.closePopup();
+          });
+
+          container.querySelector('[data-action="resolve"]')?.addEventListener('click', () => {
+            setReports(prev => prev.filter(r => r.id !== report.id));
+            toast.success(t('map.resolved'));
+            marker.closePopup();
+          });
         }, 10);
       });
 
