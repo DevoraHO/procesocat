@@ -21,7 +21,7 @@ import UpgradeModal from '@/components/UpgradeModal';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ReportWithScore {
-  report: typeof mockReports[0] & { last_activity_at?: string };
+  report: Report & { last_activity_at?: string };
   score: number;
 }
 
@@ -36,8 +36,8 @@ const MapPage = () => {
   const userMarkerRef = useRef<L.CircleMarker | null>(null);
   const previewMarkerRef = useRef<L.Marker | null>(null);
 
-  const [reports, setReports] = useState(() =>
-    updateLifecycle(mockReports.map(r => ({ ...r, validation_count: r.validation_count })))
+  const [reports, setReports] = useState<Report[]>(() =>
+    []
   );
   const [showSeasonBanner, setShowSeasonBanner] = useState(!localStorage.getItem('annual_reset_shown'));
   const [nearbyDecay, setNearbyDecay] = useState<typeof reports[0] | null>(null);
@@ -595,7 +595,7 @@ const MapPage = () => {
     }
     const newReport = {
       id: `r${Date.now()}`,
-      user_id: mockUser.id,
+      user_id: user?.id,
       lat: selectedCoords[0],
       lng: selectedCoords[1],
       description: reportDescription,
@@ -748,7 +748,7 @@ const MapPage = () => {
   const handleShareRoute = () => {
     if (!safeWalkResult) return;
     const levelText = safeWalkResult.overallLevel === 'SEGURA' ? t('safeWalk.resultSafe') : safeWalkResult.overallLevel === 'PRECAUCIÓN' ? t('safeWalk.resultCaution') : t('safeWalk.resultDangerous');
-    const msg = `🛡️ ${t('safeWalk.shareMsg', { level: levelText, percent: safeWalkResult.safePercent, pet: mockUser.pet_name })}`;
+    const msg = `🛡️ ${t('safeWalk.shareMsg', { level: levelText, percent: safeWalkResult.safePercent, pet: user?.pet_name })}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
@@ -1076,13 +1076,13 @@ const MapPage = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-lg font-bold">
-                    {safeWalkResult.overallLevel === 'SEGURA' && `✅ ${t('safeWalk.resultSafeTitle', { pet: mockUser.pet_name })}`}
+                    {safeWalkResult.overallLevel === 'SEGURA' && `✅ ${t('safeWalk.resultSafeTitle', { pet: user?.pet_name })}`}
                     {safeWalkResult.overallLevel === 'PRECAUCIÓN' && `⚠️ ${t('safeWalk.resultCautionTitle')}`}
                     {safeWalkResult.overallLevel === 'PELIGROSA' && `🔴 ${t('safeWalk.resultDangerousTitle')}`}
                   </p>
                   <p className="text-sm opacity-90 mt-0.5">
                     {safeWalkResult.overallLevel === 'SEGURA' && t('safeWalk.resultSafeDesc')}
-                    {safeWalkResult.overallLevel === 'PRECAUCIÓN' && t('safeWalk.resultCautionDesc', { pet: mockUser.pet_name })}
+                    {safeWalkResult.overallLevel === 'PRECAUCIÓN' && t('safeWalk.resultCautionDesc', { pet: user?.pet_name })}
                     {safeWalkResult.overallLevel === 'PELIGROSA' && t('safeWalk.resultDangerousDesc')}
                   </p>
                 </div>
@@ -1131,8 +1131,8 @@ const MapPage = () => {
               <div className="bg-primary/5 border border-primary/20 rounded-xl p-3">
                 <p className="text-sm text-foreground">
                   {safeWalkResult.riskyZones.length > 0
-                    ? t('safeWalk.petWarning', { pet: mockUser.pet_name, n: safeWalkResult.riskyZones[0].segment })
-                    : t('safeWalk.petSafe', { pet: mockUser.pet_name })}
+                    ? t('safeWalk.petWarning', { pet: user?.pet_name, n: safeWalkResult.riskyZones[0].segment })
+                    : t('safeWalk.petSafe', { pet: user?.pet_name })}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">{t('safeWalk.petNote')}</p>
               </div>
@@ -1156,7 +1156,7 @@ const MapPage = () => {
           <div className="bg-card rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden animate-scale-in">
             <div className="relative bg-muted p-4">
               <div className="blur-[4px] pointer-events-none">
-                <div className="bg-primary rounded-xl p-3 text-white text-sm mb-2">✅ Ruta segura para {mockUser.pet_name}</div>
+                <div className="bg-primary rounded-xl p-3 text-white text-sm mb-2">✅ Ruta segura para {user?.pet_name}</div>
                 <div className="flex gap-2 mb-2">
                   <div className="flex-1 bg-card rounded-lg py-2 text-center text-xs">📏 2.1km</div>
                   <div className="flex-1 bg-card rounded-lg py-2 text-center text-xs">✅ 92%</div>
@@ -1179,7 +1179,7 @@ const MapPage = () => {
                 </div>
                 <h3 className="text-lg font-bold text-foreground">{t('safeWalk.upgradeTitle')}</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {t('safeWalk.upgradeDesc', { pet: mockUser.pet_name })}
+                  {t('safeWalk.upgradeDesc', { pet: user?.pet_name })}
                 </p>
               </div>
 
@@ -1214,7 +1214,7 @@ const MapPage = () => {
               {t('map.activateLocationTitle')}
             </h2>
             <p className="text-sm text-muted-foreground mb-6">
-              {t('map.activateLocationText', { pet: mockUser.pet_name })}
+              {t('map.activateLocationText', { pet: user?.pet_name })}
             </p>
             <div className="flex flex-col gap-2">
               <Button onClick={handleActivateLocation} className="w-full">
@@ -1502,13 +1502,13 @@ const MapPage = () => {
         <div className="absolute bottom-24 left-3 z-[1001] bg-card/95 backdrop-blur-sm shadow-xl rounded-xl p-3 w-[220px] animate-fade-in border">
           <p className="text-xs font-semibold text-foreground mb-2">📍 {t('validation.simulateGPS')}</p>
           <div className="space-y-1.5">
-            <button onClick={() => { setMockGPS({ lat: mockReports[0].lat + 0.0003, lng: mockReports[0].lng + 0.0003 }); toast.success('GPS → 50m de r1'); }} className="w-full text-left text-xs px-2 py-1.5 rounded-lg bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 hover:opacity-80">
+            <button onClick={() => { setMockGPS({ lat: reports[0].lat + 0.0003, lng: reports[0].lng + 0.0003 }); toast.success('GPS → 50m de r1'); }} className="w-full text-left text-xs px-2 py-1.5 rounded-lg bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 hover:opacity-80">
               📍 {t('validation.nearReport')}
             </button>
-            <button onClick={() => { setMockGPS({ lat: mockReports[0].lat + 0.003, lng: mockReports[0].lng }); toast.success('GPS → 300m'); }} className="w-full text-left text-xs px-2 py-1.5 rounded-lg bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 hover:opacity-80">
+            <button onClick={() => { setMockGPS({ lat: reports[0].lat + 0.003, lng: reports[0].lng }); toast.success('GPS → 300m'); }} className="w-full text-left text-xs px-2 py-1.5 rounded-lg bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 hover:opacity-80">
               📍 {t('validation.greyZone')}
             </button>
-            <button onClick={() => { setMockGPS({ lat: mockReports[0].lat + 0.02, lng: mockReports[0].lng }); toast.success('GPS → 2km'); }} className="w-full text-left text-xs px-2 py-1.5 rounded-lg bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 hover:opacity-80">
+            <button onClick={() => { setMockGPS({ lat: reports[0].lat + 0.02, lng: reports[0].lng }); toast.success('GPS → 2km'); }} className="w-full text-left text-xs px-2 py-1.5 rounded-lg bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 hover:opacity-80">
               📍 {t('validation.farAway')}
             </button>
             <button onClick={() => { setMockGPS(null); toast.info(t('validation.deactivate')); }} className="w-full text-left text-xs px-2 py-1.5 rounded-lg bg-muted text-muted-foreground hover:opacity-80">
