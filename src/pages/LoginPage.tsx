@@ -8,11 +8,12 @@ import LanguageToggle from '@/components/LanguageToggle';
 import { toast } from 'sonner';
 import { Mail, Eye, EyeOff, Loader2, Lock, ShieldAlert } from 'lucide-react';
 import { isAccountLocked, recordLoginAttempt, getLoginAttempts, logSecurityEvent, addSession, SECURITY_CONFIG } from '@/utils/security';
+import { supabase } from '@/integrations/supabase/client';
 
 const LoginPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { signIn } = useAuth();
+  const { signIn, user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -25,6 +26,11 @@ const LoginPage = () => {
   const [captchaB] = useState(() => Math.floor(Math.random() * 9) + 1);
   const [captchaAnswer, setCaptchaAnswer] = useState('');
   const [loginError, setLoginError] = useState('');
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) navigate('/map');
+  }, [user, navigate]);
 
   const validateEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
@@ -69,42 +75,42 @@ const LoginPage = () => {
     }
 
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1000));
-
-    // Mock: password "test" or any password works for demo
-    const isValidPassword = password.length >= 1;
-    if (!isValidPassword) {
+    try {
+      await signIn(email, password);
+      recordLoginAttempt(email, true);
+      logSecurityEvent('LOGIN_SUCCESS', { email });
+      addSession(navigator.userAgent);
+      toast.success(t('auth.welcome', { name: email.split('@')[0] }) + ' 👋');
+      navigate('/map');
+    } catch (error: any) {
       recordLoginAttempt(email, false);
       logSecurityEvent('LOGIN_FAILED', { email, attempts: getLoginAttempts(email) });
       const remaining = SECURITY_CONFIG.MAX_LOGIN_ATTEMPTS - getLoginAttempts(email);
-      setLoginError(t('security.wrongPassword'));
+      let errorMsg = error?.message || t('security.wrongPassword');
+      if (errorMsg.includes('Invalid login')) {
+        errorMsg = t('security.wrongPassword');
+      }
       if (remaining > 0 && remaining <= 3) {
-        setLoginError(prev => prev + ' ' + t('security.attemptsRemaining', { count: remaining }));
+        errorMsg += ' ' + t('security.attemptsRemaining', { count: remaining });
       }
       if (getLoginAttempts(email) >= 3) {
-        setLoginError(prev => prev + ' ' + t('security.passwordTip'));
+        errorMsg += ' ' + t('security.passwordTip');
       }
+      setLoginError(errorMsg);
       checkLockStatus();
+    } finally {
       setLoading(false);
-      return;
     }
+  };
 
-    recordLoginAttempt(email, true);
-    logSecurityEvent('LOGIN_SUCCESS', { email });
-    addSession(navigator.userAgent);
-    await signIn(email, password);
-    setLoading(false);
-    toast.success(t('auth.welcome', { name: 'Pere' }) + ' 👋');
-
-    const isNewDevice = !localStorage.getItem('known_device');
-    if (isNewDevice) {
-      localStorage.setItem('known_device', 'true');
-      setTimeout(() => {
-        toast.info(t('security.newDeviceLogin', { location: 'Barcelona, España' }) + '\n' + t('security.notYou'));
-      }, 2000);
+  const handleGoogleLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + '/map' },
+    });
+    if (error) {
+      toast.error(error.message);
     }
-
-    navigate('/map');
   };
 
   return (
@@ -166,7 +172,7 @@ const LoginPage = () => {
                   onChange={e => setPassword(e.target.value)}
                   className="pr-10"
                   required
-                  minLength={1}
+                  minLength={6}
                 />
                 <button
                   type="button"
@@ -221,16 +227,7 @@ const LoginPage = () => {
             <Button
               variant="outline"
               className="w-full h-12 rounded-xl text-base gap-3"
-              onClick={async () => {
-                setLoading(true);
-                await new Promise(r => setTimeout(r, 1000));
-                logSecurityEvent('LOGIN_SUCCESS', { email: 'google@test.com', method: 'google' });
-                addSession(navigator.userAgent);
-                await signIn('google@test.com', 'google');
-                setLoading(false);
-                toast.success(t('auth.welcome', { name: 'Pere' }) + ' 👋');
-                navigate('/map');
-              }}
+              onClick={handleGoogleLogin}
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
