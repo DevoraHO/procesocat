@@ -662,6 +662,64 @@ const ProfilePage = () => {
             </CardContent>
           </Card>
 
+          {/* Municipality */}
+          <Card>
+            <CardContent className="pt-6 space-y-3">
+              <h3 className="font-semibold text-foreground">{t('municipality.title')}</h3>
+              {currentMunicipality ? (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <p className="font-medium text-green-800">📍 {lang === 'ca' ? currentMunicipality.name_ca : currentMunicipality.name_es}</p>
+                  <p className="text-xs text-green-700">{lang === 'ca' ? currentMunicipality.comarca_ca : currentMunicipality.comarca_es}</p>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">{t('municipality.notConfigured')}</p>
+              )}
+              <Button variant="outline" size="sm" onClick={() => setMunicipalityModalOpen(true)}>
+                <MapPin size={14} className="mr-1" /> {t('municipality.change')}
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Dialog open={municipalityModalOpen} onOpenChange={setMunicipalityModalOpen}>
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle>{t('municipality.title')}</DialogTitle>
+                <DialogDescription>{t('municipality.selectSubtitle')}</DialogDescription>
+              </DialogHeader>
+              <div className="relative">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input placeholder={t('municipality.search')} value={municipalityQuery} onChange={e => setMunicipalityQuery(e.target.value)} className="pl-9" />
+              </div>
+              {municipalityResults.length > 0 && (
+                <div className="border rounded-lg max-h-48 overflow-y-auto">
+                  {municipalityResults.map(m => {
+                    const isSelected = m.id === selectedMunicipalityId;
+                    return (
+                      <button
+                        key={m.id}
+                        onClick={() => {
+                          setSelectedMunicipalityId(m.id);
+                          updateProfile({ municipality_id: m.id });
+                          localStorage.setItem('municipality_id', m.id);
+                          setMunicipalityModalOpen(false);
+                          setMunicipalityQuery('');
+                          toast({ title: t('profile.profileUpdated') });
+                        }}
+                        className={`w-full text-left px-3 py-2 hover:bg-muted/50 flex items-center justify-between border-b last:border-b-0 ${isSelected ? 'bg-primary/10' : ''}`}
+                      >
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{lang === 'ca' ? m.name_ca : m.name_es}</p>
+                          <p className="text-xs text-muted-foreground">{lang === 'ca' ? m.comarca_ca : m.comarca_es}</p>
+                        </div>
+                        {isSelected && <span className="text-xs text-primary font-bold">✓ {t('municipality.selected')}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+
           <Card>
             <CardContent className="pt-6 space-y-3">
               <h3 className="font-semibold text-foreground">{t('settingsSections.language')}</h3>
