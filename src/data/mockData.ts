@@ -15,15 +15,72 @@ export const mockUser = {
   created_at: '2026-01-15'
 };
 
+export const ALERT_TYPES = {
+  procesionaria: {
+    id: 'procesionaria',
+    icon: '🐛',
+    color: '#a855f7',
+    color_light: '#f3e8ff',
+    name_es: 'Procesionaria',
+    name_ca: 'Processionària',
+    description_es: 'Nido o procesión de orugas procesionarias',
+    description_ca: 'Niu o processó d\'erugues processionàries',
+    urgency: 'high',
+    first_aid_es: 'Si tu perro la ha tocado: ve al veterinario INMEDIATAMENTE. No laves la lengua.',
+    first_aid_ca: 'Si el teu gos l\'ha tocat: vés al veterinari IMMEDIATAMENT. No rentis la llengua.'
+  },
+  veneno: {
+    id: 'veneno',
+    icon: '☠️',
+    color: '#ef4444',
+    color_light: '#fee2e2',
+    name_es: 'Veneno / Cebo',
+    name_ca: 'Verí / Esquer',
+    description_es: 'Cebo envenenado, raticida o tóxico detectado',
+    description_ca: 'Esquer enverïnat, raticida o tòxic detectat',
+    urgency: 'critical',
+    first_aid_es: 'Si tu perro lo ha ingerido: llama al veterinario URGENTE y muéstrale el tóxico si puedes.',
+    first_aid_ca: 'Si el teu gos l\'ha ingerit: truca al veterinari URGENT i mostra-li el tòxic si pots.'
+  },
+  trampa: {
+    id: 'trampa',
+    icon: '🪤',
+    color: '#f97316',
+    color_light: '#fff7ed',
+    name_es: 'Trampa ilegal',
+    name_ca: 'Trampa il·legal',
+    description_es: 'Lazo, cepo u otra trampa ilegal detectada',
+    description_ca: 'Llaç, parany o altra trampa il·legal detectada',
+    urgency: 'high',
+    first_aid_es: 'NO intentes retirar la trampa. Llama a Agents Rurals: 900 050 051',
+    first_aid_ca: 'NO intentis retirar la trampa. Truca als Agents Rurals: 900 050 051'
+  },
+  basura: {
+    id: 'basura',
+    icon: '🗑️',
+    color: '#eab308',
+    color_light: '#fefce8',
+    name_es: 'Basura peligrosa',
+    name_ca: 'Brossa perillosa',
+    description_es: 'Vidrios, huesos, alimentos tóxicos u otros peligros',
+    description_ca: 'Vidres, ossos, aliments tòxics o altres perills',
+    urgency: 'medium',
+    first_aid_es: 'Si tu perro ha ingerido algo: observa síntomas y consulta al veterinario.',
+    first_aid_ca: 'Si el teu gos ha ingerit alguna cosa: observa símptomes i consulta el veterinari.'
+  }
+} as const;
+
+export type AlertTypeKey = keyof typeof ALERT_TYPES;
+
 export const mockReports = [
-  { id:'r1', user_id:'1', lat:41.4036, lng:2.1744, description:'Nido grande en pino junto al camino principal del parque. Muy visible desde el sendero.', status:'ACTIVE', danger_score:85, validation_count:6, photos:[] as string[], comarca:'Barcelonès', created_at: new Date(Date.now()-2*24*60*60*1000).toISOString() },
-  { id:'r2', user_id:'2', lat:41.5120, lng:2.0800, description:'Bolsa de procesionaria visible desde el sendero norte. Cerca del área de picnic.', status:'ACTIVE', danger_score:62, validation_count:3, photos:[] as string[], comarca:'Vallès Occidental', created_at: new Date(Date.now()-5*24*60*60*1000).toISOString() },
-  { id:'r3', user_id:'3', lat:41.3850, lng:2.1650, description:'Nido pequeño en pino joven cerca del parque infantil. Peligro para niños.', status:'ACTIVE', danger_score:71, validation_count:4, photos:[] as string[], comarca:'Barcelonès', created_at: new Date(Date.now()-3*24*60*60*1000).toISOString() },
-  { id:'r4', user_id:'4', lat:41.6500, lng:1.9000, description:'Múltiples nidos en zona de pinos. Zona frecuentada por senderistas.', status:'ACTIVE', danger_score:45, validation_count:2, photos:[] as string[], comarca:'Bages', created_at: new Date(Date.now()-8*24*60*60*1000).toISOString() },
-  { id:'r5', user_id:'5', lat:41.7200, lng:2.4500, description:'Nido detectado en ruta de senderismo popular.', status:'DECAYING', danger_score:28, validation_count:1, photos:[] as string[], comarca:'Osona', created_at: new Date(Date.now()-12*24*60*60*1000).toISOString() },
-  { id:'r6', user_id:'1', lat:41.4500, lng:2.2500, description:'Procesionaria cruzando el camino esta mañana. Cadena larga de orugas.', status:'ACTIVE', danger_score:92, validation_count:8, photos:[] as string[], comarca:'Barcelonès', created_at: new Date(Date.now()-1*24*60*60*1000).toISOString() },
-  { id:'r7', user_id:'3', lat:41.9800, lng:2.8200, description:'Nido en pino centenario del parque natural.', status:'ACTIVE', danger_score:38, validation_count:1, photos:[] as string[], comarca:'Garrotxa', created_at: new Date(Date.now()-6*24*60*60*1000).toISOString() },
-  { id:'r8', user_id:'2', lat:41.2800, lng:1.9800, description:'Varios nidos en zona residencial con muchos niños.', status:'ACTIVE', danger_score:78, validation_count:5, photos:[] as string[], comarca:'Baix Llobregat', created_at: new Date(Date.now()-4*24*60*60*1000).toISOString() }
+  { id:'r1', user_id:'1', lat:41.4036, lng:2.1744, description:'Nido grande en pino junto al camino principal del parque. Muy visible desde el sendero.', status:'ACTIVE', danger_score:85, validation_count:6, photos:[] as string[], comarca:'Barcelonès', alert_type:'procesionaria' as AlertTypeKey, created_at: new Date(Date.now()-2*24*60*60*1000).toISOString() },
+  { id:'r2', user_id:'2', lat:41.5120, lng:2.0800, description:'Bolsa de procesionaria visible desde el sendero norte. Cerca del área de picnic.', status:'ACTIVE', danger_score:62, validation_count:3, photos:[] as string[], comarca:'Vallès Occidental', alert_type:'procesionaria' as AlertTypeKey, created_at: new Date(Date.now()-5*24*60*60*1000).toISOString() },
+  { id:'r3', user_id:'3', lat:41.3850, lng:2.1650, description:'Cebo sospechoso encontrado cerca del parque infantil. Peligro para niños y mascotas.', status:'ACTIVE', danger_score:71, validation_count:4, photos:[] as string[], comarca:'Barcelonès', alert_type:'veneno' as AlertTypeKey, created_at: new Date(Date.now()-3*24*60*60*1000).toISOString() },
+  { id:'r4', user_id:'4', lat:41.6500, lng:1.9000, description:'Múltiples nidos en zona de pinos. Zona frecuentada por senderistas.', status:'ACTIVE', danger_score:45, validation_count:2, photos:[] as string[], comarca:'Bages', alert_type:'procesionaria' as AlertTypeKey, created_at: new Date(Date.now()-8*24*60*60*1000).toISOString() },
+  { id:'r5', user_id:'5', lat:41.7200, lng:2.4500, description:'Trampa ilegal detectada en ruta de senderismo popular.', status:'DECAYING', danger_score:28, validation_count:1, photos:[] as string[], comarca:'Osona', alert_type:'trampa' as AlertTypeKey, created_at: new Date(Date.now()-12*24*60*60*1000).toISOString() },
+  { id:'r6', user_id:'1', lat:41.4500, lng:2.2500, description:'Procesionaria cruzando el camino esta mañana. Cadena larga de orugas.', status:'ACTIVE', danger_score:92, validation_count:8, photos:[] as string[], comarca:'Barcelonès', alert_type:'procesionaria' as AlertTypeKey, created_at: new Date(Date.now()-1*24*60*60*1000).toISOString() },
+  { id:'r7', user_id:'3', lat:41.9800, lng:2.8200, description:'Vidrios rotos y basura peligrosa en zona de paseo de perros.', status:'ACTIVE', danger_score:38, validation_count:1, photos:[] as string[], comarca:'Garrotxa', alert_type:'basura' as AlertTypeKey, created_at: new Date(Date.now()-6*24*60*60*1000).toISOString() },
+  { id:'r8', user_id:'2', lat:41.2800, lng:1.9800, description:'Varios nidos en zona residencial con muchos niños.', status:'ACTIVE', danger_score:78, validation_count:5, photos:[] as string[], comarca:'Baix Llobregat', alert_type:'procesionaria' as AlertTypeKey, created_at: new Date(Date.now()-4*24*60*60*1000).toISOString() }
 ];
 
 export const mockNotifications = [

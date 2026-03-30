@@ -259,7 +259,7 @@ const ProfilePage = () => {
             <Camera size={14} />
           </button>
         </div>
-        <h1 className="text-xl font-bold mt-3 text-foreground">{user.name}</h1>
+        <h1 className="text-xl font-bold mt-3 text-foreground">{user.name} {user.pet_name && <span className="text-sm font-normal text-muted-foreground">· 🐕 {user.pet_name}</span>}</h1>
         <div className="flex gap-2 mt-2 flex-wrap justify-center">
           <span className="bg-primary text-primary-foreground text-xs px-3 py-1 rounded-full font-medium">⭐ {currentRank?.name || user.rank}</span>
           <span className="bg-muted text-muted-foreground text-xs px-3 py-1 rounded-full font-medium">{points.toLocaleString()} {t('profile.points')}</span>
@@ -611,7 +611,11 @@ const ProfilePage = () => {
           <Card>
             <CardContent className="pt-6 space-y-3">
               <h3 className="font-semibold text-foreground">{t('settingsSections.petFamily')}</h3>
-              <Input placeholder={t('profile.petName')} value={petName} onChange={e => setPetName(e.target.value)} />
+              <div>
+                <label className="text-sm text-muted-foreground">{t('pet.petName')}</label>
+                <Input placeholder={t('pet.petNamePlaceholder')} value={petName} onChange={e => setPetName(e.target.value)} />
+                <p className="text-xs text-muted-foreground mt-1">{t('pet.petNameHelper')}</p>
+              </div>
               <Select value={petType} onValueChange={setPetType}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -620,10 +624,34 @@ const ProfilePage = () => {
                   <SelectItem value="other">🐾 {t('profile.other')}</SelectItem>
                 </SelectContent>
               </Select>
+              {/* Pet photo */}
+              <div className="flex items-center gap-3">
+                <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center text-2xl border-2 border-dashed border-border">
+                  {petType === 'dog' ? '🐕' : petType === 'cat' ? '🐱' : '🐾'}
+                </div>
+                <div>
+                  <p className="text-sm text-foreground">{t('pet.petPhoto', { name: petName || t('pet.yourPet') })}</p>
+                  <p className="text-xs text-muted-foreground">{t('pet.comingSoon')}</p>
+                </div>
+              </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-foreground">{t('profile.hasChildren')}</span>
+                <span className="text-sm text-foreground">{t('pet.hasChildren')}</span>
                 <Switch checked={hasChildren} onCheckedChange={setHasChildren} />
               </div>
+              {hasChildren && (
+                <div className="space-y-1 pl-2 animate-fade-in">
+                  {[
+                    { label: t('pet.childrenUnder6'), value: 'under6' },
+                    { label: t('pet.children6to12'), value: '6to12' },
+                    { label: t('pet.childrenOver12'), value: 'over12' },
+                  ].map(opt => (
+                    <label key={opt.value} className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
+                      <input type="checkbox" className="rounded border-border" />
+                      {opt.label}
+                    </label>
+                  ))}
+                </div>
+              )}
               <Button size="sm" onClick={handleSavePet}>{t('profile.save')}</Button>
             </CardContent>
           </Card>
