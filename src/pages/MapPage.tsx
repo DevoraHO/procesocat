@@ -28,6 +28,7 @@ const MapPage = () => {
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const heatmapLayerRef = useRef<L.LayerGroup | null>(null);
   const userMarkerRef = useRef<L.CircleMarker | null>(null);
+  const previewMarkerRef = useRef<L.Marker | null>(null);
 
   const [reports, setReports] = useState(() =>
     updateLifecycle(mockReports.map(r => ({ ...r, validation_count: r.validation_count })))
