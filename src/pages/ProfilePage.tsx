@@ -17,7 +17,8 @@ import UserAvatar from '@/components/UserAvatar';
 import DangerBadge from '@/components/DangerBadge';
 import BadgeUnlockModal from '@/components/BadgeUnlockModal';
 import UpgradeModal from '@/components/UpgradeModal';
-import { Pencil, Camera, TrendingUp, ChevronDown, ChevronUp, MapPin, Trash2, Lock, Shield, Route, Search } from 'lucide-react';
+import { Pencil, Camera, TrendingUp, ChevronDown, ChevronUp, MapPin, Trash2, Lock, Shield, Route, Search, BarChart3 } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
