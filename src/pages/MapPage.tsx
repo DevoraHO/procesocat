@@ -559,6 +559,8 @@ const MapPage = () => {
           📍 {t('map.tapMapToSelect')}
         </div>
       )}
+
+      <UpgradeModal open={upgradeOpen} onClose={closeUpgrade} trigger={upgradeTrigger} />
     </div>
   );
 };
