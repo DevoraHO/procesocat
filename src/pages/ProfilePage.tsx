@@ -320,7 +320,10 @@ const ProfilePage = () => {
   return (
     <div className="pb-24">
       {/* Banner */}
-      <div className="relative h-[200px] w-full" style={{ background: `linear-gradient(to bottom, ${bannerColor}, ${bannerColor}dd)` }}>
+      <div className="relative h-[200px] w-full" style={bannerImage ? { backgroundImage: `url(${bannerImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : { background: `linear-gradient(to bottom, ${bannerColor}, ${bannerColor}dd)` }}>
+        {/* Hidden file inputs */}
+        <input ref={bannerInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleBannerUpload} />
+        <input ref={avatarInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleAvatarUpload} />
         <button onClick={() => setBannerEditorOpen(!bannerEditorOpen)} className="absolute top-3 right-3 bg-black/30 rounded-full p-2 text-white hover:bg-black/50 transition">
           <Pencil size={16} />
         </button>
