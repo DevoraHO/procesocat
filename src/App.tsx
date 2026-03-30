@@ -5,9 +5,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import '@/i18n';
+import { useState, useEffect } from 'react';
 
 import AppLayout from "@/components/AppLayout";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import OfflineBanner from "@/components/OfflineBanner";
+import LoadingScreen from "@/components/LoadingScreen";
+import OnboardingFlow from "@/components/OnboardingFlow";
 
 import MapPage from "@/pages/MapPage";
 import InfoPage from "@/pages/InfoPage";
@@ -26,34 +31,60 @@ import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <GDPRModal />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Navigate to="/map" replace />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/privacy" element={<AppLayout><PrivacyPage /></AppLayout>} />
-            <Route path="/terms" element={<AppLayout><TermsPage /></AppLayout>} />
-            <Route path="/r/:id" element={<ReportSharePage />} />
-            <Route path="/info" element={<AppLayout><InfoPage /></AppLayout>} />
-            <Route path="/map" element={<AppLayout><ProtectedRoute><MapPage /></ProtectedRoute></AppLayout>} />
-            <Route path="/ranking" element={<AppLayout><ProtectedRoute><RankingPage /></ProtectedRoute></AppLayout>} />
-            <Route path="/alerts" element={<AppLayout><ProtectedRoute><AlertsPage /></ProtectedRoute></AppLayout>} />
-            <Route path="/profile" element={<AppLayout><ProtectedRoute><ProfilePage /></ProtectedRoute></AppLayout>} />
-            <Route path="/admin" element={<AppLayout><ProtectedRoute><AdminPage /></ProtectedRoute></AppLayout>} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  const [showLoading, setShowLoading] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowLoading(false);
+      if (!localStorage.getItem('onboarding_done')) {
+        setShowOnboarding(true);
+      }
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (showLoading) {
+    return <LoadingScreen onDone={() => {}} />;
+  }
+
+  if (showOnboarding) {
+    return <OnboardingFlow onComplete={() => setShowOnboarding(false)} />;
+  }
+
+  return (
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <OfflineBanner />
+            <GDPRModal />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Navigate to="/map" replace />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/privacy" element={<AppLayout><PrivacyPage /></AppLayout>} />
+                <Route path="/terms" element={<AppLayout><TermsPage /></AppLayout>} />
+                <Route path="/r/:id" element={<ReportSharePage />} />
+                <Route path="/info" element={<AppLayout><InfoPage /></AppLayout>} />
+                <Route path="/map" element={<AppLayout><ProtectedRoute><MapPage /></ProtectedRoute></AppLayout>} />
+                <Route path="/ranking" element={<AppLayout><ProtectedRoute><RankingPage /></ProtectedRoute></AppLayout>} />
+                <Route path="/alerts" element={<AppLayout><ProtectedRoute><AlertsPage /></ProtectedRoute></AppLayout>} />
+                <Route path="/profile" element={<AppLayout><ProtectedRoute><ProfilePage /></ProtectedRoute></AppLayout>} />
+                <Route path="/admin" element={<AppLayout><ProtectedRoute><AdminPage /></ProtectedRoute></AppLayout>} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
+  );
+};
 
 export default App;

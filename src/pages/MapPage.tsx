@@ -4,13 +4,14 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { mockReports, mockUser } from '@/data/mockData';
 import { calculateDangerScore, getDangerColor, getDangerLevel } from '@/utils/dangerScore';
+import { updateLifecycle, resetToActive, LIFECYCLE, getReportAge } from '@/utils/reportLifecycle';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Filter, Plus, X, ChevronLeft, ChevronRight, MapPin, Camera } from 'lucide-react';
 
 interface ReportWithScore {
-  report: typeof mockReports[0];
+  report: typeof mockReports[0] & { last_activity_at?: string };
   score: number;
 }
 
@@ -23,8 +24,10 @@ const MapPage = () => {
   const userMarkerRef = useRef<L.CircleMarker | null>(null);
 
   const [reports, setReports] = useState(() =>
-    mockReports.map(r => ({ ...r, validation_count: r.validation_count }))
+    updateLifecycle(mockReports.map(r => ({ ...r, validation_count: r.validation_count })))
   );
+  const [showSeasonBanner, setShowSeasonBanner] = useState(!localStorage.getItem('annual_reset_shown'));
+  const [nearbyDecay, setNearbyDecay] = useState<typeof reports[0] | null>(null);
   const [scoredReports, setScoredReports] = useState<ReportWithScore[]>([]);
   const [heatmapVisible, setHeatmapVisible] = useState(true);
   const [showLocationModal, setShowLocationModal] = useState(false);
@@ -103,17 +106,31 @@ const MapPage = () => {
       const desc = report.description.length > 80 ? report.description.slice(0, 80) + '...' : report.description;
       const levelName = t(`danger.${level}`);
 
+      if (report.status === LIFECYCLE.ARCHIVED || report.status === LIFECYCLE.INACTIVE) return;
+
       const marker = L.circleMarker([report.lat, report.lng], {
         radius: 10,
         color,
         fillColor: color,
-        fillOpacity: 0.9,
+        fillOpacity: report.status === LIFECYCLE.DECAYING ? 0.4 : 0.9,
         weight: 2,
-        opacity: report.status === 'DECAYING' ? 0.4 : 1
+        opacity: report.status === LIFECYCLE.DECAYING ? 0.5 : 1
       });
+
+      const decayDays = Math.floor(getReportAge(report.created_at));
+      const decayBar = report.status === LIFECYCLE.DECAYING ? `
+        <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:6px 8px;margin:0 0 8px;font-size:11px;color:#92400e">
+          ⏰ ${t('map.decayWarning', { days: decayDays })}
+        </div>
+        <div style="display:flex;gap:4px;margin-bottom:8px">
+          <button data-action="reactivate" data-id="${report.id}" style="flex:1;padding:5px 0;border:none;border-radius:6px;background:#2D6A4F;color:#fff;font-size:11px;cursor:pointer">✅ ${t('map.confirmStillActive')}</button>
+          <button data-action="resolve" data-id="${report.id}" style="flex:1;padding:5px 0;border:1px solid #999;border-radius:6px;background:#fff;color:#333;font-size:11px;cursor:pointer">❌ ${t('map.confirmGone')}</button>
+        </div>
+      ` : '';
 
       const popupContent = `
         <div style="min-width:220px;font-family:system-ui,sans-serif">
+          ${decayBar}
           <p style="margin:0 0 8px;font-size:13px;color:#333;line-height:1.4">${desc}</p>
           <div style="margin-bottom:8px">
             <span style="display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;color:#fff;background:${color}">${score} — ${levelName}</span>
@@ -153,6 +170,20 @@ const MapPage = () => {
           container.querySelector('[data-action="share"]')?.addEventListener('click', () => {
             shareToWhatsApp(report, score);
           });
+
+          container.querySelector('[data-action="reactivate"]')?.addEventListener('click', () => {
+            setReports(prev => prev.map(r =>
+              r.id === report.id ? resetToActive(r) : r
+            ));
+            toast.success(t('map.reactivated'));
+            marker.closePopup();
+          });
+
+          container.querySelector('[data-action="resolve"]')?.addEventListener('click', () => {
+            setReports(prev => prev.filter(r => r.id !== report.id));
+            toast.success(t('map.resolved'));
+            marker.closePopup();
+          });
         }, 10);
       });
 
@@ -187,10 +218,21 @@ const MapPage = () => {
   // Recalculate every 5 min
   useEffect(() => {
     const interval = setInterval(() => {
-      setReports(prev => [...prev]);
+      setReports(prev => updateLifecycle([...prev]));
     }, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Simulate nearby decay detection
+  useEffect(() => {
+    const dismissed = localStorage.getItem('decay_dismissed');
+    if (dismissed && Date.now() - parseInt(dismissed) < 86400000) return;
+    const decaying = reports.find(r => r.status === LIFECYCLE.DECAYING);
+    if (decaying) {
+      const timer = setTimeout(() => setNearbyDecay(decaying), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [reports]);
 
   const shareToWhatsApp = (report: any, score: number) => {
     const level = score > 60 ? t('map.dangerHigh') : score > 40 ? t('map.caution') : t('map.safeZone');
@@ -275,6 +317,24 @@ const MapPage = () => {
   return (
     <div className="relative w-full" style={{ height: 'calc(100vh - 64px)' }}>
       <div ref={mapContainerRef} className="w-full h-full" />
+
+      {/* Season banner */}
+      {showSeasonBanner && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1001] bg-amber-50 border border-amber-300 rounded-xl px-4 py-2.5 shadow-lg max-w-sm w-[90%] flex items-center gap-3">
+          <span className="text-sm text-amber-900">🍂 {t('map.newSeason', { year: new Date().getFullYear() })}</span>
+          <button onClick={() => { setShowSeasonBanner(false); localStorage.setItem('annual_reset_shown', 'true'); }} className="text-xs font-medium text-amber-700 whitespace-nowrap">{t('map.understood')}</button>
+        </div>
+      )}
+
+      {/* Nearby decay banner */}
+      {nearbyDecay && (
+        <div className="absolute bottom-24 left-3 right-16 z-[1001] bg-amber-50 border border-amber-300 rounded-xl px-3 py-2 shadow-lg flex items-center gap-2 text-sm">
+          <span className="text-amber-900 flex-1">{t('map.nearbyDecay', { days: Math.floor(getReportAge(nearbyDecay.created_at)) })}</span>
+          <button onClick={() => { setReports(prev => prev.map(r => r.id === nearbyDecay.id ? resetToActive(r) : r)); setNearbyDecay(null); toast.success(t('map.reactivated')); }} className="text-xs font-bold text-green-700">Sí</button>
+          <button onClick={() => { setReports(prev => prev.filter(r => r.id !== nearbyDecay.id)); setNearbyDecay(null); toast.success(t('map.resolved')); }} className="text-xs font-bold text-red-700">No</button>
+          <button onClick={() => { setNearbyDecay(null); localStorage.setItem('decay_dismissed', Date.now().toString()); }} className="text-muted-foreground">×</button>
+        </div>
+      )}
 
       {/* TOP LEFT: Active count + filter */}
       <div className="absolute top-3 left-3 z-[1000] flex flex-col gap-2">
