@@ -361,3 +361,23 @@ export const mockMunicipiData = {
   ],
   alertTypeBreakdown: { procesionaria: 18, veneno: 2, trampa: 1, basura: 2 },
 };
+
+// ═══════════════════════════════
+// VALIDATION CONFIG
+// ═══════════════════════════════
+
+export const VALIDATION_CONFIG = {
+  MAX_DISTANCE_INSITU: 200,
+  MAX_DISTANCE_REMOTE: 500,
+  POINTS_INSITU: 15,
+  POINTS_REMOTE: 5,
+  TRUST_SCORE_INSITU: 1.0,
+  TRUST_SCORE_REMOTE: 0.5,
+  TRUST_SCORE_OFFICIAL: 3.0,
+  MAX_VALIDATIONS_PER_DAY_FREE: 10,
+  MAX_VALIDATIONS_PER_DAY_FAMILIAR: 30,
+  COOLDOWN_MINUTES: 5,
+  MAX_VALIDATIONS_BURST: 5,
+  BURST_WINDOW_MINUTES: 10,
+  GPS_MAX_ACCURACY_METERS: 100,
+};
