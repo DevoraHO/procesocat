@@ -66,8 +66,9 @@ export const ValidationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [userValidations, setUserValidations] = useState<ValidationRecord[]>(loadValidations);
   const [mockGPS, setMockGPS] = useState<{ lat: number; lng: number } | null>(null);
   const [fraudLog, setFraudLog] = useState<ValidationRecord[]>([]);
+  const { user } = useAuth();
 
-  const plan = mockUser.plan;
+  const plan = user?.plan || 'free';
   const dailyLimit = plan === 'free' ? VC.MAX_VALIDATIONS_PER_DAY_FREE : VC.MAX_VALIDATIONS_PER_DAY_FAMILIAR;
   const today = new Date().toDateString();
   const dailyCount = userValidations.filter(v => new Date(v.created_at).toDateString() === today).length;
