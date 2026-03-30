@@ -392,12 +392,27 @@ const MapPage = () => {
       </div>
 
       {/* BOTTOM RIGHT: FAB add report */}
-      <button
-        onClick={() => setShowNewReport(true)}
-        className="absolute bottom-20 right-4 z-[1000] w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-xl flex items-center justify-center hover:opacity-90 transition-opacity"
-      >
-        <Plus className="h-7 w-7" />
-      </button>
+      <div className="absolute bottom-20 right-4 z-[1000] flex flex-col items-center gap-1">
+        {isFree && (
+          <span className="text-[10px] font-medium text-muted-foreground bg-card/90 backdrop-blur-sm rounded-full px-2 py-0.5 shadow">
+            {canReport ? t('map.reportLimit', { count: reportsRemaining }) : t('map.reportLimitReached')}
+          </span>
+        )}
+        <button
+          onClick={() => {
+            if (isFree && !canReport) {
+              showUpgrade('reports');
+            } else {
+              setShowNewReport(true);
+            }
+          }}
+          className={`w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-opacity ${
+            isFree && !canReport ? 'bg-muted text-muted-foreground' : 'bg-primary text-primary-foreground hover:opacity-90'
+          }`}
+        >
+          <Plus className="h-7 w-7" />
+        </button>
+      </div>
 
       {/* GEOLOCATION MODAL */}
       {showLocationModal && (
