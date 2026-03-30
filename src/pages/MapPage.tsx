@@ -1459,6 +1459,77 @@ const MapPage = () => {
       )}
 
       <UpgradeModal open={upgradeOpen} onClose={closeUpgrade} trigger={upgradeTrigger} />
+
+      {/* EDUCATION MODAL */}
+      {showEducation && (
+        <div className="fixed inset-0 z-[3000] bg-black/60 flex items-end sm:items-center justify-center p-4">
+          <div className="bg-card rounded-2xl max-w-sm w-full shadow-2xl p-6 animate-slide-in-bottom">
+            <div className="text-center mb-4">
+              <div className="text-4xl mb-2">🎯</div>
+              <h3 className="text-lg font-bold text-foreground">{t('validation.educationTitle')}</h3>
+              <p className="text-sm text-muted-foreground mt-2">{t('validation.educationText')}</p>
+            </div>
+            <div className="space-y-2 mb-4">
+              <div className="flex items-center gap-2 text-sm text-foreground">
+                <span className="text-primary">✅</span> {t('validation.educationInSitu')}
+              </div>
+              <div className="flex items-center gap-2 text-sm text-foreground">
+                <span className="text-orange-500">👁️</span> {t('validation.educationRemote')}
+              </div>
+              <div className="flex items-center gap-2 text-sm text-foreground">
+                <span className="text-destructive">❌</span> {t('validation.educationBlocked')}
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground text-center mb-4">{t('validation.educationWhy')}</p>
+            <Button className="w-full" onClick={() => {
+              setShowEducation(false);
+              localStorage.setItem('validation_explained', 'true');
+              requestGPSForValidation();
+            }}>
+              {t('validation.understood')}
+            </Button>
+            <button onClick={() => setShowEducation(false)} className="w-full text-center text-xs text-muted-foreground mt-2 hover:text-foreground">
+              {lang === 'ca' ? 'Cancel·lar' : 'Cancelar'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* GPS SIMULATOR (debug) */}
+      {showGPSSimulator && (
+        <div className="absolute bottom-24 left-3 z-[1001] bg-card/95 backdrop-blur-sm shadow-xl rounded-xl p-3 w-[220px] animate-fade-in border">
+          <p className="text-xs font-semibold text-foreground mb-2">📍 {t('validation.simulateGPS')}</p>
+          <div className="space-y-1.5">
+            <button onClick={() => { setMockGPS({ lat: mockReports[0].lat + 0.0003, lng: mockReports[0].lng + 0.0003 }); toast.success('GPS → 50m de r1'); }} className="w-full text-left text-xs px-2 py-1.5 rounded-lg bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 hover:opacity-80">
+              📍 {t('validation.nearReport')}
+            </button>
+            <button onClick={() => { setMockGPS({ lat: mockReports[0].lat + 0.003, lng: mockReports[0].lng }); toast.success('GPS → 300m'); }} className="w-full text-left text-xs px-2 py-1.5 rounded-lg bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 hover:opacity-80">
+              📍 {t('validation.greyZone')}
+            </button>
+            <button onClick={() => { setMockGPS({ lat: mockReports[0].lat + 0.02, lng: mockReports[0].lng }); toast.success('GPS → 2km'); }} className="w-full text-left text-xs px-2 py-1.5 rounded-lg bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 hover:opacity-80">
+              📍 {t('validation.farAway')}
+            </button>
+            <button onClick={() => { setMockGPS(null); toast.info(t('validation.deactivate')); }} className="w-full text-left text-xs px-2 py-1.5 rounded-lg bg-muted text-muted-foreground hover:opacity-80">
+              ❌ {t('validation.deactivate')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* GPS simulation banner */}
+      {mockGPS && (
+        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[1001] bg-blue-600 text-white rounded-lg px-3 py-1.5 text-xs font-medium shadow-lg">
+          🔵 {t('validation.simulationActive')}
+        </div>
+      )}
+
+      {/* GPS sim toggle button (bottom left) */}
+      <button
+        onClick={() => setShowGPSSimulator(v => !v)}
+        className="absolute bottom-4 right-16 z-[1000] bg-card/90 backdrop-blur-sm text-muted-foreground shadow-lg rounded-lg px-2 py-1.5 text-[10px] border hover:text-foreground transition"
+      >
+        📍 GPS
+      </button>
     </div>
   );
 };
