@@ -17,7 +17,7 @@ const PlansPage = () => {
   const [searchParams] = useSearchParams();
   const lang = i18n.language;
   const [yearly, setYearly] = useState(false);
-  const [apiOpen, setApiOpen] = useState(false);
+  
   const [upgrading, setUpgrading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const familiarRef = useRef<HTMLDivElement>(null);
