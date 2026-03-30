@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { mockReports, mockUsers, mockZoneAlerts } from '@/data/mockData';
@@ -14,7 +14,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useToast } from '@/hooks/use-toast';
 import UserAvatar from '@/components/UserAvatar';
 import DangerBadge from '@/components/DangerBadge';
-import { Shield, Users, MapPin, CreditCard, TrendingUp, MoreHorizontal, Copy } from 'lucide-react';
+import { Shield, Users, MapPin, CreditCard, TrendingUp, MoreHorizontal, Copy, ShieldAlert, AlertTriangle, Lock } from 'lucide-react';
+import { getSecurityLogs, type SecurityLog } from '@/utils/security';
 
 const AdminPage = () => {
   const { t, i18n } = useTranslation();
@@ -40,6 +41,10 @@ const AdminPage = () => {
   // Alerts state
   const [alerts, setAlerts] = useState(mockZoneAlerts);
   const [emailModal, setEmailModal] = useState<typeof mockZoneAlerts[0] | null>(null);
+  const [adminSecLogs, setAdminSecLogs] = useState<SecurityLog[]>([]);
+  const [secEventFilter, setSecEventFilter] = useState('all');
+
+  useEffect(() => { setAdminSecLogs(getSecurityLogs()); }, []);
 
   // Filtered reports
   const filteredReports = useMemo(() => {
@@ -116,11 +121,12 @@ const AdminPage = () => {
       </Button>
 
       <Tabs defaultValue="summary">
-        <TabsList className="w-full grid grid-cols-4">
+        <TabsList className="w-full grid grid-cols-5">
           <TabsTrigger value="summary">{lang === 'ca' ? 'Resum' : 'Resumen'}</TabsTrigger>
           <TabsTrigger value="reports">{lang === 'ca' ? 'Reports' : 'Reportes'}</TabsTrigger>
           <TabsTrigger value="users">{lang === 'ca' ? 'Usuaris' : 'Usuarios'}</TabsTrigger>
           <TabsTrigger value="alerts">{lang === 'ca' ? 'Alertes' : 'Alertas'}</TabsTrigger>
+          <TabsTrigger value="security">{t('security.title')}</TabsTrigger>
         </TabsList>
 
         {/* TAB 1: RESUMEN */}
@@ -393,6 +399,163 @@ const AdminPage = () => {
               </TableBody>
             </Table>
           </div>
+        </TabsContent>
+
+        {/* TAB 5: SECURITY */}
+        <TabsContent value="security" className="mt-4 space-y-6">
+          {/* Overview cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {[
+              { icon: <ShieldAlert size={20} />, num: '23', label: t('security.adminFailedLogins'), color: 'text-destructive' },
+              { icon: <Lock size={20} />, num: '2', label: t('security.adminLockedAccounts'), color: 'text-orange-500' },
+              { icon: <AlertTriangle size={20} />, num: '5', label: t('security.adminSuspiciousGPS'), color: 'text-orange-500' },
+              { icon: <Shield size={20} />, num: '1', label: t('security.adminFilesRejected'), color: 'text-muted-foreground' },
+              { icon: <TrendingUp size={20} />, num: '847', label: t('security.adminApiCalls'), color: 'text-primary' },
+            ].map((m, i) => (
+              <Card key={i}>
+                <CardContent className="pt-4 pb-4">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">{m.icon}</div>
+                  <p className={`text-2xl font-bold ${m.color}`}>{m.num}</p>
+                  <p className="text-xs text-muted-foreground">{m.label}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Locked accounts */}
+          <Card>
+            <CardContent className="pt-6">
+              <h3 className="font-semibold text-foreground mb-3">{t('security.adminLockedAccounts')}</h3>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Email</TableHead>
+                    <TableHead>{lang === 'ca' ? 'Intents' : 'Intentos'}</TableHead>
+                    <TableHead>{lang === 'ca' ? 'Tipus' : 'Tipo'}</TableHead>
+                    <TableHead></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {[
+                    { email: 'spammer@test.com', attempts: 22, type: 'permanent' },
+                    { email: 'olvidadizo@gmail.com', attempts: 6, type: 'temporary' },
+                  ].map(row => (
+                    <TableRow key={row.email}>
+                      <TableCell className="text-sm">{row.email}</TableCell>
+                      <TableCell className="text-sm">{row.attempts}</TableCell>
+                      <TableCell>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${row.type === 'permanent' ? 'bg-destructive/10 text-destructive' : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'}`}>
+                          {row.type === 'permanent' ? 'Permanent' : 'Temporal'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => toast({ title: t('security.unlock') })}>{t('security.unlock')}</Button>
+                          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => toast({ title: t('security.permanentBlock') })}>{t('security.permanentBlock')}</Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          {/* Security event log */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-foreground">{t('security.recentActivity')}</h3>
+                <div className="flex gap-2">
+                  <Select value={secEventFilter} onValueChange={setSecEventFilter}>
+                    <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{lang === 'ca' ? 'Tots' : 'Todos'}</SelectItem>
+                      <SelectItem value="LOGIN_FAILED">Login Failed</SelectItem>
+                      <SelectItem value="LOGIN_SUCCESS">Login Success</SelectItem>
+                      <SelectItem value="SUSPICIOUS_GPS">GPS Suspicious</SelectItem>
+                      <SelectItem value="PASSWORD_CHANGED">Password Changed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button variant="outline" size="sm" onClick={() => toast({ title: t('security.exportCSV') })}>
+                    {t('security.exportCSV')}
+                  </Button>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead></TableHead>
+                      <TableHead>{lang === 'ca' ? 'Tipus' : 'Tipo'}</TableHead>
+                      <TableHead>{lang === 'ca' ? 'Detalls' : 'Detalles'}</TableHead>
+                      <TableHead>IP</TableHead>
+                      <TableHead>{lang === 'ca' ? 'Data' : 'Fecha'}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(secEventFilter === 'all' ? adminSecLogs : adminSecLogs.filter(l => l.type === secEventFilter)).slice(0, 20).map(log => {
+                      const icons: Record<string, string> = { LOGIN_SUCCESS: '🟢', LOGIN_FAILED: '🔴', PASSWORD_CHANGED: '🟡', REPORT_CREATED: '🔵', SUSPICIOUS_GPS: '🟠', FILE_REJECTED: '🔴' };
+                      return (
+                        <TableRow key={log.id}>
+                          <TableCell>{icons[log.type] || '⚪'}</TableCell>
+                          <TableCell className="text-xs font-mono">{log.type}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{JSON.stringify(log.details)}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{log.ip}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{new Date(log.timestamp).toLocaleString()}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    {adminSecLogs.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-6">
+                          {lang === 'ca' ? 'No hi ha events de seguretat registrats' : 'No hay eventos de seguridad registrados'}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* GPS Anomalies */}
+          <Card>
+            <CardContent className="pt-6">
+              <h3 className="font-semibold text-foreground mb-3">{lang === 'ca' ? 'Anomalies GPS' : 'Anomalías GPS'}</h3>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{lang === 'ca' ? 'Usuari' : 'Usuario'}</TableHead>
+                    <TableHead>{lang === 'ca' ? 'Des de' : 'Desde'}</TableHead>
+                    <TableHead>{lang === 'ca' ? 'Fins a' : 'Hasta'}</TableHead>
+                    <TableHead>{lang === 'ca' ? 'Velocitat' : 'Velocidad'}</TableHead>
+                    <TableHead></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {[
+                    { user: 'user47@test.com', from: '41.40, 2.17', to: '42.80, 1.50', speed: '320 km/h', time: '15 min' },
+                    { user: 'bot@test.com', from: '41.38, 2.16', to: '41.72, 2.45', speed: '85 km/h', time: '10 min' },
+                  ].map((row, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="text-sm">{row.user}</TableCell>
+                      <TableCell className="text-xs font-mono">{row.from}</TableCell>
+                      <TableCell className="text-xs font-mono">{row.to}</TableCell>
+                      <TableCell className="text-sm text-destructive font-medium">{row.speed}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => navigate('/map')}>{t('security.viewOnMap')}</Button>
+                          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => toast({ title: t('security.markFraud') })}>{t('security.markFraud')}</Button>
+                          <Button variant="ghost" size="sm" onClick={() => toast({ title: t('security.ignore') })}>{t('security.ignore')}</Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 

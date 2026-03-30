@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import WeeklyCharts from '@/components/WeeklyCharts';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -18,7 +18,8 @@ import UserAvatar from '@/components/UserAvatar';
 import DangerBadge from '@/components/DangerBadge';
 import BadgeUnlockModal from '@/components/BadgeUnlockModal';
 import UpgradeModal from '@/components/UpgradeModal';
-import { Pencil, Camera, TrendingUp, ChevronDown, ChevronUp, MapPin, Trash2, Lock, Shield, Route, Search, BarChart3, LayoutDashboard, Award, MapPinned, Trophy, Settings } from 'lucide-react';
+import { Pencil, Camera, TrendingUp, ChevronDown, ChevronUp, MapPin, Trash2, Lock, Shield, Route, Search, BarChart3, LayoutDashboard, Award, MapPinned, Trophy, Settings, Monitor, Smartphone, ShieldCheck, Eye as EyeIcon } from 'lucide-react';
+import { getActiveSessions, removeSession, getSecurityLogs, logSecurityEvent, validatePassword, mockSessions, type SessionInfo, type SecurityLog } from '@/utils/security';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -119,6 +120,22 @@ const ProfilePage = () => {
   const [selectedMunicipalityId, setSelectedMunicipalityId] = useState(user?.municipality_id || localStorage.getItem('municipality_id') || '');
   const municipalityResults = searchMunicipalities(municipalityQuery);
   const currentMunicipality = selectedMunicipalityId ? getMunicipalityById(selectedMunicipalityId) : undefined;
+
+  // Security state
+  const [sessions, setSessions] = useState<SessionInfo[]>([]);
+  const [securityLogs, setSecurityLogs] = useState<SecurityLog[]>([]);
+  const [currentPwd, setCurrentPwd] = useState('');
+  const [newPwd, setNewPwd] = useState('');
+  const [confirmPwd, setConfirmPwd] = useState('');
+  const pwdValidation = useMemo(() => validatePassword(newPwd), [newPwd]);
+
+  const loadSecurityData = useCallback(() => {
+    const s = getActiveSessions();
+    setSessions(s.length > 0 ? s : mockSessions);
+    setSecurityLogs(getSecurityLogs());
+  }, []);
+
+  useEffect(() => { loadSecurityData(); }, [loadSecurityData]);
 
   const isFree = user?.plan === 'free';
   // Ranking sub-tab
@@ -947,6 +964,121 @@ const ProfilePage = () => {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          {/* SECURITY SECTION */}
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <ShieldCheck size={18} className="text-primary" />
+                <h3 className="font-semibold text-foreground">{t('security.title')}</h3>
+              </div>
+
+              {/* Active Sessions */}
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-foreground">{t('security.activeSessions')}</p>
+                {sessions.map(s => (
+                  <div key={s.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border">
+                    {s.device.toLowerCase().includes('iphone') || s.device.toLowerCase().includes('safari') || s.device.toLowerCase().includes('android')
+                      ? <Smartphone size={18} className="text-muted-foreground shrink-0" />
+                      : <Monitor size={18} className="text-muted-foreground shrink-0" />}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{s.device}</p>
+                      <p className="text-xs text-muted-foreground">{s.location} · {s.ip.replace(/\.\d+$/, '.x')}</p>
+                      <p className="text-xs text-muted-foreground">{t('security.lastActive')}: {new Date(s.lastActive).toLocaleDateString()}</p>
+                    </div>
+                    {s.current ? (
+                      <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium shrink-0">{t('security.currentSession')}</span>
+                    ) : (
+                      <Button variant="ghost" size="sm" className="text-destructive shrink-0" onClick={() => {
+                        removeSession(s.id);
+                        setSessions(prev => prev.filter(x => x.id !== s.id));
+                        toast({ title: t('security.sessionClosed') });
+                      }}>
+                        {t('security.closeSession')}
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                {sessions.filter(s => !s.current).length > 0 && (
+                  <Button variant="outline" size="sm" className="w-full text-destructive border-destructive/30" onClick={() => {
+                    const current = sessions.filter(s => s.current);
+                    sessions.filter(s => !s.current).forEach(s => removeSession(s.id));
+                    setSessions(current);
+                    toast({ title: t('security.allClosed') });
+                  }}>
+                    {t('security.closeAllOthers')}
+                  </Button>
+                )}
+              </div>
+
+              {/* Change Password */}
+              <div className="space-y-2 border-t pt-4">
+                <p className="text-sm font-medium text-foreground">{t('security.changePassword')}</p>
+                <Input type="password" placeholder={t('security.currentPassword')} value={currentPwd} onChange={e => setCurrentPwd(e.target.value)} />
+                <Input type="password" placeholder={t('security.newPassword')} value={newPwd} onChange={e => setNewPwd(e.target.value)} />
+                {newPwd && (
+                  <div className="space-y-1">
+                    <div className="flex gap-1">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className={`h-1.5 flex-1 rounded-full ${
+                          pwdValidation.strength === 'strong' ? 'bg-green-500' :
+                          pwdValidation.strength === 'medium' && i <= 2 ? 'bg-orange-400' :
+                          pwdValidation.strength === 'weak' && i <= 1 ? 'bg-destructive' : 'bg-muted'
+                        }`} />
+                      ))}
+                    </div>
+                    <p className={`text-xs ${pwdValidation.strength === 'strong' ? 'text-green-600' : pwdValidation.strength === 'medium' ? 'text-orange-500' : 'text-destructive'}`}>
+                      {t(`security.strength${pwdValidation.strength.charAt(0).toUpperCase() + pwdValidation.strength.slice(1)}`)}
+                    </p>
+                    {pwdValidation.errors.map(err => (
+                      <p key={err} className="text-xs text-destructive">• {t(`security.password${err.charAt(0).toUpperCase() + err.slice(1)}`)}</p>
+                    ))}
+                  </div>
+                )}
+                <Input type="password" placeholder={t('security.confirmPassword')} value={confirmPwd} onChange={e => setConfirmPwd(e.target.value)} />
+                {confirmPwd && newPwd !== confirmPwd && (
+                  <p className="text-xs text-destructive">{t('security.passwordMismatch')}</p>
+                )}
+                <Button size="sm" disabled={!currentPwd || !pwdValidation.valid || newPwd !== confirmPwd} onClick={() => {
+                  logSecurityEvent('PASSWORD_CHANGED', { userId: user?.id });
+                  setCurrentPwd(''); setNewPwd(''); setConfirmPwd('');
+                  loadSecurityData();
+                  toast({ title: t('security.passwordChanged') });
+                }}>
+                  {t('security.changePassword')}
+                </Button>
+              </div>
+
+              {/* 2FA */}
+              <div className="flex items-center justify-between border-t pt-4">
+                <div>
+                  <p className="text-sm font-medium text-foreground">{t('security.twoFactor')}</p>
+                  <p className="text-xs text-muted-foreground">{t('security.twoFactorDesc')}</p>
+                </div>
+                <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full">{t('security.comingSoon')}</span>
+              </div>
+
+              {/* Security Log */}
+              {securityLogs.length > 0 && (
+                <div className="border-t pt-4 space-y-2">
+                  <p className="text-sm font-medium text-foreground">{t('security.recentActivity')}</p>
+                  <div className="space-y-1 max-h-48 overflow-y-auto">
+                    {securityLogs.slice(0, 10).map(log => {
+                      const icons: Record<string, string> = { LOGIN_SUCCESS: '🟢', LOGIN_FAILED: '🔴', PASSWORD_CHANGED: '🟡', REPORT_CREATED: '🔵', SUSPICIOUS_GPS: '🟠', FILE_REJECTED: '🔴' };
+                      return (
+                        <div key={log.id} className="flex items-center gap-2 text-xs py-1">
+                          <span>{icons[log.type] || '⚪'}</span>
+                          <span className="text-foreground flex-1">{log.type.replace(/_/g, ' ')}</span>
+                          <span className="text-muted-foreground">{new Date(log.timestamp).toLocaleDateString()}</span>
+                          <span className="text-muted-foreground">{log.ip.replace(/\.\d+$/, '.x')}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           <Card>
             <CardContent className="pt-6 space-y-3">
