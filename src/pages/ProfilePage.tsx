@@ -84,9 +84,14 @@ const ProfilePage = () => {
     { icon: '🔥', textKey: 'activity.loginStreak', textParams: { days: '7' }, timeKey: '1 ' + (lang === 'ca' ? 'setmana' : 'semana'), pts: 50 },
   ];
 
+  // Refs for file inputs
+  const bannerInputRef = useRef<HTMLInputElement>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
   // State
   const [bannerEditorOpen, setBannerEditorOpen] = useState(false);
   const [bannerColor, setBannerColor] = useState(user?.banner_color || '#2D6A4F');
+  const [bannerImage, setBannerImage] = useState<string | null>(user?.banner_image || null);
   const [showAllRanks, setShowAllRanks] = useState(false);
   const [badgeCategory, setBadgeCategory] = useState<string>('all');
   const [badgeRarity, setBadgeRarity] = useState<string>('all');
@@ -196,6 +201,47 @@ const ProfilePage = () => {
     };
   }, [addZoneOpen]);
 
+  const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      toast({ title: lang === 'ca' ? 'Format no permès. Només JPG, PNG, WEBP.' : 'Formato no permitido. Solo JPG, PNG, WEBP.', variant: 'destructive' });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: lang === 'ca' ? 'Imatge massa gran. Màx 5MB.' : 'Imagen demasiado grande. Máx 5MB.', variant: 'destructive' });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setBannerImage(dataUrl);
+      updateProfile({ banner_image: dataUrl });
+      toast({ title: t('profile.bannerSaved') });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      toast({ title: lang === 'ca' ? 'Format no permès' : 'Formato no permitido', variant: 'destructive' });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: lang === 'ca' ? 'Imatge massa gran' : 'Imagen demasiado grande', variant: 'destructive' });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      updateProfile({ avatar_url: dataUrl });
+      toast({ title: t('profile.profileUpdated') });
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSaveBanner = () => {
     updateProfile({ banner_color: bannerColor });
     setBannerEditorOpen(false);
@@ -274,7 +320,10 @@ const ProfilePage = () => {
   return (
     <div className="pb-24">
       {/* Banner */}
-      <div className="relative h-[200px] w-full" style={{ background: `linear-gradient(to bottom, ${bannerColor}, ${bannerColor}dd)` }}>
+      <div className="relative h-[200px] w-full" style={bannerImage ? { backgroundImage: `url(${bannerImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : { background: `linear-gradient(to bottom, ${bannerColor}, ${bannerColor}dd)` }}>
+        {/* Hidden file inputs */}
+        <input ref={bannerInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleBannerUpload} />
+        <input ref={avatarInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleAvatarUpload} />
         <button onClick={() => setBannerEditorOpen(!bannerEditorOpen)} className="absolute top-3 right-3 bg-black/30 rounded-full p-2 text-white hover:bg-black/50 transition">
           <Pencil size={16} />
         </button>
@@ -289,7 +338,7 @@ const ProfilePage = () => {
             ))}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => toast({ title: t('profile.comingSoon') })}>{t('profile.uploadImage')}</Button>
+            <Button variant="outline" size="sm" onClick={() => bannerInputRef.current?.click()}>{t('profile.uploadImage')}</Button>
             <Button size="sm" onClick={handleSaveBanner}>{t('profile.save')}</Button>
           </div>
         </div>
@@ -301,7 +350,7 @@ const ProfilePage = () => {
           <div className="border-4 border-card rounded-full">
             <UserAvatar name={user.name} avatar_url={user.avatar_url} size="xl" />
           </div>
-          <button onClick={() => toast({ title: t('profile.comingSoon') })} className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-1.5">
+          <button onClick={() => avatarInputRef.current?.click()} className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-1.5">
             <Camera size={14} />
           </button>
         </div>
