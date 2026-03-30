@@ -71,3 +71,21 @@ export const mockStats = {
   totalPhotos: 5,
   totalComments: 0
 };
+
+export const mockUsers = [
+  {id:'u1', name:'Maria Garcia', email:'maria@test.com', plan:'familiar', points:8450, reports:45, created_at:'2026-01-10', role:'user', status:'active'},
+  {id:'u2', name:'Joan Puig', email:'joan@test.com', plan:'familiar', points:6200, reports:32, created_at:'2026-01-12', role:'user', status:'active'},
+  {id:'u3', name:'Pere Fité', email:'pere@test.com', plan:'familiar', points:3450, reports:8, created_at:'2026-01-15', role:'admin', status:'active'},
+  {id:'u4', name:'Anna Mas', email:'anna@test.com', plan:'free', points:3100, reports:15, created_at:'2026-01-20', role:'user', status:'active'},
+  {id:'u5', name:'Lluís Serra', email:'lluis@test.com', plan:'free', points:2800, reports:12, created_at:'2026-02-01', role:'user', status:'active'},
+  {id:'u6', name:'Ajuntament Mollet', email:'mollet@ajuntament.cat', plan:'municipi', points:0, reports:0, created_at:'2026-02-15', role:'municipi', status:'active'},
+  {id:'u7', name:'Marta Vila', email:'marta@test.com', plan:'free', points:2200, reports:9, created_at:'2026-02-20', role:'user', status:'active'},
+  {id:'u8', name:'Diputació Barcelona', email:'diputacio@diba.cat', plan:'municipi', points:0, reports:0, created_at:'2026-03-01', role:'municipi', status:'active'}
+];
+
+export const mockZoneAlerts = [
+  {id:'a1', zone_name:'Parc de Collserola', comarca:'Barcelonès', lat:41.4036, lng:2.1744, max_danger:85, report_count:6, created_at: new Date(Date.now()-2*24*60*60*1000).toISOString(), is_active:true},
+  {id:'a2', zone_name:'Parc de la Ciutadella', comarca:'Barcelonès', lat:41.3850, lng:2.1880, max_danger:71, report_count:4, created_at: new Date(Date.now()-3*24*60*60*1000).toISOString(), is_active:true},
+  {id:'a3', zone_name:'Montserrat Nord', comarca:'Bages', lat:41.6000, lng:1.8300, max_danger:62, report_count:3, created_at: new Date(Date.now()-5*24*60*60*1000).toISOString(), is_active:false},
+  {id:'a4', zone_name:'Zona Residencial Mollet', comarca:'Vallès Oriental', lat:41.5200, lng:2.2100, max_danger:78, report_count:5, created_at: new Date(Date.now()-1*24*60*60*1000).toISOString(), is_active:true}
+];
