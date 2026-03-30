@@ -108,6 +108,11 @@ const ProfilePage = () => {
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [municipalityModalOpen, setMunicipalityModalOpen] = useState(false);
+  const [municipalityQuery, setMunicipalityQuery] = useState('');
+  const [selectedMunicipalityId, setSelectedMunicipalityId] = useState(user?.municipality_id || localStorage.getItem('municipality_id') || '');
+  const municipalityResults = searchMunicipalities(municipalityQuery);
+  const currentMunicipality = selectedMunicipalityId ? getMunicipalityById(selectedMunicipalityId) : undefined;
 
   const isFree = user?.plan === 'free';
   // Ranking sub-tab
