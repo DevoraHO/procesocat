@@ -95,7 +95,7 @@ export const ValidationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     });
 
     // Own report
-    if (reportUserId === mockUser.id) {
+    if (user && reportUserId === user.id) {
       return noResult('own_report', 'No puedes confirmar tu propio reporte', 'No pots confirmar el teu propi report');
     }
 
