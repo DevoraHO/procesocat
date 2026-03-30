@@ -121,11 +121,12 @@ const AdminPage = () => {
       </Button>
 
       <Tabs defaultValue="summary">
-        <TabsList className="w-full grid grid-cols-4">
+        <TabsList className="w-full grid grid-cols-5">
           <TabsTrigger value="summary">{lang === 'ca' ? 'Resum' : 'Resumen'}</TabsTrigger>
           <TabsTrigger value="reports">{lang === 'ca' ? 'Reports' : 'Reportes'}</TabsTrigger>
           <TabsTrigger value="users">{lang === 'ca' ? 'Usuaris' : 'Usuarios'}</TabsTrigger>
           <TabsTrigger value="alerts">{lang === 'ca' ? 'Alertes' : 'Alertas'}</TabsTrigger>
+          <TabsTrigger value="security">{t('security.title')}</TabsTrigger>
         </TabsList>
 
         {/* TAB 1: RESUMEN */}
