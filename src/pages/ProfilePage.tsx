@@ -226,11 +226,13 @@ const ProfilePage = () => {
     }
   };
 
+  const [demoRarityIdx, setDemoRarityIdx] = useState(0);
+  const DEMO_RARITIES = ['comú', 'inedit', 'rar', 'epic', 'llegenda'];
   const handleDemoUnlock = () => {
-    const locked = mockBadges.filter(b => !b.earned);
-    if (locked.length > 0) {
-      setUnlockBadge(locked[Math.floor(Math.random() * locked.length)]);
-    }
+    const rarity = DEMO_RARITIES[demoRarityIdx % DEMO_RARITIES.length];
+    const badge = mockBadges.find(b => b.rarity === rarity && !b.earned) || mockBadges.find(b => !b.earned);
+    if (badge) setUnlockBadge(badge);
+    setDemoRarityIdx(prev => prev + 1);
   };
 
   const thresholdLabels: Record<number, { labelKey: string; color: string }> = {
