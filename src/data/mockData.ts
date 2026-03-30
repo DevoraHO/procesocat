@@ -89,3 +89,9 @@ export const mockZoneAlerts = [
   {id:'a3', zone_name:'Montserrat Nord', comarca:'Bages', lat:41.6000, lng:1.8300, max_danger:62, report_count:3, created_at: new Date(Date.now()-5*24*60*60*1000).toISOString(), is_active:false},
   {id:'a4', zone_name:'Zona Residencial Mollet', comarca:'Vallès Oriental', lat:41.5200, lng:2.2100, max_danger:78, report_count:5, created_at: new Date(Date.now()-1*24*60*60*1000).toISOString(), is_active:true}
 ];
+
+export const mockRouteHistory = [
+  {id:'rh1', name_es:'Ruta del parque', name_ca:'Ruta del parc', result:'SEGURA', distance:1.8, date: new Date(Date.now()-2*24*60*60*1000).toISOString()},
+  {id:'rh2', name_es:'Ruta del bosque', name_ca:'Ruta del bosc', result:'PRECAUCIÓN', distance:3.2, date: new Date(Date.now()-5*24*60*60*1000).toISOString()},
+  {id:'rh3', name_es:'Ruta casa-colegio', name_ca:'Ruta casa-escola', result:'SEGURA', distance:0.9, date: new Date(Date.now()-7*24*60*60*1000).toISOString()}
+];
