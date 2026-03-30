@@ -15,7 +15,8 @@ import { useToast } from '@/hooks/use-toast';
 import UserAvatar from '@/components/UserAvatar';
 import DangerBadge from '@/components/DangerBadge';
 import BadgeUnlockModal from '@/components/BadgeUnlockModal';
-import { Pencil, Camera, TrendingUp, ChevronDown, ChevronUp, MapPin, Trash2 } from 'lucide-react';
+import UpgradeModal from '@/components/UpgradeModal';
+import { Pencil, Camera, TrendingUp, ChevronDown, ChevronUp, MapPin, Trash2, Lock, Shield } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -105,7 +106,9 @@ const ProfilePage = () => {
   const [cancelSubOpen, setCancelSubOpen] = useState(false);
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
+  const isFree = user?.plan === 'free';
   // Ranking sub-tab
   const [rankingTab, setRankingTab] = useState<'comarca' | 'catalunya'>('comarca');
 
@@ -406,6 +409,20 @@ const ProfilePage = () => {
 
         {/* TAB 3: ZONAS */}
         <TabsContent value="zones" className="mt-4 space-y-4">
+          {isFree ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <MapPin className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="font-bold text-foreground text-lg mb-2">{t('profile.myZones')}</h3>
+              <p className="text-sm text-muted-foreground mb-6">{t('profile.noZonesText')}</p>
+              <Button onClick={() => setUpgradeOpen(true)} className="gap-2">
+                <Shield className="h-4 w-4" />
+                {t('subscription.upgrade')}
+              </Button>
+            </div>
+          ) : (
+          <>
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-foreground">{t('profile.myZones')}</h3>
             <Button size="sm" onClick={() => setAddZoneOpen(true)}>+ {t('profile.addZone')}</Button>
@@ -493,8 +510,9 @@ const ProfilePage = () => {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          </>
+          )}
         </TabsContent>
-
         {/* TAB 4: RANKING */}
         <TabsContent value="ranking" className="mt-4 space-y-4">
           <div className="flex gap-2 mb-2">
@@ -608,12 +626,35 @@ const ProfilePage = () => {
           <Card>
             <CardContent className="pt-6 space-y-3">
               <h3 className="font-semibold text-foreground">{t('settingsSections.subscription')}</h3>
-              <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
-                <p className="font-medium text-primary">{t('subscription.familiar')} ✓</p>
-                <p className="text-xs text-muted-foreground">{t('profile.renewal', { date: '28 abril 2026' })}</p>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => toast({ title: t('profile.comingSoon') })}>{t('profile.manageSubscription')}</Button>
-              <Button variant="outline" size="sm" className="text-destructive border-destructive/30" onClick={() => setCancelSubOpen(true)}>{t('profile.cancelSubscription')}</Button>
+              {isFree ? (
+                <>
+                  <div className="bg-muted rounded-lg p-3">
+                    <p className="font-medium text-foreground">{t('subscription.currentFree')}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{t('subscription.freeIncludes')}</p>
+                    <ul className="text-xs text-muted-foreground mt-2 space-y-1">
+                      <li>✅ {t('subscription.freeF1')}</li>
+                      <li>✅ {t('subscription.freeF2')}</li>
+                      <li>✅ {t('subscription.freeF3')}</li>
+                      <li>✅ {t('subscription.freeF4')}</li>
+                      <li>✅ {t('subscription.freeF5')}</li>
+                      <li>✅ {t('subscription.freeF6')}</li>
+                    </ul>
+                  </div>
+                  <Button onClick={() => setUpgradeOpen(true)} className="w-full gap-2">
+                    <Shield className="h-4 w-4" />
+                    {t('subscription.upgrade')} — {t('subscription.perMonth')}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
+                    <p className="font-medium text-primary">{t('subscription.familiar')} ✓</p>
+                    <p className="text-xs text-muted-foreground">{t('profile.renewal', { date: '28 abril 2026' })}</p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => toast({ title: t('profile.comingSoon') })}>{t('profile.manageSubscription')}</Button>
+                  <Button variant="outline" size="sm" className="text-destructive border-destructive/30" onClick={() => setCancelSubOpen(true)}>{t('profile.cancelSubscription')}</Button>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -670,6 +711,7 @@ const ProfilePage = () => {
       </Tabs>
 
       <BadgeUnlockModal badge={unlockBadge} onClose={() => setUnlockBadge(null)} />
+      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} trigger="zones" />
     </div>
   );
 };

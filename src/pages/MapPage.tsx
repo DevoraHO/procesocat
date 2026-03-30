@@ -8,7 +8,9 @@ import { updateLifecycle, resetToActive, LIFECYCLE, getReportAge } from '@/utils
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Filter, Plus, X, ChevronLeft, ChevronRight, MapPin, Camera } from 'lucide-react';
+import { Filter, Plus, X, ChevronLeft, ChevronRight, MapPin, Camera, Lock } from 'lucide-react';
+import { useFreemium } from '@/hooks/useFreemium';
+import UpgradeModal from '@/components/UpgradeModal';
 
 interface ReportWithScore {
   report: typeof mockReports[0] & { last_activity_at?: string };
@@ -38,6 +40,7 @@ const MapPage = () => {
   const [reportPhotos, setReportPhotos] = useState<File[]>([]);
   const [mapClickMode, setMapClickMode] = useState(false);
   const [validatedIds, setValidatedIds] = useState<Set<string>>(new Set());
+  const { isFree, canReport, reportsRemaining, incrementReportCount, upgradeOpen, upgradeTrigger, showUpgrade, closeUpgrade } = useFreemium();
 
   // Calculate scores
   useEffect(() => {
@@ -277,6 +280,10 @@ const MapPage = () => {
 
   const handleSubmitReport = () => {
     if (!selectedCoords) return;
+    if (isFree && !canReport) {
+      showUpgrade('reports');
+      return;
+    }
     const newReport = {
       id: `r${Date.now()}`,
       user_id: mockUser.id,
@@ -291,6 +298,7 @@ const MapPage = () => {
       created_at: new Date().toISOString()
     };
     setReports(prev => [...prev, newReport]);
+    incrementReportCount();
     setShowNewReport(false);
     setReportStep(1);
     setSelectedCoords(null);
@@ -360,10 +368,13 @@ const MapPage = () => {
           {heatmapVisible ? '🔥' : '○'} {t('map.heatLayer')}
         </button>
         <button
-          onClick={() => toast.info(t('map.comingSoon'))}
-          className="px-3 py-2 rounded-xl text-sm font-medium shadow-lg backdrop-blur-sm bg-primary text-primary-foreground"
+          onClick={() => isFree ? showUpgrade('safeWalk') : toast.info(t('map.comingSoon'))}
+          className={`px-3 py-2 rounded-xl text-sm font-medium shadow-lg backdrop-blur-sm flex items-center gap-1.5 ${
+            isFree ? 'bg-card/95 text-muted-foreground' : 'bg-primary text-primary-foreground'
+          }`}
         >
           🛡️ {t('map.safeWalk')}
+          {isFree && <Lock className="h-3 w-3" />}
         </button>
       </div>
 
@@ -381,12 +392,27 @@ const MapPage = () => {
       </div>
 
       {/* BOTTOM RIGHT: FAB add report */}
-      <button
-        onClick={() => setShowNewReport(true)}
-        className="absolute bottom-20 right-4 z-[1000] w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-xl flex items-center justify-center hover:opacity-90 transition-opacity"
-      >
-        <Plus className="h-7 w-7" />
-      </button>
+      <div className="absolute bottom-20 right-4 z-[1000] flex flex-col items-center gap-1">
+        {isFree && (
+          <span className="text-[10px] font-medium text-muted-foreground bg-card/90 backdrop-blur-sm rounded-full px-2 py-0.5 shadow">
+            {canReport ? t('map.reportLimit', { count: reportsRemaining }) : t('map.reportLimitReached')}
+          </span>
+        )}
+        <button
+          onClick={() => {
+            if (isFree && !canReport) {
+              showUpgrade('reports');
+            } else {
+              setShowNewReport(true);
+            }
+          }}
+          className={`w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-opacity ${
+            isFree && !canReport ? 'bg-muted text-muted-foreground' : 'bg-primary text-primary-foreground hover:opacity-90'
+          }`}
+        >
+          <Plus className="h-7 w-7" />
+        </button>
+      </div>
 
       {/* GEOLOCATION MODAL */}
       {showLocationModal && (
@@ -533,6 +559,8 @@ const MapPage = () => {
           📍 {t('map.tapMapToSelect')}
         </div>
       )}
+
+      <UpgradeModal open={upgradeOpen} onClose={closeUpgrade} trigger={upgradeTrigger} />
     </div>
   );
 };
