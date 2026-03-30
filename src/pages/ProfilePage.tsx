@@ -86,6 +86,7 @@ const ProfilePage = () => {
   const [bannerColor, setBannerColor] = useState(user?.banner_color || '#2D6A4F');
   const [showAllRanks, setShowAllRanks] = useState(false);
   const [badgeCategory, setBadgeCategory] = useState<string>('all');
+  const [badgeRarity, setBadgeRarity] = useState<string>('all');
   const [selectedBadge, setSelectedBadge] = useState<typeof mockBadges[0] | null>(null);
   const [unlockBadge, setUnlockBadge] = useState<typeof mockBadges[0] | null>(null);
   const [zones, setZones] = useState(mockSavedZones);
