@@ -7,6 +7,8 @@ import { mockReports, mockUser, ALERT_TYPES, type AlertTypeKey } from '@/data/mo
 import { calculateDangerScore, getDangerColor, getDangerLevel } from '@/utils/dangerScore';
 import { createAlertMarker } from '@/utils/mapMarkers';
 import { updateLifecycle, resetToActive, LIFECYCLE, getReportAge } from '@/utils/reportLifecycle';
+import { calculateDistance, getValidationType, formatDistance } from '@/utils/validation';
+import { useValidation } from '@/contexts/ValidationContext';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
