@@ -873,6 +873,7 @@ const MapPage = () => {
 
   return (
     <div className="relative w-full" style={{ height: 'calc(100vh - 64px)' }}>
+      {showMapIntro && <MapIntroGuide onComplete={() => setShowMapIntro(false)} />}
       <div ref={mapContainerRef} className="w-full h-full" />
 
       {/* Season banner */}
