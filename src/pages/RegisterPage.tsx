@@ -28,6 +28,7 @@ const RegisterPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setError('');
     setLoading(true);
     try {
@@ -39,24 +40,53 @@ const RegisterPage = () => {
           emailRedirectTo: window.location.origin,
         },
       });
-      if (signUpError) throw signUpError;
+
+      if (signUpError) {
+        if (signUpError.message.includes('already registered')) {
+          toast.error(lang === 'ca' ? 'Aquest email ja té un compte. Inicia sessió.' : 'Este email ya tiene una cuenta. Inicia sesión.');
+          navigate('/login');
+        } else if (signUpError.message.toLowerCase().includes('password')) {
+          setError(lang === 'ca' ? 'La contrasenya ha de tenir mínim 6 caràcters' : 'La contraseña debe tener mínimo 6 caracteres');
+          toast.error(lang === 'ca' ? 'La contrasenya ha de tenir mínim 6 caràcters' : 'La contraseña debe tener mínimo 6 caracteres');
+        } else if (signUpError.message.toLowerCase().includes('email')) {
+          setError(lang === 'ca' ? "L'email no és vàlid" : 'El email no es válido');
+          toast.error(lang === 'ca' ? "L'email no és vàlid" : 'El email no es válido');
+        } else {
+          setError(lang === 'ca' ? 'Error al crear el compte. Torna-ho a provar.' : 'Error al crear cuenta. Inténtalo de nuevo.');
+          toast.error(lang === 'ca' ? 'Error al crear el compte.' : 'Error al crear cuenta.');
+          console.error('Registration error:', signUpError);
+        }
+        setLoading(false);
+        return;
+      }
+
+      // Fallback profile creation in case trigger fails
+      if (data.user) {
+        const { error: profileError } = await supabase.from('profiles').upsert({
+          id: data.user.id,
+          email: data.user.email,
+          name: name || (data.user.email ? data.user.email.split('@')[0] : ''),
+          points: 0,
+          weekly_points: 0,
+          rank: 'Observador',
+          plan: 'free',
+          banner_color: '#2D6A4F',
+          language: lang,
+        }, { onConflict: 'id' });
+        if (profileError) console.error('Profile creation error:', profileError);
+      }
 
       if (data.user && !data.session) {
-        // Email confirmation required
         toast.success(lang === 'ca' ? 'Compte creat! Revisa el teu email per confirmar' : '¡Cuenta creada! Revisa tu email para confirmar tu cuenta');
         navigate('/login');
       } else if (data.session) {
-        // Auto-confirmed, continue onboarding
         toast.success(lang === 'ca' ? 'Benvingut a ProcesoCat!' : '¡Bienvenido a ProcesoCat!');
         setStep('pet');
       }
     } catch (err: any) {
-      let msg = err?.message || 'Error';
-      if (msg.includes('already registered')) {
-        msg = lang === 'ca' ? 'Aquest email ja està registrat' : 'Este email ya está registrado';
-      }
-      setError(msg);
-      toast.error(msg);
+      console.error('Registration crash:', err);
+      setError(lang === 'ca' ? 'Error al crear el compte. Torna-ho a provar.' : 'Error al crear cuenta. Inténtalo de nuevo.');
+      toast.error(lang === 'ca' ? 'Error al crear el compte.' : 'Error al crear cuenta.');
     } finally {
       setLoading(false);
     }
@@ -111,7 +141,7 @@ const RegisterPage = () => {
               </div>
             )}
             <Button type="submit" className="w-full text-white" style={{ backgroundColor: '#2D6A4F' }} disabled={loading}>
-              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : t('auth.createAccount')}
+              {loading ? <><Loader2 className="h-5 w-5 animate-spin mr-2" /> {lang === 'ca' ? 'Creant compte...' : 'Creando cuenta...'}</> : t('auth.createAccount')}
             </Button>
             <p className="text-xs text-muted-foreground text-center">
               {lang === 'ca' ? "Verificaràs el teu email després del registre" : "Verificarás tu email después del registro"}

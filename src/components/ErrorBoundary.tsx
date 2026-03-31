@@ -9,14 +9,19 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, State
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-muted p-4">
-          <div className="text-center">
-            <div className="text-5xl mb-4">😵</div>
-            <h1 className="text-xl font-bold mb-2">Algo salió mal</h1>
-            <p className="text-muted-foreground mb-6">Ha ocurrido un error inesperado</p>
-            <button onClick={() => window.location.reload()} className="px-6 py-2 rounded-lg bg-primary text-primary-foreground font-medium">
-              Recargar página
-            </button>
+        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+          <div className="text-center max-w-sm">
+            <div className="text-5xl mb-4">🐛</div>
+            <h1 className="text-xl font-bold mb-2 text-foreground">Algo no ha ido bien</h1>
+            <p className="text-muted-foreground mb-6">No te preocupes, puedes volver a intentarlo.</p>
+            <div className="space-y-3">
+              <button onClick={() => { this.setState({ hasError: false }); window.history.back(); }} className="w-full px-6 py-2 rounded-lg bg-primary text-primary-foreground font-medium">
+                Volver atrás
+              </button>
+              <button onClick={() => window.location.reload()} className="w-full px-6 py-2 rounded-lg border border-border text-foreground font-medium">
+                Recargar página
+              </button>
+            </div>
           </div>
         </div>
       );
