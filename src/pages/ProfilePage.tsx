@@ -622,7 +622,8 @@ const ProfilePage = () => {
           {(() => {
             const earned = earnedBadgeIds.size;
             const total = mockBadges.length;
-            const rarityCounts = mockBadges.reduce((acc, b) => { acc[b.rarity] = (acc[b.rarity] || 0) + 1; return acc; }, {} as Record<string, number>);
+            const earnedBadges = mockBadges.filter(b => earnedBadgeIds.has(b.id));
+            const rarityCounts = earnedBadges.reduce((acc, b) => { acc[b.rarity] = (acc[b.rarity] || 0) + 1; return acc; }, {} as Record<string, number>);
             return (
               <div className="bg-card border rounded-xl p-4">
                 <p className="text-sm font-semibold text-foreground mb-2">{earned} / {total} {t('badges.medals')}</p>
