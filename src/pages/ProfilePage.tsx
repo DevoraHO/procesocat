@@ -172,7 +172,7 @@ const ProfilePage = () => {
   const [rankingTab, setRankingTab] = useState<'comarca' | 'catalunya'>('comarca');
 
   // Rank calculation
-  const points = user?.points || 3450;
+  const points = user?.points || 0;
   const currentRankIdx = RANKS.findIndex(r => points >= r.min && points <= r.max);
   const currentRank = RANKS[currentRankIdx];
   const nextRank = currentRankIdx < RANKS.length - 1 ? RANKS[currentRankIdx + 1] : null;

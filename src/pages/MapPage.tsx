@@ -529,10 +529,12 @@ const MapPage = () => {
               setReports(prev => prev.map(r =>
                 r.id === report.id ? { ...r, validation_count: r.validation_count + 1 } : r
               ));
-              if (record.type === 'in_situ') {
-                toast.success(t('validation.successInSitu'));
-              } else {
-                toast.success(t('validation.successRemote'));
+              // Award points for validation
+              if (user) {
+                const pts = record.type === 'in_situ' ? POINTS.VALIDATION_IN_SITU : POINTS.VALIDATION_REMOTE;
+                awardPoints(user.id, pts, lang).then(newPts => {
+                  if (newPts !== null) updateProfile({ points: newPts });
+                });
               }
               marker.closePopup();
             }
