@@ -643,6 +643,10 @@ const MapPage = () => {
   };
 
   const handleGetLocationForReport = () => {
+    if (gpsPosition) {
+      setSelectedCoords([gpsPosition.lat, gpsPosition.lng]);
+      return;
+    }
     navigator.geolocation.getCurrentPosition(
       (pos) => setSelectedCoords([pos.coords.latitude, pos.coords.longitude]),
       () => toast.error(t('errors.location'))
