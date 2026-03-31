@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { mockBadges, mockDangerEvolution, ALERT_TYPES } from '@/data/mockData';
+import { supabase as sb } from '@/integrations/supabase/client';
 import { fetchSavedZones, createSavedZone, deleteSavedZone, fetchUserBadges, fetchRanking, fetchUserReports } from '@/lib/supabase-queries';
 import { searchMunicipalities, getMunicipalityById, Municipality } from '@/data/municipalData';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -78,13 +79,9 @@ const ProfilePage = () => {
 
   const RANKS = lang === 'ca' ? RANKS_CA : RANKS_ES;
 
-  const MOCK_ACTIVITY = [
-    { icon: '📍', textKey: 'activity.reportPublished', textParams: { comarca: 'Barcelonès' }, timeKey: '2 ' + t('activity.days'), pts: 50 },
-    { icon: '✅', textKey: 'activity.validationDone', textParams: {}, timeKey: '3 ' + t('activity.days'), pts: 15 },
-    { icon: '🏅', textKey: 'activity.badgeEarned', textParams: { badge: 'Verificador' }, timeKey: '5 ' + t('activity.days'), pts: 200 },
-    { icon: '📍', textKey: 'activity.reportInVallès', textParams: {}, timeKey: '6 ' + t('activity.days'), pts: 50 },
-    { icon: '🔥', textKey: 'activity.loginStreak', textParams: { days: '7' }, timeKey: '1 ' + (lang === 'ca' ? 'setmana' : 'semana'), pts: 50 },
-  ];
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [earnedBadgeIds, setEarnedBadgeIds] = useState<Set<string>>(new Set());
+  const [realValidationsCount, setRealValidationsCount] = useState(0);
 
   // Refs for file inputs
   const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -97,8 +94,8 @@ const ProfilePage = () => {
   const [showAllRanks, setShowAllRanks] = useState(false);
   const [badgeCategory, setBadgeCategory] = useState<string>('all');
   const [badgeRarity, setBadgeRarity] = useState<string>('all');
-  const [selectedBadge, setSelectedBadge] = useState<typeof mockBadges[0] | null>(null);
-  const [unlockBadge, setUnlockBadge] = useState<typeof mockBadges[0] | null>(null);
+  const [selectedBadge, setSelectedBadge] = useState<any>(null);
+  const [unlockBadge, setUnlockBadge] = useState<any>(null);
   const [zones, setZones] = useState<any[]>([]);
   const [ranking, setRanking] = useState<any[]>([]);
   const [userStats, setUserStats] = useState({ totalReports: 0, totalValidations: 0, totalPhotos: 0, totalComments: 0 });
@@ -152,19 +149,26 @@ const ProfilePage = () => {
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      const [zonesData, rankingData, userReports] = await Promise.all([
+      const [zonesData, rankingData, userReports, badgesData, validationsData] = await Promise.all([
         fetchSavedZones(user.id),
         fetchRanking(50),
         fetchUserReports(user.id),
+        fetchUserBadges(user.id),
+        sb.from('report_validations').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
       ]);
       setZones(zonesData);
       setRanking(rankingData);
       setLastReports(userReports.slice(0, 5));
+      setRecentActivity(userReports.slice(0, 10));
       setLoadingReports(false);
+      const earnedIds = new Set<string>((badgesData || []).map((b: any) => b.badge_id));
+      setEarnedBadgeIds(earnedIds);
+      const vCount = validationsData.count || 0;
+      setRealValidationsCount(vCount);
       setUserStats({
         totalReports: userReports.length,
-        totalValidations: user.points ? Math.floor(user.points / 15) : 0,
-        totalPhotos: userReports.reduce((acc, r) => acc + (r.photos?.length || 0), 0),
+        totalValidations: vCount,
+        totalPhotos: userReports.reduce((acc: number, r: any) => acc + (r.photos?.length || 0), 0),
         totalComments: 0,
       });
     };
@@ -182,26 +186,21 @@ const ProfilePage = () => {
   const nextRank = currentRankIdx < RANKS.length - 1 ? RANKS[currentRankIdx + 1] : null;
   const progressPct = nextRank ? ((points - currentRank.min) / (nextRank.min - currentRank.min)) * 100 : 100;
 
-  // Filtered badges
+  // Filtered badges — use real earned status from Supabase
   const filteredBadges = useMemo(() => {
-    let result = mockBadges;
+    let result = mockBadges.map(b => ({
+      ...b,
+      earned: earnedBadgeIds.has(b.id),
+      earned_at: earnedBadgeIds.has(b.id) ? b.earned_at : undefined,
+    }));
     if (badgeCategory !== 'all') result = result.filter(b => b.category === badgeCategory);
     if (badgeRarity !== 'all') result = result.filter(b => b.rarity === badgeRarity);
-    // Smart sorting
     return [...result].sort((a, b) => {
-      const aNearly = !a.earned && a.progress !== undefined && a.total !== undefined && a.total > 0 && (a.progress / a.total) > 0.7;
-      const bNearly = !b.earned && b.progress !== undefined && b.total !== undefined && b.total > 0 && (b.progress / b.total) > 0.7;
-      if (aNearly && !bNearly) return -1;
-      if (!aNearly && bNearly) return 1;
-      if (a.earned && !b.earned) return aNearly ? 1 : -1;
-      if (!a.earned && b.earned) return bNearly ? -1 : 1;
-      if (a.earned && b.earned) return (b.earned_at || '').localeCompare(a.earned_at || '');
-      if (a.progress !== undefined && b.progress !== undefined && a.total && b.total) {
-        return (b.progress / b.total) - (a.progress / a.total);
-      }
+      if (a.earned && !b.earned) return -1;
+      if (!a.earned && b.earned) return 1;
       return 0;
     });
-  }, [badgeCategory, badgeRarity]);
+  }, [badgeCategory, badgeRarity, earnedBadgeIds]);
 
   // Days until Monday
   const daysUntilMonday = useMemo(() => {
@@ -488,18 +487,36 @@ const ProfilePage = () => {
           <Card>
             <CardContent className="pt-6">
               <h3 className="font-semibold text-foreground mb-3">{t('profile.recentActivity')}</h3>
-              <div className="space-y-3">
-                {MOCK_ACTIVITY.map((a, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <span className="text-lg">{a.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground">{t(a.textKey, a.textParams)}</p>
-                      <p className="text-xs text-muted-foreground">{t('activity.ago', { time: a.timeKey })}</p>
-                    </div>
-                    <span className="text-xs font-semibold text-primary whitespace-nowrap">+{a.pts}</span>
-                  </div>
-                ))}
-              </div>
+              {recentActivity.length === 0 ? (
+                <div className="text-center py-6 space-y-2">
+                  <span className="text-4xl block">📍</span>
+                  <p className="text-sm font-medium text-foreground">{lang === 'ca' ? 'Sense activitat recent' : 'Sin actividad reciente'}</p>
+                  <p className="text-xs text-muted-foreground">{lang === 'ca' ? 'Crea el teu primer report al mapa' : 'Crea tu primer reporte en el mapa'}</p>
+                  <Button size="sm" className="mt-2" onClick={() => navigate('/map')}>
+                    <MapPin size={14} className="mr-1" /> {lang === 'ca' ? 'Anar al mapa' : 'Ir al mapa'}
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {recentActivity.map((report) => {
+                    const daysAgo = Math.floor((Date.now() - new Date(report.created_at).getTime()) / 86400000);
+                    const alertType = ALERT_TYPES[report.alert_type as keyof typeof ALERT_TYPES];
+                    return (
+                      <div key={report.id} className="flex items-start gap-3">
+                        <span className="text-lg">{alertType?.icon || '📍'}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-foreground truncate">{report.description || (lang === 'ca' ? alertType?.name_ca : alertType?.name_es) || 'Report'}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {report.comarca && <span>{report.comarca} · </span>}
+                            {daysAgo === 0 ? (lang === 'ca' ? 'Avui' : 'Hoy') : (lang === 'ca' ? `Fa ${daysAgo} dies` : `Hace ${daysAgo} días`)}
+                          </p>
+                        </div>
+                        <span className="text-xs font-semibold text-primary whitespace-nowrap">+50</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -603,9 +620,10 @@ const ProfilePage = () => {
         <TabsContent value="badges" className="mt-4 space-y-4">
           {/* Stats header */}
           {(() => {
-            const earned = mockBadges.filter(b => b.earned).length;
+            const earned = earnedBadgeIds.size;
             const total = mockBadges.length;
-            const rarityCounts = mockBadges.reduce((acc, b) => { acc[b.rarity] = (acc[b.rarity] || 0) + 1; return acc; }, {} as Record<string, number>);
+            const earnedBadges = mockBadges.filter(b => earnedBadgeIds.has(b.id));
+            const rarityCounts = earnedBadges.reduce((acc, b) => { acc[b.rarity] = (acc[b.rarity] || 0) + 1; return acc; }, {} as Record<string, number>);
             return (
               <div className="bg-card border rounded-xl p-4">
                 <p className="text-sm font-semibold text-foreground mb-2">{earned} / {total} {t('badges.medals')}</p>
