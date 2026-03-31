@@ -5,9 +5,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
-  import { Loader2, Check, X as XIcon } from 'lucide-react';
+import { Loader2, Check, X as XIcon } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import Confetti from '@/components/Confetti';
+import { toast } from 'sonner';
+import { stripePromise, PRICE_IDS } from '@/lib/stripe';
+import { createCheckout } from '@/utils/stripeCheckout';
 
 const PlansPage = () => {
   const { t, i18n } = useTranslation();
@@ -27,6 +30,17 @@ const PlansPage = () => {
   const isFamiliar = currentPlan === 'familiar';
   const isMunicipi = currentPlan === 'municipi';
 
+  // Handle success/cancel URL params
+  useEffect(() => {
+    if (searchParams.get('success') === 'true') {
+      setShowSuccess(true);
+      updateProfile({ plan: 'familiar' });
+    }
+    if (searchParams.get('cancelled') === 'true') {
+      toast.info(lang === 'ca' ? 'Pagament cancel·lat' : 'Pago cancelado');
+    }
+  }, [searchParams]);
+
   // Auto-scroll to familiar card if coming from upgrade prompt
   useEffect(() => {
     if (searchParams.get('highlight') === 'familiar' && familiarRef.current) {
@@ -36,13 +50,28 @@ const PlansPage = () => {
     }
   }, [searchParams]);
 
-  const handleUpgrade = () => {
+  const handleUpgrade = async () => {
+    if (!user) {
+      navigate('/register');
+      return;
+    }
     setUpgrading(true);
-    setTimeout(() => {
+    try {
+      if (stripePromise) {
+        const priceId = yearly ? PRICE_IDS.FAMILIAR_YEARLY : PRICE_IDS.FAMILIAR_MONTHLY;
+        await createCheckout(priceId, user.id, user.email);
+      } else {
+        // Mock mode when Stripe key not set
+        await new Promise(r => setTimeout(r, 1200));
+        updateProfile({ plan: 'familiar' });
+        toast.success(lang === 'ca' ? 'Pla activat correctament' : 'Plan activado correctamente');
+        setShowSuccess(true);
+      }
+    } catch (e) {
+      toast.error(lang === 'ca' ? 'Error en el pagament' : 'Error en el pago');
+    } finally {
       setUpgrading(false);
-      setShowSuccess(true);
-      updateProfile({ plan: 'familiar' });
-    }, 1500);
+    }
   };
 
   const freeFeatures = [
