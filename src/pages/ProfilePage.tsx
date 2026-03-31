@@ -159,6 +159,8 @@ const ProfilePage = () => {
       ]);
       setZones(zonesData);
       setRanking(rankingData);
+      setLastReports(userReports.slice(0, 5));
+      setLoadingReports(false);
       setUserStats({
         totalReports: userReports.length,
         totalValidations: user.points ? Math.floor(user.points / 15) : 0,
