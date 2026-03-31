@@ -115,7 +115,7 @@ const ProfilePage = () => {
 
   // Settings state
   const [editName, setEditName] = useState(user?.name || '');
-  const [petName, setPetName] = useState(user?.pet_name || 'Max');
+  const [petName, setPetName] = useState(user?.pet_name || '');
   const [petType, setPetType] = useState(user?.pet_type || 'dog');
   const [hasChildren, setHasChildren] = useState(false);
   const [notifications, setNotifications] = useState({ danger: true, confirmed: true, stillActive: true, badge: true, weekly: false });
