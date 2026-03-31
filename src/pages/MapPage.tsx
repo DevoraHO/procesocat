@@ -20,6 +20,9 @@ import { Filter, Plus, X, ChevronLeft, ChevronRight, MapPin, Camera, Lock, Shiel
 import { useFreemium } from '@/hooks/useFreemium';
 import UpgradeModal from '@/components/UpgradeModal';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useGPSTracking } from '@/hooks/useGPSTracking';
+import { awardPoints, POINTS } from '@/utils/points';
+import SOSButton from '@/components/SOSButton';
 
 interface ReportWithScore {
   report: Report & { last_activity_at?: string };
