@@ -38,6 +38,7 @@ const NotFound = lazy(() => import("@/pages/NotFound"));
 const ReportsPage = lazy(() => import("@/pages/ReportsPage"));
 const MunicipiDashboard = lazy(() => import("@/pages/MunicipiDashboard"));
 const PDFPreview = lazy(() => import("@/pages/PDFPreview"));
+const OnboardingPage = lazy(() => import("@/pages/OnboardingPage"));
 
 const queryClient = new QueryClient();
 
@@ -96,6 +97,7 @@ const App = () => {
                   <Route path="/reports" element={<AppLayout><ProtectedRoute><ReportsPage /></ProtectedRoute></AppLayout>} />
                   <Route path="/municipi" element={<AppLayout><ProtectedRoute><MunicipiDashboard /></ProtectedRoute></AppLayout>} />
                   <Route path="/pdf-preview" element={<AppLayout><ProtectedRoute><PDFPreview /></ProtectedRoute></AppLayout>} />
+                  <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
@@ -113,11 +115,27 @@ function OAuthCallbackHandler() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
         const currentPath = window.location.pathname;
         if (currentPath === '/login' || currentPath === '/register' || currentPath === '/') {
-          navigate('/map', { replace: true });
+          // Check if new user needs onboarding
+          setTimeout(async () => {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('municipality_id, pet_name, points')
+              .eq('id', session.user.id)
+              .single();
+
+            const isNewUser = profile && !profile.municipality_id && !profile.pet_name && (profile.points === 0 || profile.points === null);
+            const onboardingDone = localStorage.getItem('onboarding_profile_done');
+
+            if (isNewUser && !onboardingDone) {
+              navigate('/onboarding', { replace: true });
+            } else {
+              navigate('/map', { replace: true });
+            }
+          }, 500);
         }
       }
       if (event === 'SIGNED_OUT') {

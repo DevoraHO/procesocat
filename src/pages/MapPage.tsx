@@ -23,6 +23,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useGPSTracking } from '@/hooks/useGPSTracking';
 import { awardPoints, POINTS } from '@/utils/points';
 import SOSButton from '@/components/SOSButton';
+import MapIntroGuide from '@/components/MapIntroGuide';
 
 interface ReportWithScore {
   report: Report & { last_activity_at?: string };
@@ -42,6 +43,7 @@ const MapPage = () => {
   const userAccuracyRef = useRef<L.Circle | null>(null);
   const previewMarkerRef = useRef<L.Marker | null>(null);
   const { position: gpsPosition, startTracking } = useGPSTracking();
+  const [showMapIntro, setShowMapIntro] = useState(!localStorage.getItem('map_intro_shown'));
 
   const [reports, setReports] = useState<Report[]>([]);
 
@@ -871,6 +873,7 @@ const MapPage = () => {
 
   return (
     <div className="relative w-full" style={{ height: 'calc(100vh - 64px)' }}>
+      {showMapIntro && <MapIntroGuide onComplete={() => setShowMapIntro(false)} />}
       <div ref={mapContainerRef} className="w-full h-full" />
 
       {/* Season banner */}
