@@ -812,8 +812,8 @@ const ProfilePage = () => {
           </div>
 
           <div className="space-y-2">
-            {mockRanking.slice(3).map((r, i) => {
-              const isUser = r.name === user.name;
+            {ranking.slice(3).map((r, i) => {
+              const isUser = r.id === user.id;
               return (
                 <div key={r.id} className={`flex items-center gap-3 p-3 rounded-xl ${isUser ? 'bg-primary/10 border border-primary/20' : 'bg-card border'}`}>
                   <span className="text-sm font-bold text-muted-foreground w-6">#{i + 4}</span>
