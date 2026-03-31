@@ -79,13 +79,9 @@ const ProfilePage = () => {
 
   const RANKS = lang === 'ca' ? RANKS_CA : RANKS_ES;
 
-  const MOCK_ACTIVITY = [
-    { icon: '📍', textKey: 'activity.reportPublished', textParams: { comarca: 'Barcelonès' }, timeKey: '2 ' + t('activity.days'), pts: 50 },
-    { icon: '✅', textKey: 'activity.validationDone', textParams: {}, timeKey: '3 ' + t('activity.days'), pts: 15 },
-    { icon: '🏅', textKey: 'activity.badgeEarned', textParams: { badge: 'Verificador' }, timeKey: '5 ' + t('activity.days'), pts: 200 },
-    { icon: '📍', textKey: 'activity.reportInVallès', textParams: {}, timeKey: '6 ' + t('activity.days'), pts: 50 },
-    { icon: '🔥', textKey: 'activity.loginStreak', textParams: { days: '7' }, timeKey: '1 ' + (lang === 'ca' ? 'setmana' : 'semana'), pts: 50 },
-  ];
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [earnedBadgeIds, setEarnedBadgeIds] = useState<Set<string>>(new Set());
+  const [realValidationsCount, setRealValidationsCount] = useState(0);
 
   // Refs for file inputs
   const bannerInputRef = useRef<HTMLInputElement>(null);
