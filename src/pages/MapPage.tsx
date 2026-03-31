@@ -5,6 +5,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { ALERT_TYPES, type AlertTypeKey } from '@/data/mockData';
 import { fetchReports, createReport as createReportDB, updateReport as updateReportDB, type Report } from '@/lib/supabase-queries';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { calculateDangerScore, getDangerColor, getDangerLevel } from '@/utils/dangerScore';
 import { createAlertMarker } from '@/utils/mapMarkers';
