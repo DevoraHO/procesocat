@@ -389,10 +389,10 @@ const ProfilePage = () => {
       {/* Stats */}
       <div className="grid grid-cols-4 gap-2 px-4 mt-6">
         {[
-          { label: lang === 'ca' ? 'Reports' : 'Reportes', val: mockStats.totalReports },
-          { label: 'Val.', val: mockStats.totalValidations },
-          { label: 'Fotos', val: mockStats.totalPhotos },
-          { label: 'Coment.', val: mockStats.totalComments },
+          { label: lang === 'ca' ? 'Reports' : 'Reportes', val: userStats.totalReports },
+          { label: 'Val.', val: userStats.totalValidations },
+          { label: 'Fotos', val: userStats.totalPhotos },
+          { label: 'Coment.', val: userStats.totalComments },
         ].map(s => (
           <Card key={s.label} className="text-center py-3">
             <p className="text-xl font-bold text-primary">{s.val}</p>
