@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
@@ -39,33 +39,71 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [authUser, setAuthUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const mountedRef = useRef(true);
 
-  const fetchProfile = useCallback(async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    
-    if (error) {
-      console.error('Error fetching profile:', error);
-      return null;
-    }
-    return data as UserProfile;
+  // Safety timeout — never stay loading forever
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (mountedRef.current && loading) {
+        console.warn('Auth loading timeout reached');
+        setLoading(false);
+      }
+    }, 3000);
+    return () => clearTimeout(timeout);
+  }, [loading]);
+
+  useEffect(() => {
+    return () => { mountedRef.current = false; };
   }, []);
 
-  // Listen to auth state changes
+  const loadProfile = useCallback(async (user: User): Promise<UserProfile | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (!error && data) return data as UserProfile;
+
+      // Profile missing — create it
+      const { data: created } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          email: user.email,
+          name: user.user_metadata?.name || user.email?.split('@')[0] || 'Usuario',
+          points: 0,
+          weekly_points: 0,
+          rank: 'Observador',
+          plan: 'free',
+          banner_color: '#2D6A4F',
+          language: 'es',
+        }, { onConflict: 'id' })
+        .select()
+        .single();
+
+      return (created as UserProfile) ?? null;
+    } catch (err) {
+      console.error('Profile load error:', err);
+      return null;
+    }
+  }, []);
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (_event, session) => {
+        if (!mountedRef.current) return;
         setAuthUser(session?.user ?? null);
-        
+
         if (session?.user) {
-          // Use setTimeout to avoid Supabase deadlock
           setTimeout(async () => {
-            const p = await fetchProfile(session.user.id);
-            setProfile(p);
-            setLoading(false);
+            if (!mountedRef.current) return;
+            const p = await loadProfile(session.user);
+            if (mountedRef.current) {
+              setProfile(p);
+              setLoading(false);
+            }
           }, 0);
         } else {
           setProfile(null);
@@ -76,16 +114,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Check existing session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!mountedRef.current) return;
       setAuthUser(session?.user ?? null);
       if (session?.user) {
-        const p = await fetchProfile(session.user.id);
-        setProfile(p);
+        const p = await loadProfile(session.user);
+        if (mountedRef.current) {
+          setProfile(p);
+        }
       }
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, [fetchProfile]);
+  }, [loadProfile]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -112,17 +153,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateProfile = useCallback(async (updates: Partial<UserProfile>) => {
     if (!authUser) return;
-    
     const { error } = await supabase
       .from('profiles')
       .update(updates)
       .eq('id', authUser.id);
-    
     if (error) {
       console.error('Error updating profile:', error);
       return;
     }
-    
     setProfile(prev => prev ? { ...prev, ...updates } : prev);
   }, [authUser]);
 
@@ -133,7 +171,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (error) throw error;
   }, []);
 
-  const user = profile; // backward compat
+  const user = profile;
 
   return (
     <AuthContext.Provider value={{ user, authUser, profile, loading, signIn, signOut, signUp, updateProfile, resetPassword }}>
