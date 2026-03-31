@@ -186,13 +186,75 @@ const ProfilePage = () => {
   const nextRank = currentRankIdx < RANKS.length - 1 ? RANKS[currentRankIdx + 1] : null;
   const progressPct = nextRank ? ((points - currentRank.min) / (nextRank.min - currentRank.min)) * 100 : 100;
 
-  // Filtered badges — use real earned status from Supabase
+  // Calculate real progress per badge from Supabase data
+  const realBadgeProgress = useMemo((): Record<string, { progress: number; total: number }> => {
+    const rc = userStats.totalReports;
+    const vc = realValidationsCount;
+    const photos = userStats.totalPhotos;
+    const pts = user?.points || 0;
+    return {
+      primer_pas: { progress: Math.min(rc, 1), total: 1 },
+      cartograf: { progress: Math.min(rc, 5), total: 5 },
+      explorador_cat: { progress: 0, total: 5 },
+      gran_explorador: { progress: 0, total: 10 },
+      muntanyenc: { progress: 0, total: 1 },
+      costaner: { progress: 0, total: 1 },
+      tota_catalunya: { progress: 0, total: 4 },
+      primer_temporada: { progress: 0, total: 1 },
+      primer_ull: { progress: Math.min(vc, 1), total: 1 },
+      verificador: { progress: Math.min(vc, 10), total: 10 },
+      pilar_comunitat: { progress: Math.min(vc, 50), total: 50 },
+      mestre_validador: { progress: Math.min(vc, 100), total: 100 },
+      llegenda_validador: { progress: Math.min(vc, 500), total: 500 },
+      resposta_rapida: { progress: 0, total: 1 },
+      primer_flash: { progress: Math.min(photos, 1), total: 1 },
+      cineasta: { progress: 0, total: 1 },
+      fotografo: { progress: Math.min(photos, 20), total: 20 },
+      documentalista: { progress: 0, total: 10 },
+      foto_destacada: { progress: 0, total: 50 },
+      consistent: { progress: 0, total: 7 },
+      dedicat: { progress: 0, total: 30 },
+      incombustible: { progress: 0, total: 100 },
+      temporada_completa: { progress: 0, total: 5 },
+      any_sencer: { progress: 0, total: 365 },
+      hivern_actiu: { progress: 0, total: 1 },
+      heroi_silencios: { progress: 0, total: 1 },
+      amic_animals: { progress: 0, total: 20 },
+      protector_infancia: { progress: 0, total: 20 },
+      top3_setmana: { progress: 0, total: 1 },
+      numero_1: { progress: 0, total: 1 },
+      ambaixador: { progress: 0, total: 10 },
+      super_ambaixador: { progress: 0, total: 5 },
+      cacador_procesionaria: { progress: 0, total: 10 },
+      detector_veri: { progress: 0, total: 3 },
+      anti_trampes: { progress: 0, total: 3 },
+      netejador: { progress: 0, total: 5 },
+      primer_vot: { progress: 0, total: 1 },
+      difusor: { progress: 0, total: 10 },
+      collaborador: { progress: 0, total: 5 },
+      veterà_comunitat: { progress: 0, total: 365 },
+      salvador_zona: { progress: 0, total: 1 },
+      fundador: { progress: 1, total: 1 },
+      beta_tester: { progress: 0, total: 1 },
+      veterà: { progress: 0, total: 365 },
+      dos_anys: { progress: 0, total: 730 },
+      llegenda: { progress: pts, total: 100000 },
+      enllaç_institucional: { progress: 0, total: 1 },
+    };
+  }, [userStats, realValidationsCount, user?.points]);
+
+  // Filtered badges — use real earned status and progress from Supabase
   const filteredBadges = useMemo(() => {
-    let result = mockBadges.map(b => ({
-      ...b,
-      earned: earnedBadgeIds.has(b.id),
-      earned_at: earnedBadgeIds.has(b.id) ? b.earned_at : undefined,
-    }));
+    let result = mockBadges.map(b => {
+      const real = realBadgeProgress[b.id] || { progress: 0, total: b.total || 1 };
+      return {
+        ...b,
+        earned: earnedBadgeIds.has(b.id),
+        earned_at: earnedBadgeIds.has(b.id) ? b.earned_at : undefined,
+        progress: real.progress,
+        total: real.total,
+      };
+    });
     if (badgeCategory !== 'all') result = result.filter(b => b.category === badgeCategory);
     if (badgeRarity !== 'all') result = result.filter(b => b.rarity === badgeRarity);
     return [...result].sort((a, b) => {
@@ -200,7 +262,7 @@ const ProfilePage = () => {
       if (!a.earned && b.earned) return 1;
       return 0;
     });
-  }, [badgeCategory, badgeRarity, earnedBadgeIds]);
+  }, [badgeCategory, badgeRarity, earnedBadgeIds, realBadgeProgress]);
 
   // Days until Monday
   const daysUntilMonday = useMemo(() => {
