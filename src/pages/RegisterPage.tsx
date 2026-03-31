@@ -141,7 +141,7 @@ const RegisterPage = () => {
               </div>
             )}
             <Button type="submit" className="w-full text-white" style={{ backgroundColor: '#2D6A4F' }} disabled={loading}>
-              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : t('auth.createAccount')}
+              {loading ? <><Loader2 className="h-5 w-5 animate-spin mr-2" /> {lang === 'ca' ? 'Creant compte...' : 'Creando cuenta...'}</> : t('auth.createAccount')}
             </Button>
             <p className="text-xs text-muted-foreground text-center">
               {lang === 'ca' ? "Verificaràs el teu email després del registre" : "Verificarás tu email después del registro"}
