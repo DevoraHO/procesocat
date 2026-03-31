@@ -692,6 +692,14 @@ const MapPage = () => {
       };
       setReports(prev => [...prev, newReport]);
     }
+    // Award points for report
+    if (user) {
+      let pts = POINTS.REPORT;
+      if (reportPhotos.length > 0) pts += POINTS.PHOTO;
+      awardPoints(user.id, pts, lang).then(newPts => {
+        if (newPts !== null) updateProfile({ points: newPts });
+      });
+    }
     incrementReportCount();
     setShowNewReport(false);
     setReportStep(1);
