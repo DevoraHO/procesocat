@@ -3,6 +3,7 @@ import WeeklyCharts from '@/components/WeeklyCharts';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { mockBadges, mockRouteHistory, mockDangerEvolution, ALERT_TYPES } from '@/data/mockData';
 import { fetchSavedZones, createSavedZone, deleteSavedZone, fetchUserBadges, fetchRanking, fetchUserReports } from '@/lib/supabase-queries';
 import { searchMunicipalities, getMunicipalityById, Municipality } from '@/data/municipalData';
@@ -225,9 +226,9 @@ const ProfilePage = () => {
     };
   }, [addZoneOpen]);
 
-  const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !user) return;
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
       toast({ title: lang === 'ca' ? 'Format no permès. Només JPG, PNG, WEBP.' : 'Formato no permitido. Solo JPG, PNG, WEBP.', variant: 'destructive' });
       return;
@@ -236,19 +237,23 @@ const ProfilePage = () => {
       toast({ title: lang === 'ca' ? 'Imatge massa gran. Màx 5MB.' : 'Imagen demasiado grande. Máx 5MB.', variant: 'destructive' });
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      setBannerImage(dataUrl);
-      updateProfile({ banner_image: dataUrl });
-      toast({ title: t('profile.bannerSaved') });
-    };
-    reader.readAsDataURL(file);
+    const filePath = `banners/${user.id}/banner.${file.name.split('.').pop() || 'jpg'}`;
+    const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file, { upsert: true });
+    if (uploadError) {
+      console.error('Banner upload error:', uploadError);
+      toast({ title: lang === 'ca' ? 'Error pujant imatge' : 'Error subiendo imagen', variant: 'destructive' });
+      return;
+    }
+    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
+    const publicUrl = urlData.publicUrl + '?t=' + Date.now();
+    setBannerImage(publicUrl);
+    updateProfile({ banner_image: publicUrl });
+    toast({ title: lang === 'ca' ? 'Banner actualitzat' : 'Banner actualizado' });
   };
 
-  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !user) return;
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
       toast({ title: lang === 'ca' ? 'Format no permès' : 'Formato no permitido', variant: 'destructive' });
       return;
@@ -257,19 +262,30 @@ const ProfilePage = () => {
       toast({ title: lang === 'ca' ? 'Imatge massa gran' : 'Imagen demasiado grande', variant: 'destructive' });
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      updateProfile({ avatar_url: dataUrl });
-      toast({ title: t('profile.profileUpdated') });
-    };
-    reader.readAsDataURL(file);
+    const filePath = `${user.id}/avatar.${file.name.split('.').pop() || 'jpg'}`;
+    const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file, { upsert: true });
+    if (uploadError) {
+      console.error('Avatar upload error:', uploadError);
+      toast({ title: lang === 'ca' ? 'Error pujant imatge' : 'Error subiendo imagen', variant: 'destructive' });
+      return;
+    }
+    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
+    const publicUrl = urlData.publicUrl + '?t=' + Date.now();
+    updateProfile({ avatar_url: publicUrl });
+    toast({ title: t('profile.profileUpdated') });
   };
 
-  const handleSaveBanner = () => {
+  const handleSaveBanner = async () => {
+    if (!user) return;
+    const { error } = await supabase.from('profiles').update({ banner_color: bannerColor }).eq('id', user.id);
+    if (error) {
+      console.error('Banner color save error:', error);
+      toast({ title: lang === 'ca' ? 'Error desant color' : 'Error guardando color', variant: 'destructive' });
+      return;
+    }
     updateProfile({ banner_color: bannerColor });
     setBannerEditorOpen(false);
-    toast({ title: t('profile.bannerSaved') });
+    toast({ title: lang === 'ca' ? 'Banner actualitzat' : 'Banner actualizado' });
   };
 
   const handleSaveProfile = () => {
@@ -369,6 +385,7 @@ const ProfilePage = () => {
             <Button variant="outline" size="sm" onClick={() => bannerInputRef.current?.click()}>{t('profile.uploadImage')}</Button>
             <Button size="sm" onClick={handleSaveBanner}>{t('profile.save')}</Button>
           </div>
+          <p className="text-xs text-muted-foreground mt-2">Mida recomanada: 1200x300px · Màx 5MB</p>
         </div>
       )}
 
