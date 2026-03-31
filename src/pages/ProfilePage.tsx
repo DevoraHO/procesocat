@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { mockBadges, mockRouteHistory, mockDangerEvolution, ALERT_TYPES } from '@/data/mockData';
+import { mockBadges, mockDangerEvolution, ALERT_TYPES } from '@/data/mockData';
 import { fetchSavedZones, createSavedZone, deleteSavedZone, fetchUserBadges, fetchRanking, fetchUserReports } from '@/lib/supabase-queries';
 import { searchMunicipalities, getMunicipalityById, Municipality } from '@/data/municipalData';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -124,6 +124,8 @@ const ProfilePage = () => {
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [lastReports, setLastReports] = useState<any[]>([]);
+  const [loadingReports, setLoadingReports] = useState(true);
   const [municipalityModalOpen, setMunicipalityModalOpen] = useState(false);
   const [municipalityQuery, setMunicipalityQuery] = useState('');
   const [selectedMunicipalityId, setSelectedMunicipalityId] = useState(user?.municipality_id || localStorage.getItem('municipality_id') || '');
@@ -157,6 +159,8 @@ const ProfilePage = () => {
       ]);
       setZones(zonesData);
       setRanking(rankingData);
+      setLastReports(userReports.slice(0, 5));
+      setLoadingReports(false);
       setUserStats({
         totalReports: userReports.length,
         totalValidations: user.points ? Math.floor(user.points / 15) : 0,
@@ -549,35 +553,48 @@ const ProfilePage = () => {
           {/* Weekly Charts Section */}
           <WeeklyCharts />
 
-          {/* Route History */}
+          {/* Route History — Real data from Supabase */}
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-2 mb-3">
                 <Route size={18} className="text-primary" />
-                <h3 className="font-semibold text-foreground">{t('safeWalk.routeHistory')}</h3>
+                <h3 className="font-semibold text-foreground">{lang === 'ca' ? 'Últimes rutes analitzades' : 'Últimas rutas analizadas'}</h3>
               </div>
-              <div className="space-y-3">
-                {mockRouteHistory.map(route => {
-                  const daysAgo = Math.floor((Date.now() - new Date(route.date).getTime()) / 86400000);
-                  const color = route.result === 'SEGURA' ? 'text-green-600' : 'text-orange-500';
-                  const dot = route.result === 'SEGURA' ? 'bg-green-500' : 'bg-orange-500';
-                  const label = route.result === 'SEGURA' ? (lang === 'ca' ? 'Segura' : 'Segura') : (lang === 'ca' ? 'Precaució' : 'Precaución');
-                  return (
-                    <div key={route.id} className="flex items-center gap-3">
-                      <span className={`w-2.5 h-2.5 rounded-full ${dot} flex-shrink-0`} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-foreground truncate">{lang === 'ca' ? route.name_ca : route.name_es}</p>
-                        <p className="text-xs text-muted-foreground">
-                          <span className={color}>{label}</span> · {t('safeWalk.daysAgo', { days: daysAgo })} · {route.distance}km
-                        </p>
+              {loadingReports ? (
+                <div className="text-center py-6 text-muted-foreground text-sm">{lang === 'ca' ? 'Carregant...' : 'Cargando...'}</div>
+              ) : lastReports.length === 0 ? (
+                <div className="text-center py-6 space-y-2">
+                  <span className="text-4xl block">🗺️</span>
+                  <p className="text-sm font-medium text-foreground">{lang === 'ca' ? 'Encara no has analitzat cap ruta' : 'Aún no has analizado ninguna ruta'}</p>
+                  <p className="text-xs text-muted-foreground">{lang === 'ca' ? 'Crea el teu primer report al mapa' : 'Crea tu primer reporte en el mapa'}</p>
+                  <Button size="sm" className="mt-2" onClick={() => navigate('/map')}>
+                    <MapPin size={14} className="mr-1" /> {lang === 'ca' ? 'Anar al mapa' : 'Ir al mapa'}
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {lastReports.map(report => {
+                    const daysAgo = Math.floor((Date.now() - new Date(report.created_at).getTime()) / 86400000);
+                    const scoreColor = report.danger_score <= 30 ? 'bg-green-500' : report.danger_score <= 60 ? 'bg-orange-500' : 'bg-red-600';
+                    return (
+                      <div key={report.id} className="flex items-center gap-3">
+                        <span className={`w-2.5 h-2.5 rounded-full ${scoreColor} flex-shrink-0`} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-foreground truncate">{report.description || report.alert_type}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {report.comarca && <span>{report.comarca} · </span>}
+                            {daysAgo === 0 ? (lang === 'ca' ? 'Avui' : 'Hoy') : (lang === 'ca' ? `Fa ${daysAgo} dies` : `Hace ${daysAgo} días`)}
+                          </p>
+                        </div>
+                        <DangerBadge score={report.danger_score} size="sm" />
+                        <Button variant="ghost" size="sm" className="text-xs text-primary" onClick={() => navigate('/map')}>
+                          {lang === 'ca' ? 'Veure' : 'Ver'}
+                        </Button>
                       </div>
-                      <Button variant="ghost" size="sm" className="text-xs text-primary" onClick={() => navigate('/map')}>
-                        {t('safeWalk.viewOnMap')}
-                      </Button>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
