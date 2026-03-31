@@ -1624,6 +1624,9 @@ const MapPage = () => {
       >
         📍 GPS
       </button>
+
+      {/* SOS Button - only on map */}
+      <SOSButton />
     </div>
   );
 };
