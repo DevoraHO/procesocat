@@ -98,7 +98,9 @@ const ProfilePage = () => {
   const [badgeRarity, setBadgeRarity] = useState<string>('all');
   const [selectedBadge, setSelectedBadge] = useState<typeof mockBadges[0] | null>(null);
   const [unlockBadge, setUnlockBadge] = useState<typeof mockBadges[0] | null>(null);
-  const [zones, setZones] = useState(mockSavedZones);
+  const [zones, setZones] = useState<any[]>([]);
+  const [ranking, setRanking] = useState<any[]>([]);
+  const [userStats, setUserStats] = useState({ totalReports: 0, totalValidations: 0, totalPhotos: 0, totalComments: 0 });
   const [addZoneOpen, setAddZoneOpen] = useState(false);
   const [deleteZoneId, setDeleteZoneId] = useState<string | null>(null);
   const [zoneName, setZoneName] = useState('');
