@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import LanguageToggle from '@/components/LanguageToggle';
@@ -30,8 +31,25 @@ const RegisterPage = () => {
     setError('');
     setLoading(true);
     try {
-      await signUp(email, password, name);
-      setStep('pet');
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { name },
+          emailRedirectTo: window.location.origin,
+        },
+      });
+      if (signUpError) throw signUpError;
+
+      if (data.user && !data.session) {
+        // Email confirmation required
+        toast.success(lang === 'ca' ? 'Compte creat! Revisa el teu email per confirmar' : '¡Cuenta creada! Revisa tu email para confirmar tu cuenta');
+        navigate('/login');
+      } else if (data.session) {
+        // Auto-confirmed, continue onboarding
+        toast.success(lang === 'ca' ? 'Benvingut a ProcesoCat!' : '¡Bienvenido a ProcesoCat!');
+        setStep('pet');
+      }
     } catch (err: any) {
       let msg = err?.message || 'Error';
       if (msg.includes('already registered')) {
