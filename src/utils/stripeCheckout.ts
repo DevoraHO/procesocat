@@ -1,7 +1,7 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, SUPABASE_URL_EXPORT } from '@/integrations/supabase/client';
 
 export async function createCheckout(priceId: string, userId: string, userEmail: string) {
-  const supabaseUrl = 'https://onkbqxmxrghzypddookg.supabase.co';
+  const supabaseUrl = SUPABASE_URL_EXPORT;
 
   const response = await fetch(`${supabaseUrl}/functions/v1/create-checkout`, {
     method: 'POST',
