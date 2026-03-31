@@ -487,18 +487,36 @@ const ProfilePage = () => {
           <Card>
             <CardContent className="pt-6">
               <h3 className="font-semibold text-foreground mb-3">{t('profile.recentActivity')}</h3>
-              <div className="space-y-3">
-                {MOCK_ACTIVITY.map((a, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <span className="text-lg">{a.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground">{t(a.textKey, a.textParams)}</p>
-                      <p className="text-xs text-muted-foreground">{t('activity.ago', { time: a.timeKey })}</p>
-                    </div>
-                    <span className="text-xs font-semibold text-primary whitespace-nowrap">+{a.pts}</span>
-                  </div>
-                ))}
-              </div>
+              {recentActivity.length === 0 ? (
+                <div className="text-center py-6 space-y-2">
+                  <span className="text-4xl block">📍</span>
+                  <p className="text-sm font-medium text-foreground">{lang === 'ca' ? 'Sense activitat recent' : 'Sin actividad reciente'}</p>
+                  <p className="text-xs text-muted-foreground">{lang === 'ca' ? 'Crea el teu primer report al mapa' : 'Crea tu primer reporte en el mapa'}</p>
+                  <Button size="sm" className="mt-2" onClick={() => navigate('/map')}>
+                    <MapPin size={14} className="mr-1" /> {lang === 'ca' ? 'Anar al mapa' : 'Ir al mapa'}
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {recentActivity.map((report) => {
+                    const daysAgo = Math.floor((Date.now() - new Date(report.created_at).getTime()) / 86400000);
+                    const alertType = ALERT_TYPES[report.alert_type as keyof typeof ALERT_TYPES];
+                    return (
+                      <div key={report.id} className="flex items-start gap-3">
+                        <span className="text-lg">{alertType?.icon || '📍'}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-foreground truncate">{report.description || (lang === 'ca' ? alertType?.name_ca : alertType?.name_es) || 'Report'}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {report.comarca && <span>{report.comarca} · </span>}
+                            {daysAgo === 0 ? (lang === 'ca' ? 'Avui' : 'Hoy') : (lang === 'ca' ? `Fa ${daysAgo} dies` : `Hace ${daysAgo} días`)}
+                          </p>
+                        </div>
+                        <span className="text-xs font-semibold text-primary whitespace-nowrap">+50</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
 
