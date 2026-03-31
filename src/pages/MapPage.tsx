@@ -23,6 +23,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useGPSTracking } from '@/hooks/useGPSTracking';
 import { awardPoints, POINTS } from '@/utils/points';
 import SOSButton from '@/components/SOSButton';
+import MapIntroGuide from '@/components/MapIntroGuide';
 
 interface ReportWithScore {
   report: Report & { last_activity_at?: string };
