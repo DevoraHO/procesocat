@@ -78,10 +78,10 @@ const RegisterPage = () => {
 
       if (data.user && !data.session) {
         toast.success(lang === 'ca' ? 'Compte creat! Revisa el teu email per confirmar' : '¡Cuenta creada! Revisa tu email para confirmar tu cuenta');
-        navigate('/login');
+        setTimeout(() => navigate('/login'), 1000);
       } else if (data.session) {
         toast.success(lang === 'ca' ? 'Benvingut a ProcesoCat!' : '¡Bienvenido a ProcesoCat!');
-        setStep('pet');
+        setTimeout(() => setStep('pet'), 1000);
       }
     } catch (err: any) {
       console.error('Registration crash:', err);
