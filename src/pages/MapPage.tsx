@@ -623,28 +623,21 @@ const MapPage = () => {
   };
 
   const handleActivateLocation = () => {
+    startTracking();
+    if (mapRef.current && gpsPosition) {
+      mapRef.current.setView([gpsPosition.lat, gpsPosition.lng], 13);
+    }
+    setShowLocationModal(false);
+    localStorage.setItem('location_asked', 'true');
+    // If no position yet, also try getCurrentPosition for immediate fly
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const { latitude, longitude } = pos.coords;
         if (mapRef.current) {
-          if (userMarkerRef.current) mapRef.current.removeLayer(userMarkerRef.current);
-          userMarkerRef.current = L.circleMarker([latitude, longitude], {
-            radius: 8,
-            color: '#3b82f6',
-            fillColor: '#3b82f6',
-            fillOpacity: 1,
-            weight: 3,
-            opacity: 0.5
-          }).addTo(mapRef.current);
-          mapRef.current.setView([latitude, longitude], 13);
+          mapRef.current.setView([pos.coords.latitude, pos.coords.longitude], 13);
         }
-        setShowLocationModal(false);
-        localStorage.setItem('location_asked', 'true');
       },
       () => {
         toast.error(t('errors.location'));
-        setShowLocationModal(false);
-        localStorage.setItem('location_asked', 'true');
       }
     );
   };
