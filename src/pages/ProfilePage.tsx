@@ -620,7 +620,7 @@ const ProfilePage = () => {
         <TabsContent value="badges" className="mt-4 space-y-4">
           {/* Stats header */}
           {(() => {
-            const earned = mockBadges.filter(b => b.earned).length;
+            const earned = earnedBadgeIds.size;
             const total = mockBadges.length;
             const rarityCounts = mockBadges.reduce((acc, b) => { acc[b.rarity] = (acc[b.rarity] || 0) + 1; return acc; }, {} as Record<string, number>);
             return (
