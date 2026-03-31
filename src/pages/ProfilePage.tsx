@@ -149,19 +149,26 @@ const ProfilePage = () => {
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      const [zonesData, rankingData, userReports] = await Promise.all([
+      const [zonesData, rankingData, userReports, badgesData, validationsData] = await Promise.all([
         fetchSavedZones(user.id),
         fetchRanking(50),
         fetchUserReports(user.id),
+        fetchUserBadges(user.id),
+        sb.from('report_validations').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
       ]);
       setZones(zonesData);
       setRanking(rankingData);
       setLastReports(userReports.slice(0, 5));
+      setRecentActivity(userReports.slice(0, 10));
       setLoadingReports(false);
+      const earnedIds = new Set<string>((badgesData || []).map((b: any) => b.badge_id));
+      setEarnedBadgeIds(earnedIds);
+      const vCount = validationsData.count || 0;
+      setRealValidationsCount(vCount);
       setUserStats({
         totalReports: userReports.length,
-        totalValidations: user.points ? Math.floor(user.points / 15) : 0,
-        totalPhotos: userReports.reduce((acc, r) => acc + (r.photos?.length || 0), 0),
+        totalValidations: vCount,
+        totalPhotos: userReports.reduce((acc: number, r: any) => acc + (r.photos?.length || 0), 0),
         totalComments: 0,
       });
     };
