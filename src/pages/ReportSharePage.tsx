@@ -3,12 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { mockReports, mockUser } from '@/data/mockData';
+import { fetchReportById, fetchProfile, type Report } from '@/lib/supabase-queries';
 import { getDangerColor, getDangerLevel } from '@/utils/dangerScore';
 import DangerBadge from '@/components/DangerBadge';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 const ReportSharePage = () => {
   const { id } = useParams();
@@ -17,7 +18,25 @@ const ReportSharePage = () => {
   const { user } = useAuth();
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletRef = useRef<L.Map | null>(null);
-  const report = mockReports.find(r => r.id === id);
+
+  const [report, setReport] = useState<Report | null>(null);
+  const [reporterName, setReporterName] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id) return;
+    const load = async () => {
+      setLoading(true);
+      const data = await fetchReportById(id);
+      setReport(data);
+      if (data) {
+        const profile = await fetchProfile(data.user_id);
+        setReporterName(profile?.name || 'Anónimo');
+      }
+      setLoading(false);
+    };
+    load();
+  }, [id]);
 
   const daysAgo = report ? Math.floor((Date.now() - new Date(report.created_at).getTime()) / 86400000) : 0;
 
@@ -31,6 +50,14 @@ const ReportSharePage = () => {
     leafletRef.current = map;
     return () => { map.remove(); leafletRef.current = null; };
   }, [report]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (!report) {
     return (
@@ -80,7 +107,7 @@ const ReportSharePage = () => {
     }
   };
 
-  const initials = mockUser.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  const initials = reporterName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
   return (
     <div className="min-h-screen bg-muted">
@@ -111,7 +138,7 @@ const ReportSharePage = () => {
           <p className="text-sm text-muted-foreground">✅ {t('report.validatedBy', { count: report.validation_count })}</p>
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ background: '#2D6A4F' }}>{initials}</div>
-            <span className="text-sm text-muted-foreground">{t('publicReport.reportedBy')} {mockUser.name}</span>
+            <span className="text-sm text-muted-foreground">{t('publicReport.reportedBy')} {reporterName}</span>
           </div>
         </div>
 

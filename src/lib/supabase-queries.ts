@@ -256,3 +256,56 @@ export async function fetchProfile(userId: string) {
   }
   return data;
 }
+
+// ═══════════════════════════════
+// SINGLE REPORT
+// ═══════════════════════════════
+
+export async function fetchReportById(reportId: string): Promise<Report | null> {
+  const { data, error } = await supabase
+    .from('reports')
+    .select('*')
+    .eq('id', reportId)
+    .single();
+
+  if (error) {
+    console.error('Error fetching report:', error);
+    return null;
+  }
+  return data as Report;
+}
+
+// ═══════════════════════════════
+// DELETE SAVED ZONE
+// ═══════════════════════════════
+
+export async function deleteSavedZone(zoneId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('saved_zones')
+    .delete()
+    .eq('id', zoneId);
+
+  if (error) {
+    console.error('Error deleting saved zone:', error);
+    return false;
+  }
+  return true;
+}
+
+// ═══════════════════════════════
+// ALL PROFILES (admin)
+// ═══════════════════════════════
+
+export async function fetchAllProfiles(limit = 100) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('Error fetching all profiles:', error);
+    return [];
+  }
+  return data || [];
+}
