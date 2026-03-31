@@ -385,6 +385,7 @@ const ProfilePage = () => {
             <Button variant="outline" size="sm" onClick={() => bannerInputRef.current?.click()}>{t('profile.uploadImage')}</Button>
             <Button size="sm" onClick={handleSaveBanner}>{t('profile.save')}</Button>
           </div>
+          <p className="text-xs text-muted-foreground mt-2">Mida recomanada: 1200x300px · Màx 5MB</p>
         </div>
       )}
 
