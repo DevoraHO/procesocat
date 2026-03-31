@@ -1,10 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate, useNavigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ValidationProvider } from "@/contexts/ValidationContext";
+import { supabase } from "@/integrations/supabase/client";
 import '@/i18n';
 import { useState, useEffect, lazy, Suspense } from 'react';
 
@@ -73,6 +74,7 @@ const App = () => {
             <OfflineBanner />
             <GDPRModal />
             <BrowserRouter>
+              <OAuthCallbackHandler />
               <Suspense fallback={<LoadingSpinner />}>
                 <Routes>
                   <Route path="/" element={<Navigate to="/map" replace />} />
@@ -105,5 +107,26 @@ const App = () => {
     </ErrorBoundary>
   );
 };
+
+// Handles OAuth redirect (access_token in URL hash)
+function OAuthCallbackHandler() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        // Only redirect if we're on login or root with hash tokens
+        const hash = window.location.hash;
+        const path = window.location.pathname;
+        if (hash.includes('access_token') || path === '/login' || path === '/') {
+          navigate('/map', { replace: true });
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  return null;
+}
 
 export default App;
