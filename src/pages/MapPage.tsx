@@ -20,6 +20,9 @@ import { Filter, Plus, X, ChevronLeft, ChevronRight, MapPin, Camera, Lock, Shiel
 import { useFreemium } from '@/hooks/useFreemium';
 import UpgradeModal from '@/components/UpgradeModal';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useGPSTracking } from '@/hooks/useGPSTracking';
+import { awardPoints, POINTS } from '@/utils/points';
+import SOSButton from '@/components/SOSButton';
 
 interface ReportWithScore {
   report: Report & { last_activity_at?: string };
@@ -30,13 +33,15 @@ const MapPage = () => {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const heatmapLayerRef = useRef<L.LayerGroup | null>(null);
   const userMarkerRef = useRef<L.CircleMarker | null>(null);
+  const userAccuracyRef = useRef<L.Circle | null>(null);
   const previewMarkerRef = useRef<L.Marker | null>(null);
+  const { position: gpsPosition, startTracking } = useGPSTracking();
 
   const [reports, setReports] = useState<Report[]>([]);
 
@@ -164,6 +169,43 @@ const MapPage = () => {
       mapRef.current = null;
     };
   }, []);
+
+  // GPS real-time tracking - update blue dot on map
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !gpsPosition) return;
+
+    const { lat, lng, accuracy } = gpsPosition;
+
+    if (userMarkerRef.current) {
+      userMarkerRef.current.setLatLng([lat, lng]);
+    } else {
+      userMarkerRef.current = L.circleMarker([lat, lng], {
+        radius: 8,
+        color: '#3b82f6',
+        fillColor: '#3b82f6',
+        fillOpacity: 1,
+        weight: 3,
+        opacity: 0.5,
+      }).addTo(map);
+    }
+
+    if (userAccuracyRef.current) {
+      userAccuracyRef.current.setLatLng([lat, lng]);
+      userAccuracyRef.current.setRadius(accuracy);
+    } else {
+      userAccuracyRef.current = L.circle([lat, lng], {
+        radius: accuracy,
+        color: '#3b82f6',
+        fillColor: '#3b82f6',
+        fillOpacity: 0.1,
+        weight: 1,
+        opacity: 0.3,
+      }).addTo(map);
+    }
+
+    setUserGPS({ lat, lng, accuracy });
+  }, [gpsPosition]);
 
   // Fly to location from navigation state (e.g. from profile zones)
   useEffect(() => {
@@ -487,10 +529,12 @@ const MapPage = () => {
               setReports(prev => prev.map(r =>
                 r.id === report.id ? { ...r, validation_count: r.validation_count + 1 } : r
               ));
-              if (record.type === 'in_situ') {
-                toast.success(t('validation.successInSitu'));
-              } else {
-                toast.success(t('validation.successRemote'));
+              // Award points for validation
+              if (user) {
+                const pts = record.type === 'in_situ' ? POINTS.VALIDATION_IN_SITU : POINTS.VALIDATION_REMOTE;
+                awardPoints(user.id, pts, lang).then(newPts => {
+                  if (newPts !== null) updateProfile({ points: newPts });
+                });
               }
               marker.closePopup();
             }
@@ -581,33 +625,30 @@ const MapPage = () => {
   };
 
   const handleActivateLocation = () => {
+    startTracking();
+    if (mapRef.current && gpsPosition) {
+      mapRef.current.setView([gpsPosition.lat, gpsPosition.lng], 13);
+    }
+    setShowLocationModal(false);
+    localStorage.setItem('location_asked', 'true');
+    // If no position yet, also try getCurrentPosition for immediate fly
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const { latitude, longitude } = pos.coords;
         if (mapRef.current) {
-          if (userMarkerRef.current) mapRef.current.removeLayer(userMarkerRef.current);
-          userMarkerRef.current = L.circleMarker([latitude, longitude], {
-            radius: 8,
-            color: '#3b82f6',
-            fillColor: '#3b82f6',
-            fillOpacity: 1,
-            weight: 3,
-            opacity: 0.5
-          }).addTo(mapRef.current);
-          mapRef.current.setView([latitude, longitude], 13);
+          mapRef.current.setView([pos.coords.latitude, pos.coords.longitude], 13);
         }
-        setShowLocationModal(false);
-        localStorage.setItem('location_asked', 'true');
       },
       () => {
         toast.error(t('errors.location'));
-        setShowLocationModal(false);
-        localStorage.setItem('location_asked', 'true');
       }
     );
   };
 
   const handleGetLocationForReport = () => {
+    if (gpsPosition) {
+      setSelectedCoords([gpsPosition.lat, gpsPosition.lng]);
+      return;
+    }
     navigator.geolocation.getCurrentPosition(
       (pos) => setSelectedCoords([pos.coords.latitude, pos.coords.longitude]),
       () => toast.error(t('errors.location'))
@@ -652,6 +693,14 @@ const MapPage = () => {
         created_at: new Date().toISOString()
       };
       setReports(prev => [...prev, newReport]);
+    }
+    // Award points for report
+    if (user) {
+      let pts = POINTS.REPORT;
+      if (reportPhotos.length > 0) pts += POINTS.PHOTO;
+      awardPoints(user.id, pts, lang).then(newPts => {
+        if (newPts !== null) updateProfile({ points: newPts });
+      });
     }
     incrementReportCount();
     setShowNewReport(false);
@@ -1577,6 +1626,9 @@ const MapPage = () => {
       >
         📍 GPS
       </button>
+
+      {/* SOS Button - only on map */}
+      <SOSButton />
     </div>
   );
 };

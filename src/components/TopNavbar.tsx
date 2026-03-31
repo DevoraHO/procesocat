@@ -21,7 +21,7 @@ const TopNavbar = () => {
   const { user } = useAuth();
 
   return (
-    <header className="hidden md:flex items-center h-14 border-b bg-background px-6 sticky top-0 z-50">
+    <header className="hidden md:flex items-center h-14 border-b bg-background px-6 fixed top-0 left-0 right-0 z-[1000]">
       <span
         className="font-bold text-lg mr-8 cursor-pointer"
         style={{ color: '#2D6A4F' }}

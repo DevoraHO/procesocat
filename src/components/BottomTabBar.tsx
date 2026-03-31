@@ -17,7 +17,7 @@ const BottomTabBar = () => {
   const navigate = useNavigate();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 h-16 border-t bg-background flex items-center justify-around md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-[1000] h-16 border-t bg-background flex items-center justify-around md:hidden">
       {tabs.map(({ key, path, icon: Icon, activeColor }) => {
         const active = location.pathname === path;
         return (
