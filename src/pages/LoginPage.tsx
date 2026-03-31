@@ -123,7 +123,7 @@ const LoginPage = () => {
       <div className="w-full max-w-[420px] bg-card rounded-2xl shadow-xl p-8 space-y-6">
         {/* Logo */}
         <div className="flex flex-col items-center gap-2">
-          <img src={logo} alt="ProcesoCat" className="w-16 h-16 rounded-2xl" />
+          <img src={logo} alt="ProcesoCat" className="w-24 h-24 rounded-2xl" />
           <h1 className="text-2xl font-bold text-foreground">ProcesoCat</h1>
           <p className="text-sm text-muted-foreground">Protegint Catalunya</p>
         </div>
