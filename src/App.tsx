@@ -115,12 +115,13 @@ function OAuthCallbackHandler() {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        // Only redirect if we're on login or root with hash tokens
-        const hash = window.location.hash;
-        const path = window.location.pathname;
-        if (hash.includes('access_token') || path === '/login' || path === '/') {
+        const currentPath = window.location.pathname;
+        if (currentPath === '/login' || currentPath === '/register' || currentPath === '/') {
           navigate('/map', { replace: true });
         }
+      }
+      if (event === 'SIGNED_OUT') {
+        navigate('/login', { replace: true });
       }
     });
     return () => subscription.unsubscribe();
