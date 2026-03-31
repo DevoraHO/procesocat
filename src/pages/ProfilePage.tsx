@@ -796,7 +796,7 @@ const ProfilePage = () => {
           {/* Podium */}
           <div className="flex items-end justify-center gap-3 pt-4 pb-2">
             {[1, 0, 2].map(idx => {
-              const r = mockRanking[idx];
+              const r = ranking[idx];
               if (!r) return null;
               const isCenter = idx === 0;
               const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉';
