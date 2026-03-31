@@ -331,7 +331,7 @@ const ProfilePage = () => {
     80: { labelKey: 'danger.red', color: '#ef4444' },
   };
 
-  const userRankIdx = mockRanking.findIndex(r => r.name === user?.name);
+  const userRankIdx = ranking.findIndex(r => r.id === user?.id);
 
   const shareRanking = () => {
     const pos = userRankIdx + 1;
