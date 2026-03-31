@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { mockBadges, mockDangerEvolution, ALERT_TYPES } from '@/data/mockData';
+import { supabase as sb } from '@/integrations/supabase/client';
 import { fetchSavedZones, createSavedZone, deleteSavedZone, fetchUserBadges, fetchRanking, fetchUserReports } from '@/lib/supabase-queries';
 import { searchMunicipalities, getMunicipalityById, Municipality } from '@/data/municipalData';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
