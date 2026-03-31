@@ -145,6 +145,27 @@ const ProfilePage = () => {
 
   useEffect(() => { loadSecurityData(); }, [loadSecurityData]);
 
+  // Load real data from Supabase
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      const [zonesData, rankingData, userReports] = await Promise.all([
+        fetchSavedZones(user.id),
+        fetchRanking(50),
+        fetchUserReports(user.id),
+      ]);
+      setZones(zonesData);
+      setRanking(rankingData);
+      setUserStats({
+        totalReports: userReports.length,
+        totalValidations: user.points ? Math.floor(user.points / 15) : 0,
+        totalPhotos: userReports.reduce((acc, r) => acc + (r.photos?.length || 0), 0),
+        totalComments: 0,
+      });
+    };
+    load();
+  }, [user]);
+
   const isFree = user?.plan === 'free';
   // Ranking sub-tab
   const [rankingTab, setRankingTab] = useState<'comarca' | 'catalunya'>('comarca');
