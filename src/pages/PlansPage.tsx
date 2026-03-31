@@ -30,6 +30,17 @@ const PlansPage = () => {
   const isFamiliar = currentPlan === 'familiar';
   const isMunicipi = currentPlan === 'municipi';
 
+  // Handle success/cancel URL params
+  useEffect(() => {
+    if (searchParams.get('success') === 'true') {
+      setShowSuccess(true);
+      updateProfile({ plan: 'familiar' });
+    }
+    if (searchParams.get('cancelled') === 'true') {
+      toast.info(lang === 'ca' ? 'Pagament cancel·lat' : 'Pago cancelado');
+    }
+  }, [searchParams]);
+
   // Auto-scroll to familiar card if coming from upgrade prompt
   useEffect(() => {
     if (searchParams.get('highlight') === 'familiar' && familiarRef.current) {
@@ -39,13 +50,28 @@ const PlansPage = () => {
     }
   }, [searchParams]);
 
-  const handleUpgrade = () => {
+  const handleUpgrade = async () => {
+    if (!user) {
+      navigate('/register');
+      return;
+    }
     setUpgrading(true);
-    setTimeout(() => {
+    try {
+      if (stripePromise) {
+        const priceId = yearly ? PRICE_IDS.FAMILIAR_YEARLY : PRICE_IDS.FAMILIAR_MONTHLY;
+        await createCheckout(priceId, user.id, user.email);
+      } else {
+        // Mock mode when Stripe key not set
+        await new Promise(r => setTimeout(r, 1200));
+        updateProfile({ plan: 'familiar' });
+        toast.success(lang === 'ca' ? 'Pla activat correctament' : 'Plan activado correctamente');
+        setShowSuccess(true);
+      }
+    } catch (e) {
+      toast.error(lang === 'ca' ? 'Error en el pagament' : 'Error en el pago');
+    } finally {
       setUpgrading(false);
-      setShowSuccess(true);
-      updateProfile({ plan: 'familiar' });
-    }, 1500);
+    }
   };
 
   const freeFeatures = [
