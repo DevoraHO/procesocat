@@ -13,6 +13,8 @@ i18n
       ca: { translation: ca }
     },
     fallbackLng: 'es',
+    load: 'languageOnly',
+    debug: false,
     detection: {
       lookupLocalStorage: 'procesocat_lang',
       order: ['localStorage', 'navigator'],
@@ -21,6 +23,8 @@ i18n
     interpolation: {
       escapeValue: false
     }
+  }).catch((err) => {
+    console.error('i18n init failed, using fallback', err);
   });
 
 export default i18n;
