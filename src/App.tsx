@@ -74,6 +74,7 @@ const App = () => {
             <OfflineBanner />
             <GDPRModal />
             <BrowserRouter>
+              <OAuthCallbackHandler />
               <Suspense fallback={<LoadingSpinner />}>
                 <Routes>
                   <Route path="/" element={<Navigate to="/map" replace />} />
@@ -106,5 +107,26 @@ const App = () => {
     </ErrorBoundary>
   );
 };
+
+// Handles OAuth redirect (access_token in URL hash)
+function OAuthCallbackHandler() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        // Only redirect if we're on login or root with hash tokens
+        const hash = window.location.hash;
+        const path = window.location.pathname;
+        if (hash.includes('access_token') || path === '/login' || path === '/') {
+          navigate('/map', { replace: true });
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  return null;
+}
 
 export default App;
