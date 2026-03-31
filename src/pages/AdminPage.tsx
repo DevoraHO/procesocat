@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { mockReports, mockUsers, mockZoneAlerts } from '@/data/mockData';
+import { mockZoneAlerts } from '@/data/mockData';
+import { fetchReports, fetchAllProfiles, type Report } from '@/lib/supabase-queries';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,7 +25,7 @@ const AdminPage = () => {
   const lang = i18n.language;
 
   // Reports state
-  const [reports, setReports] = useState(mockReports);
+  const [reports, setReports] = useState<Report[]>([]);
   const [statusFilter, setStatusFilter] = useState('all');
   const [comarcaFilter, setComarcaFilter] = useState('all');
   const [dangerFilter, setDangerFilter] = useState('all');
@@ -33,7 +34,7 @@ const AdminPage = () => {
   const [noteText, setNoteText] = useState('');
 
   // Users state
-  const [users, setUsers] = useState(mockUsers);
+  const [users, setUsers] = useState<any[]>([]);
   const [userSearch, setUserSearch] = useState('');
   const [warningModal, setWarningModal] = useState<string | null>(null);
   const [warningText, setWarningText] = useState('');
@@ -45,6 +46,29 @@ const AdminPage = () => {
   const [secEventFilter, setSecEventFilter] = useState('all');
 
   useEffect(() => { setAdminSecLogs(getSecurityLogs()); }, []);
+
+  // Load real data from Supabase
+  useEffect(() => {
+    const load = async () => {
+      const [reportsData, profilesData] = await Promise.all([
+        fetchReports(),
+        fetchAllProfiles(200),
+      ]);
+      setReports(reportsData);
+      setUsers(profilesData.map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        email: p.email,
+        plan: p.plan,
+        points: p.points,
+        reports: 0,
+        created_at: p.created_at,
+        role: 'user',
+        status: 'active',
+      })));
+    };
+    load();
+  }, []);
 
   // Filtered reports
   const filteredReports = useMemo(() => {

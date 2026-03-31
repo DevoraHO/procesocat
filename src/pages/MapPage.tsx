@@ -5,6 +5,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { ALERT_TYPES, type AlertTypeKey } from '@/data/mockData';
 import { fetchReports, createReport as createReportDB, updateReport as updateReportDB, type Report } from '@/lib/supabase-queries';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { calculateDangerScore, getDangerColor, getDangerLevel } from '@/utils/dangerScore';
 import { createAlertMarker } from '@/utils/mapMarkers';
@@ -48,6 +49,22 @@ const MapPage = () => {
       }
     };
     load();
+
+    // Real-time subscription for new reports
+    const channel = supabase
+      .channel('reports-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reports' }, (payload) => {
+        const newReport = payload.new as Report;
+        setReports(prev => updateLifecycle([newReport, ...prev] as any));
+        toast.info('📍 ' + (newReport.description?.slice(0, 50) || 'Nuevo reporte'));
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'reports' }, (payload) => {
+        const updated = payload.new as Report;
+        setReports(prev => updateLifecycle(prev.map(r => r.id === updated.id ? updated : r) as any));
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
   const [showSeasonBanner, setShowSeasonBanner] = useState(!localStorage.getItem('annual_reset_shown'));
   const [nearbyDecay, setNearbyDecay] = useState<typeof reports[0] | null>(null);

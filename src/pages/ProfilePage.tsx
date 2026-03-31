@@ -3,7 +3,8 @@ import WeeklyCharts from '@/components/WeeklyCharts';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { mockBadges, mockSavedZones, mockStats, mockRanking, mockRouteHistory, mockWeeklyReports, mockDangerEvolution, ALERT_TYPES } from '@/data/mockData';
+import { mockBadges, mockRouteHistory, mockDangerEvolution, ALERT_TYPES } from '@/data/mockData';
+import { fetchSavedZones, createSavedZone, deleteSavedZone, fetchUserBadges, fetchRanking, fetchUserReports } from '@/lib/supabase-queries';
 import { searchMunicipalities, getMunicipalityById, Municipality } from '@/data/municipalData';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -97,7 +98,9 @@ const ProfilePage = () => {
   const [badgeRarity, setBadgeRarity] = useState<string>('all');
   const [selectedBadge, setSelectedBadge] = useState<typeof mockBadges[0] | null>(null);
   const [unlockBadge, setUnlockBadge] = useState<typeof mockBadges[0] | null>(null);
-  const [zones, setZones] = useState(mockSavedZones);
+  const [zones, setZones] = useState<any[]>([]);
+  const [ranking, setRanking] = useState<any[]>([]);
+  const [userStats, setUserStats] = useState({ totalReports: 0, totalValidations: 0, totalPhotos: 0, totalComments: 0 });
   const [addZoneOpen, setAddZoneOpen] = useState(false);
   const [deleteZoneId, setDeleteZoneId] = useState<string | null>(null);
   const [zoneName, setZoneName] = useState('');
@@ -141,6 +144,27 @@ const ProfilePage = () => {
   }, []);
 
   useEffect(() => { loadSecurityData(); }, [loadSecurityData]);
+
+  // Load real data from Supabase
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      const [zonesData, rankingData, userReports] = await Promise.all([
+        fetchSavedZones(user.id),
+        fetchRanking(50),
+        fetchUserReports(user.id),
+      ]);
+      setZones(zonesData);
+      setRanking(rankingData);
+      setUserStats({
+        totalReports: userReports.length,
+        totalValidations: user.points ? Math.floor(user.points / 15) : 0,
+        totalPhotos: userReports.reduce((acc, r) => acc + (r.photos?.length || 0), 0),
+        totalComments: 0,
+      });
+    };
+    load();
+  }, [user]);
 
   const isFree = user?.plan === 'free';
   // Ranking sub-tab
@@ -264,18 +288,19 @@ const ProfilePage = () => {
     navigate('/login');
   };
 
-  const handleAddZone = () => {
-    if (!zoneName || !zoneLat || !zoneLng) return;
-    const newZone = {
-      id: `z${Date.now()}`,
+  const handleAddZone = async () => {
+    if (!zoneName || !zoneLat || !zoneLng || !user) return;
+    const newZone = await createSavedZone({
+      user_id: user.id,
       name: zoneName,
       lat: zoneLat,
       lng: zoneLng,
       radius_km: zoneRadius,
       alert_threshold: zoneThreshold,
-      current_danger_score: Math.floor(Math.random() * 50),
-    };
-    setZones(prev => [...prev, newZone]);
+    });
+    if (newZone) {
+      setZones(prev => [...prev, newZone]);
+    }
     setAddZoneOpen(false);
     setZoneName('');
     setZoneLat(null);
@@ -283,9 +308,12 @@ const ProfilePage = () => {
     toast({ title: t('profile.zoneSaved') });
   };
 
-  const handleDeleteZone = () => {
+  const handleDeleteZone = async () => {
     if (deleteZoneId) {
-      setZones(prev => prev.filter(z => z.id !== deleteZoneId));
+      const ok = await deleteSavedZone(deleteZoneId);
+      if (ok) {
+        setZones(prev => prev.filter(z => z.id !== deleteZoneId));
+      }
       setDeleteZoneId(null);
       toast({ title: t('profile.zoneDeleted') });
     }
@@ -307,7 +335,7 @@ const ProfilePage = () => {
     80: { labelKey: 'danger.red', color: '#ef4444' },
   };
 
-  const userRankIdx = mockRanking.findIndex(r => r.name === user?.name);
+  const userRankIdx = ranking.findIndex(r => r.id === user?.id);
 
   const shareRanking = () => {
     const pos = userRankIdx + 1;
@@ -365,10 +393,10 @@ const ProfilePage = () => {
       {/* Stats */}
       <div className="grid grid-cols-4 gap-2 px-4 mt-6">
         {[
-          { label: lang === 'ca' ? 'Reports' : 'Reportes', val: mockStats.totalReports },
-          { label: 'Val.', val: mockStats.totalValidations },
-          { label: 'Fotos', val: mockStats.totalPhotos },
-          { label: 'Coment.', val: mockStats.totalComments },
+          { label: lang === 'ca' ? 'Reports' : 'Reportes', val: userStats.totalReports },
+          { label: 'Val.', val: userStats.totalValidations },
+          { label: 'Fotos', val: userStats.totalPhotos },
+          { label: 'Coment.', val: userStats.totalComments },
         ].map(s => (
           <Card key={s.label} className="text-center py-3">
             <p className="text-xl font-bold text-primary">{s.val}</p>
@@ -772,7 +800,7 @@ const ProfilePage = () => {
           {/* Podium */}
           <div className="flex items-end justify-center gap-3 pt-4 pb-2">
             {[1, 0, 2].map(idx => {
-              const r = mockRanking[idx];
+              const r = ranking[idx];
               if (!r) return null;
               const isCenter = idx === 0;
               const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉';
@@ -788,8 +816,8 @@ const ProfilePage = () => {
           </div>
 
           <div className="space-y-2">
-            {mockRanking.slice(3).map((r, i) => {
-              const isUser = r.name === user.name;
+            {ranking.slice(3).map((r, i) => {
+              const isUser = r.id === user.id;
               return (
                 <div key={r.id} className={`flex items-center gap-3 p-3 rounded-xl ${isUser ? 'bg-primary/10 border border-primary/20' : 'bg-card border'}`}>
                   <span className="text-sm font-bold text-muted-foreground w-6">#{i + 4}</span>
