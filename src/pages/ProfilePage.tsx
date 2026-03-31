@@ -288,18 +288,19 @@ const ProfilePage = () => {
     navigate('/login');
   };
 
-  const handleAddZone = () => {
-    if (!zoneName || !zoneLat || !zoneLng) return;
-    const newZone = {
-      id: `z${Date.now()}`,
+  const handleAddZone = async () => {
+    if (!zoneName || !zoneLat || !zoneLng || !user) return;
+    const newZone = await createSavedZone({
+      user_id: user.id,
       name: zoneName,
       lat: zoneLat,
       lng: zoneLng,
       radius_km: zoneRadius,
       alert_threshold: zoneThreshold,
-      current_danger_score: Math.floor(Math.random() * 50),
-    };
-    setZones(prev => [...prev, newZone]);
+    });
+    if (newZone) {
+      setZones(prev => [...prev, newZone]);
+    }
     setAddZoneOpen(false);
     setZoneName('');
     setZoneLat(null);
@@ -307,9 +308,12 @@ const ProfilePage = () => {
     toast({ title: t('profile.zoneSaved') });
   };
 
-  const handleDeleteZone = () => {
+  const handleDeleteZone = async () => {
     if (deleteZoneId) {
-      setZones(prev => prev.filter(z => z.id !== deleteZoneId));
+      const ok = await deleteSavedZone(deleteZoneId);
+      if (ok) {
+        setZones(prev => prev.filter(z => z.id !== deleteZoneId));
+      }
       setDeleteZoneId(null);
       toast({ title: t('profile.zoneDeleted') });
     }
