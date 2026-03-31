@@ -170,6 +170,43 @@ const MapPage = () => {
     };
   }, []);
 
+  // GPS real-time tracking - update blue dot on map
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !gpsPosition) return;
+
+    const { lat, lng, accuracy } = gpsPosition;
+
+    if (userMarkerRef.current) {
+      userMarkerRef.current.setLatLng([lat, lng]);
+    } else {
+      userMarkerRef.current = L.circleMarker([lat, lng], {
+        radius: 8,
+        color: '#3b82f6',
+        fillColor: '#3b82f6',
+        fillOpacity: 1,
+        weight: 3,
+        opacity: 0.5,
+      }).addTo(map);
+    }
+
+    if (userAccuracyRef.current) {
+      userAccuracyRef.current.setLatLng([lat, lng]);
+      userAccuracyRef.current.setRadius(accuracy);
+    } else {
+      userAccuracyRef.current = L.circle([lat, lng], {
+        radius: accuracy,
+        color: '#3b82f6',
+        fillColor: '#3b82f6',
+        fillOpacity: 0.1,
+        weight: 1,
+        opacity: 0.3,
+      }).addTo(map);
+    }
+
+    setUserGPS({ lat, lng, accuracy });
+  }, [gpsPosition]);
+
   // Fly to location from navigation state (e.g. from profile zones)
   useEffect(() => {
     const state = location.state as { flyTo?: { lat: number; lng: number; zoom?: number } } | null;
