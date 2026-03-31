@@ -186,26 +186,21 @@ const ProfilePage = () => {
   const nextRank = currentRankIdx < RANKS.length - 1 ? RANKS[currentRankIdx + 1] : null;
   const progressPct = nextRank ? ((points - currentRank.min) / (nextRank.min - currentRank.min)) * 100 : 100;
 
-  // Filtered badges
+  // Filtered badges — use real earned status from Supabase
   const filteredBadges = useMemo(() => {
-    let result = mockBadges;
+    let result = mockBadges.map(b => ({
+      ...b,
+      earned: earnedBadgeIds.has(b.id),
+      earned_at: earnedBadgeIds.has(b.id) ? b.earned_at : undefined,
+    }));
     if (badgeCategory !== 'all') result = result.filter(b => b.category === badgeCategory);
     if (badgeRarity !== 'all') result = result.filter(b => b.rarity === badgeRarity);
-    // Smart sorting
     return [...result].sort((a, b) => {
-      const aNearly = !a.earned && a.progress !== undefined && a.total !== undefined && a.total > 0 && (a.progress / a.total) > 0.7;
-      const bNearly = !b.earned && b.progress !== undefined && b.total !== undefined && b.total > 0 && (b.progress / b.total) > 0.7;
-      if (aNearly && !bNearly) return -1;
-      if (!aNearly && bNearly) return 1;
-      if (a.earned && !b.earned) return aNearly ? 1 : -1;
-      if (!a.earned && b.earned) return bNearly ? -1 : 1;
-      if (a.earned && b.earned) return (b.earned_at || '').localeCompare(a.earned_at || '');
-      if (a.progress !== undefined && b.progress !== undefined && a.total && b.total) {
-        return (b.progress / b.total) - (a.progress / a.total);
-      }
+      if (a.earned && !b.earned) return -1;
+      if (!a.earned && b.earned) return 1;
       return 0;
     });
-  }, [badgeCategory, badgeRarity]);
+  }, [badgeCategory, badgeRarity, earnedBadgeIds]);
 
   // Days until Monday
   const daysUntilMonday = useMemo(() => {
