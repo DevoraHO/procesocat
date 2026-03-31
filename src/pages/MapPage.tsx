@@ -33,13 +33,15 @@ const MapPage = () => {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const heatmapLayerRef = useRef<L.LayerGroup | null>(null);
   const userMarkerRef = useRef<L.CircleMarker | null>(null);
+  const userAccuracyRef = useRef<L.Circle | null>(null);
   const previewMarkerRef = useRef<L.Marker | null>(null);
+  const { position: gpsPosition, startTracking } = useGPSTracking();
 
   const [reports, setReports] = useState<Report[]>([]);
 
