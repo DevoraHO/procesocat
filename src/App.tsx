@@ -50,6 +50,9 @@ const App = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
+    // Preload all Catalunya municipalities from INE API
+    loadAllMunicipalities();
+
     const timer = setTimeout(() => {
       setShowLoading(false);
       if (!safeStorage.getItem('onboarding_done')) {
