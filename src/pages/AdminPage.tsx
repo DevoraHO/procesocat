@@ -630,7 +630,7 @@ const AdminPage = () => {
             <p className="text-xs text-muted-foreground">{lang === 'ca' ? 'En producció enviarà email automàticament' : 'En producción enviará email automáticamente'}</p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { navigator.clipboard.writeText(emailBody); toast({ title: lang === 'ca' ? 'Text copiat!' : '¡Texto copiado!' }); }}>
+            <Button variant="outline" onClick={() => { try { navigator.clipboard.writeText(emailBody); } catch {} toast({ title: lang === 'ca' ? 'Text copiat!' : '¡Texto copiado!' }); }}>
               <Copy size={14} /> {lang === 'ca' ? 'Copiar text' : 'Copiar texto'}
             </Button>
             <Button variant="outline" onClick={() => setEmailModal(null)}>{lang === 'ca' ? 'Tancar' : 'Cerrar'}</Button>
