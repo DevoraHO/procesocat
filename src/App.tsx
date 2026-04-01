@@ -8,6 +8,7 @@ import { ValidationProvider } from "@/contexts/ValidationContext";
 import { supabase } from "@/integrations/supabase/client";
 import '@/i18n';
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { safeStorage } from '@/utils/safeStorage';
 
 import AppLayout from "@/components/AppLayout";
 import ProtectedRoute from "@/components/ProtectedRoute";
