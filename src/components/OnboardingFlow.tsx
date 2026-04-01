@@ -13,10 +13,10 @@ const OnboardingFlow = ({ onComplete }: Props) => {
   const toggleLang = () => {
     const next = currentLang === 'es' ? 'ca' : 'es';
     i18n.changeLanguage(next);
-    localStorage.setItem('procesocat_lang', next);
+    safeStorage.setItem('procesocat_lang', next);
   };
 
-  const skip = () => { localStorage.setItem('onboarding_done', 'true'); onComplete(); };
+  const skip = () => { safeStorage.setItem('onboarding_done', 'true'); onComplete(); };
   const next = () => { if (step < 2) setStep(step + 1); else skip(); };
   const prev = () => { if (step > 0) setStep(step - 1); };
 
@@ -32,8 +32,8 @@ const OnboardingFlow = ({ onComplete }: Props) => {
     <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center p-8 text-white text-center" style={{ background: '#2D6A4F' }}>
       <div className="absolute top-6 left-6 right-6 flex justify-between items-center">
         <div className="flex gap-1">
-          <button onClick={() => { i18n.changeLanguage('es'); localStorage.setItem('procesocat_lang', 'es'); }} className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${currentLang === 'es' ? 'bg-white text-[#2D6A4F]' : 'bg-white/20 text-white/70'}`}>ES</button>
-          <button onClick={() => { i18n.changeLanguage('ca'); localStorage.setItem('procesocat_lang', 'ca'); }} className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${currentLang === 'ca' ? 'bg-white text-[#2D6A4F]' : 'bg-white/20 text-white/70'}`}>CA</button>
+          <button onClick={() => { i18n.changeLanguage('es'); safeStorage.setItem('procesocat_lang', 'es'); }} className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${currentLang === 'es' ? 'bg-white text-[#2D6A4F]' : 'bg-white/20 text-white/70'}`}>ES</button>
+          <button onClick={() => { i18n.changeLanguage('ca'); safeStorage.setItem('procesocat_lang', 'ca'); }} className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${currentLang === 'ca' ? 'bg-white text-[#2D6A4F]' : 'bg-white/20 text-white/70'}`}>CA</button>
         </div>
         <button onClick={skip} className="text-white/70 text-sm">{t('onboarding.skip')}</button>
       </div>

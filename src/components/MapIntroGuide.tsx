@@ -43,7 +43,7 @@ const MapIntroGuide = ({ onComplete }: { onComplete: () => void }) => {
 
   const handleNext = () => {
     if (isLast) {
-      localStorage.setItem('map_intro_shown', 'true');
+      safeStorage.setItem('map_intro_shown', 'true');
       onComplete();
     } else {
       setSlide(slide + 1);

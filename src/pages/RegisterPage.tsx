@@ -94,7 +94,7 @@ const RegisterPage = () => {
 
   const handleFinishPet = (withPet: boolean) => {
     if (withPet && petName) {
-      localStorage.setItem('pet_name', petName);
+      safeStorage.setItem('pet_name', petName);
     }
     setStep('municipality');
   };
@@ -107,7 +107,7 @@ const RegisterPage = () => {
       }
       if (muni) {
         await updateProfile({ municipality_id: muni.id });
-        localStorage.setItem('municipality_id', muni.id);
+        safeStorage.setItem('municipality_id', muni.id);
       }
     } catch (err) {
       console.error('Error updating profile:', err);
