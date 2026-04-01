@@ -52,7 +52,7 @@ const ReportSharePage = () => {
     } catch (err) {
       console.error('Share map init failed:', err);
     }
-    return () => { map.remove(); leafletRef.current = null; };
+    return () => { if (leafletRef.current) { leafletRef.current.remove(); leafletRef.current = null; } };
   }, [report]);
 
   if (loading) {
