@@ -1099,13 +1099,14 @@ const ProfilePage = () => {
               </div>
               {municipalityResults.length > 0 && (
                 <div className="border rounded-lg max-h-48 overflow-y-auto">
-                  {municipalityResults.map(m => {
+                  {municipalityResults.map((m: MunicipalityBasic) => {
                     const isSelected = m.id === selectedMunicipalityId;
                     return (
                       <button
                         key={m.id}
                         onClick={() => {
                           setSelectedMunicipalityId(m.id);
+                          setNeedsMunicipalityUpdate(false);
                           updateProfile({ municipality_id: m.id });
                           safeStorage.setItem('municipality_id', m.id);
                           setMunicipalityModalOpen(false);
@@ -1115,14 +1116,19 @@ const ProfilePage = () => {
                         className={`w-full text-left px-3 py-2 hover:bg-muted/50 flex items-center justify-between border-b last:border-b-0 ${isSelected ? 'bg-primary/10' : ''}`}
                       >
                         <div>
-                          <p className="text-sm font-medium text-foreground">{lang === 'ca' ? m.name_ca : m.name_es}</p>
-                          <p className="text-xs text-muted-foreground">{lang === 'ca' ? m.comarca_ca : m.comarca_es}</p>
+                          <p className="text-sm font-medium text-foreground">{m.name}</p>
+                          <p className="text-xs text-muted-foreground">{m.comarca} · {m.provincia}</p>
                         </div>
                         {isSelected && <span className="text-xs text-primary font-bold">✓ {t('municipality.selected')}</span>}
                       </button>
                     );
                   })}
                 </div>
+              )}
+              {municipalityQuery.length >= 2 && municipalityResults.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-2">
+                  {lang === 'ca' ? "No s'ha trobat cap municipi" : 'No se ha encontrado ningún municipio'}
+                </p>
               )}
             </DialogContent>
           </Dialog>
