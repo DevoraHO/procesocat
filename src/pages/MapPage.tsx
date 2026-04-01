@@ -163,6 +163,9 @@ const MapPage = () => {
       return;
     }
 
+    // Auto-start GPS tracking on map load
+    startTracking();
+
     if (!safeStorage.getItem('location_asked')) {
       setShowLocationModal(true);
     }
