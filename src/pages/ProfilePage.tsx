@@ -1052,7 +1052,7 @@ const ProfilePage = () => {
                         onClick={() => {
                           setSelectedMunicipalityId(m.id);
                           updateProfile({ municipality_id: m.id });
-                          localStorage.setItem('municipality_id', m.id);
+                          safeStorage.setItem('municipality_id', m.id);
                           setMunicipalityModalOpen(false);
                           setMunicipalityQuery('');
                           toast({ title: t('profile.profileUpdated') });

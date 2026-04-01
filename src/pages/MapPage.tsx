@@ -74,7 +74,7 @@ const MapPage = () => {
 
     return () => { supabase.removeChannel(channel); };
   }, []);
-  const [showSeasonBanner, setShowSeasonBanner] = useState(!localStorage.getItem('annual_reset_shown'));
+  const [showSeasonBanner, setShowSeasonBanner] = useState(!safeStorage.getItem('annual_reset_shown'));
   const [nearbyDecay, setNearbyDecay] = useState<typeof reports[0] | null>(null);
   const [scoredReports, setScoredReports] = useState<ReportWithScore[]>([]);
   const [heatmapVisible, setHeatmapVisible] = useState(true);

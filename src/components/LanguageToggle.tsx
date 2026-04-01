@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { safeStorage } from '@/utils/safeStorage';
 
 const LanguageToggle = () => {
   const { i18n } = useTranslation();
@@ -8,7 +9,7 @@ const LanguageToggle = () => {
   const toggle = () => {
     const next = current === 'es' ? 'ca' : 'es';
     i18n.changeLanguage(next);
-    localStorage.setItem('procesocat_lang', next);
+    safeStorage.setItem('procesocat_lang', next);
   };
 
   return (

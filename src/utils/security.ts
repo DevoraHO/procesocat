@@ -239,7 +239,7 @@ export interface SecurityLog {
 }
 
 export function logSecurityEvent(type: string, details: Record<string, unknown>): void {
-  const logs: SecurityLog[] = JSON.parse(localStorage.getItem('security_logs') || '[]');
+  const logs: SecurityLog[] = JSON.parse(safeStorage.getItem('security_logs') || '[]');
   logs.unshift({
     id: Math.random().toString(36).substring(2),
     type,
@@ -247,11 +247,11 @@ export function logSecurityEvent(type: string, details: Record<string, unknown>)
     timestamp: new Date().toISOString(),
     ip: '192.168.1.1'
   });
-  localStorage.setItem('security_logs', JSON.stringify(logs.slice(0, 100)));
+  safeStorage.setItem('security_logs', JSON.stringify(logs.slice(0, 100)));
 }
 
 export function getSecurityLogs(): SecurityLog[] {
-  return JSON.parse(localStorage.getItem('security_logs') || '[]');
+  return JSON.parse(safeStorage.getItem('security_logs') || '[]');
 }
 
 export const mockSessions: SessionInfo[] = [

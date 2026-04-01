@@ -185,7 +185,7 @@ export const ValidationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     const updated = [...userValidations, record];
     setUserValidations(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    safeStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
 
     if (isSuspicious) {
       setFraudLog(prev => [...prev, record]);
