@@ -202,7 +202,7 @@ export interface SessionInfo {
 }
 
 export function getActiveSessions(): SessionInfo[] {
-  return JSON.parse(localStorage.getItem('active_sessions') || '[]');
+  return JSON.parse(safeStorage.getItem('active_sessions') || '[]');
 }
 
 export function addSession(deviceInfo: string): string {
