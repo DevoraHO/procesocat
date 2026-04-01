@@ -40,6 +40,7 @@ const ReportsPage = lazy(() => import("@/pages/ReportsPage"));
 const MunicipiDashboard = lazy(() => import("@/pages/MunicipiDashboard"));
 const PDFPreview = lazy(() => import("@/pages/PDFPreview"));
 const OnboardingPage = lazy(() => import("@/pages/OnboardingPage"));
+const AuthCallbackPage = lazy(() => import("@/pages/AuthCallbackPage"));
 
 const queryClient = new QueryClient();
 
