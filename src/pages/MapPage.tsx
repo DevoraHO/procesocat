@@ -1146,6 +1146,21 @@ const MapPage = () => {
         </div>
       )}
 
+      {/* Center on my location button */}
+      {gpsPosition && !safeWalkMode && (
+        <button
+          onClick={() => {
+            if (mapRef.current && gpsPosition) {
+              mapRef.current.flyTo([gpsPosition.lat, gpsPosition.lng], 15, { duration: 1 });
+            }
+          }}
+          className="absolute bottom-36 right-4 z-[1000] w-10 h-10 rounded-full bg-card shadow-lg border border-border flex items-center justify-center hover:bg-accent transition"
+          title={t('map.centerOnMe', 'Centrar en la meva ubicació')}
+        >
+          <Locate className="h-5 w-5 text-primary" />
+        </button>
+      )}
+
       {/* BOTTOM RIGHT: FAB add report */}
       {!safeWalkMode && (
         <div className="absolute bottom-20 right-4 z-[1000] flex flex-col items-center gap-1">
