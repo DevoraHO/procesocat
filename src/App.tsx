@@ -40,6 +40,7 @@ const ReportsPage = lazy(() => import("@/pages/ReportsPage"));
 const MunicipiDashboard = lazy(() => import("@/pages/MunicipiDashboard"));
 const PDFPreview = lazy(() => import("@/pages/PDFPreview"));
 const OnboardingPage = lazy(() => import("@/pages/OnboardingPage"));
+const AuthCallbackPage = lazy(() => import("@/pages/AuthCallbackPage"));
 
 const queryClient = new QueryClient();
 
@@ -85,6 +86,7 @@ const App = () => {
                   <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                   <Route path="/privacy" element={<AppLayout><PrivacyPage /></AppLayout>} />
                   <Route path="/terms" element={<AppLayout><TermsPage /></AppLayout>} />
+                  <Route path="/auth/callback" element={<AuthCallbackPage />} />
                   <Route path="/r/:id" element={<ReportSharePage />} />
                   <Route path="/info" element={<AppLayout><InfoPage /></AppLayout>} />
                   <Route path="/pricing" element={<AppLayout><PricingPage /></AppLayout>} />
