@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { Filter, Plus, X, ChevronLeft, ChevronRight, MapPin, Camera, Lock, Shield, Search, Trash2, RotateCcw } from 'lucide-react';
+import { Filter, Plus, X, ChevronLeft, ChevronRight, MapPin, Camera, Lock, Shield, Search, Trash2, RotateCcw, Locate } from 'lucide-react';
 import { useFreemium } from '@/hooks/useFreemium';
 import UpgradeModal from '@/components/UpgradeModal';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
