@@ -1276,7 +1276,7 @@ const ProfilePage = () => {
             <CardContent className="pt-6 space-y-3">
               <h3 className="font-semibold text-foreground">{t('settingsSections.privacy')}</h3>
               <Button variant="outline" size="sm" onClick={() => toast({ title: t('profile.downloadDataToast') })}>{t('settings.downloadData')}</Button>
-              <Button variant="outline" size="sm" onClick={() => { localStorage.removeItem('gdpr_shown'); window.location.reload(); }}>{t('profile.revokeConsent')}</Button>
+              <Button variant="outline" size="sm" onClick={() => { safeStorage.removeItem('gdpr_shown'); window.location.reload(); }}>{t('profile.revokeConsent')}</Button>
               <Button variant="outline" size="sm" className="text-destructive border-destructive/30" onClick={() => setDeleteAccountOpen(true)}>{t('settings.deleteAccount')}</Button>
             </CardContent>
           </Card>
