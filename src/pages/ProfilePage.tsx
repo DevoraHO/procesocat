@@ -125,7 +125,7 @@ const ProfilePage = () => {
   const [loadingReports, setLoadingReports] = useState(true);
   const [municipalityModalOpen, setMunicipalityModalOpen] = useState(false);
   const [municipalityQuery, setMunicipalityQuery] = useState('');
-  const [selectedMunicipalityId, setSelectedMunicipalityId] = useState(user?.municipality_id || localStorage.getItem('municipality_id') || '');
+  const [selectedMunicipalityId, setSelectedMunicipalityId] = useState(user?.municipality_id || safeStorage.getItem('municipality_id') || '');
   const municipalityResults = searchMunicipalities(municipalityQuery);
   const currentMunicipality = selectedMunicipalityId ? getMunicipalityById(selectedMunicipalityId) : undefined;
 
