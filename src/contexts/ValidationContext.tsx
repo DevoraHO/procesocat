@@ -51,7 +51,7 @@ const STORAGE_KEY = 'mock_validations';
 
 function loadValidations(): ValidationRecord[] {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = safeStorage.getItem(STORAGE_KEY);
     if (stored) return JSON.parse(stored);
   } catch { /* ignore */ }
   // Initial mock validations
