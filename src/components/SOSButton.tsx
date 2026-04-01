@@ -43,13 +43,7 @@ const SOSButton = ({ alertType }: SOSButtonProps) => {
   };
 
   const findNearestMunicipality = useCallback((lat: number, lng: number) => {
-    let nearest: Municipality | null = null;
-    let minDist = Infinity;
-    for (const m of MUNICIPALITIES) {
-      const d = haversine(lat, lng, m.lat, m.lng);
-      if (d < minDist) { minDist = d; nearest = m; }
-    }
-    return nearest;
+    return findNearestRichMunicipality(lat, lng);
   }, []);
 
   const requestGPS = useCallback(() => {
