@@ -1657,14 +1657,20 @@ const MiniLocationMap = ({ initialCoords, alertType, onCoordsChange, static: isS
   useEffect(() => {
     if (!containerRef.current || miniMapRef.current) return;
     const center: [number, number] = initialCoords || [41.54, 2.21];
-    const map = L.map(containerRef.current, {
-      zoomControl: false,
-      attributionControl: false,
-      dragging: !isStatic,
-      scrollWheelZoom: !isStatic,
-      doubleClickZoom: false,
-      touchZoom: !isStatic,
-    }).setView(center, initialCoords ? 16 : 12);
+    let map: L.Map;
+    try {
+      map = L.map(containerRef.current, {
+        zoomControl: false,
+        attributionControl: false,
+        dragging: !isStatic,
+        scrollWheelZoom: !isStatic,
+        doubleClickZoom: false,
+        touchZoom: !isStatic,
+      }).setView(center, initialCoords ? 16 : 12);
+    } catch (err) {
+      console.error('MiniMap init failed:', err);
+      return;
+    }
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
@@ -1674,7 +1680,6 @@ const MiniLocationMap = ({ initialCoords, alertType, onCoordsChange, static: isS
         onCoordsChange([c.lat, c.lng]);
       };
       map.on('move', updateCenter);
-      // Set initial coords
       if (initialCoords) onCoordsChange(initialCoords);
       else {
         const c = map.getCenter();
