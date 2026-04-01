@@ -1,4 +1,5 @@
 import DOMPurify from 'dompurify';
+import { safeStorage } from '@/utils/safeStorage';
 
 export const SECURITY_CONFIG = {
   MAX_LOGIN_ATTEMPTS: 5,

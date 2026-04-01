@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { safeStorage } from '@/utils/safeStorage';
 import WeeklyCharts from '@/components/WeeklyCharts';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
