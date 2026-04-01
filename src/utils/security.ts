@@ -220,7 +220,7 @@ export function addSession(deviceInfo: string): string {
   const updatedSessions = [newSession,
     ...sessions.map(s => ({ ...s, current: false }))]
     .slice(0, SECURITY_CONFIG.MAX_DEVICES);
-  localStorage.setItem('active_sessions', JSON.stringify(updatedSessions));
+  safeStorage.setItem('active_sessions', JSON.stringify(updatedSessions));
   return sessionId;
 }
 
