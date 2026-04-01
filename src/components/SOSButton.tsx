@@ -3,7 +3,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Phone, X, MapPin, Globe, Mail, ChevronDown, ChevronUp, Search, Navigation, Share2, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
-import { getMunicipalityById, Municipality, MUNICIPALITIES, searchMunicipalities } from '@/data/municipalData';
+import { getMunicipalityById, Municipality, searchMunicipalities, findNearestRichMunicipality } from '@/data/municipalData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -43,13 +43,7 @@ const SOSButton = ({ alertType }: SOSButtonProps) => {
   };
 
   const findNearestMunicipality = useCallback((lat: number, lng: number) => {
-    let nearest: Municipality | null = null;
-    let minDist = Infinity;
-    for (const m of MUNICIPALITIES) {
-      const d = haversine(lat, lng, m.lat, m.lng);
-      if (d < minDist) { minDist = d; nearest = m; }
-    }
-    return nearest;
+    return findNearestRichMunicipality(lat, lng);
   }, []);
 
   const requestGPS = useCallback(() => {
@@ -450,7 +444,7 @@ const SOSButton = ({ alertType }: SOSButtonProps) => {
               <Navigation size={14} className="mr-2" /> {t('municipality.useLocation')}
             </Button>
             <div className="space-y-1">
-              {(searchQuery.length >= 2 ? searchResults : MUNICIPALITIES.slice(0, 8)).map((m) => (
+              {(searchQuery.length >= 2 ? searchResults : searchMunicipalities('a')).map((m) => (
                 <button key={m.id} onClick={() => selectMunicipality(m)} className="w-full text-left p-3 rounded-lg hover:bg-accent flex items-center justify-between border">
                   <div>
                     <p className="text-sm font-medium">{lang === 'ca' ? m.name_ca : m.name_es}</p>

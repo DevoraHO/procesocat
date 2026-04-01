@@ -1,3 +1,6 @@
+import { searchMunicipalitiesAPI, type MunicipalityBasic } from '@/services/municipalityService';
+import { getMunicipalityFromGPS } from '@/services/geoLocationService';
+
 export interface Vet {
   name: string;
   phone: string;
@@ -35,8 +38,8 @@ export interface Municipality {
   sanitat_forestal: string;
 }
 
-export const MUNICIPALITIES: Municipality[] = [
-  // VALLÈS OCCIDENTAL
+// Rich emergency data — kept internally for SOS and emergency features
+const _RICH_DATA: Municipality[] = [
   {
     id: 'sabadell',
     name_es: 'Sabadell', name_ca: 'Sabadell',
@@ -81,7 +84,6 @@ export const MUNICIPALITIES: Municipality[] = [
     ],
     sanitat_forestal: 'Oficina Comarcal Vallès Occidental — 93 748 XX XX'
   },
-  // VALLÈS ORIENTAL
   {
     id: 'granollers',
     name_es: 'Granollers', name_ca: 'Granollers',
@@ -112,7 +114,6 @@ export const MUNICIPALITIES: Municipality[] = [
     ],
     sanitat_forestal: 'Oficina Comarcal Vallès Oriental — 93 860 XX XX'
   },
-  // MARESME
   {
     id: 'mataro',
     name_es: 'Mataró', name_ca: 'Mataró',
@@ -128,7 +129,6 @@ export const MUNICIPALITIES: Municipality[] = [
     ],
     sanitat_forestal: 'Oficina Comarcal Maresme — 93 741 XX XX'
   },
-  // BARCELONÈS
   {
     id: 'barcelona',
     name_es: 'Barcelona', name_ca: 'Barcelona',
@@ -145,7 +145,6 @@ export const MUNICIPALITIES: Municipality[] = [
     ],
     sanitat_forestal: 'Servei de Parcs i Jardins Barcelona — 010'
   },
-  // BAIX LLOBREGAT
   {
     id: 'castelldefels',
     name_es: 'Castelldefels', name_ca: 'Castelldefels',
@@ -160,7 +159,6 @@ export const MUNICIPALITIES: Municipality[] = [
     ],
     sanitat_forestal: 'Oficina Comarcal Baix Llobregat — 93 685 XX XX'
   },
-  // BAGES
   {
     id: 'manresa',
     name_es: 'Manresa', name_ca: 'Manresa',
@@ -246,7 +244,6 @@ export const MUNICIPALITIES: Municipality[] = [
     ],
     sanitat_forestal: 'Oficina Comarcal Bages — 93 877 XX XX'
   },
-  // OSONA
   {
     id: 'vic',
     name_es: 'Vic', name_ca: 'Vic',
@@ -261,32 +258,93 @@ export const MUNICIPALITIES: Municipality[] = [
       { name: 'Clínica Vet Vic Centre', phone: '93 886 XX XX', address: 'Carrer de la Rambla, 35', hours: 'L-V 9-20h', emergency: false }
     ],
     sanitat_forestal: 'Oficina Comarcal Osona — 93 883 XX XX'
-  }
+  },
 ];
 
-export function getMunicipalityByName(name: string) {
-  return MUNICIPALITIES.find(m =>
+export function getMunicipalityByName(name: string): Municipality | undefined {
+  return _RICH_DATA.find(m =>
     m.name_es.toLowerCase().includes(name.toLowerCase()) ||
     m.name_ca.toLowerCase().includes(name.toLowerCase())
   );
 }
 
-export function getMunicipalityById(id: string) {
-  return MUNICIPALITIES.find(m => m.id === id);
+export function getMunicipalityById(id: string): Municipality | undefined {
+  return _RICH_DATA.find(m => m.id === id);
 }
 
-export function getMunicipalitiesByComarca(comarca: string) {
-  return MUNICIPALITIES.filter(m =>
+export function getMunicipalitiesByComarca(comarca: string): Municipality[] {
+  return _RICH_DATA.filter(m =>
     m.comarca_es.toLowerCase().includes(comarca.toLowerCase()) ||
     m.comarca_ca.toLowerCase().includes(comarca.toLowerCase())
   );
 }
 
-export function searchMunicipalities(query: string) {
+// Synchronous search against local rich data (fallback)
+export function searchMunicipalities(query: string): Municipality[] {
   if (!query || query.length < 2) return [];
-  return MUNICIPALITIES.filter(m =>
+  return _RICH_DATA.filter(m =>
     m.name_es.toLowerCase().includes(query.toLowerCase()) ||
     m.name_ca.toLowerCase().includes(query.toLowerCase()) ||
     m.comarca_es.toLowerCase().includes(query.toLowerCase())
   ).slice(0, 8);
 }
+
+// Async search via IDESCAT API with local rich data merge
+export async function searchMunicipalitiesAsync(query: string): Promise<Municipality[]> {
+  if (!query || query.length < 2) return [];
+
+  // First try local rich data
+  const local = searchMunicipalities(query);
+
+  // Then try API
+  try {
+    const apiResults = await searchMunicipalitiesAPI(query);
+    const localIds = new Set(local.map(m => m.id));
+
+    // Convert API results to Municipality type, merging with rich data if available
+    const apiMunicipalities: Municipality[] = apiResults
+      .filter(r => !localIds.has(r.id))
+      .map(r => {
+        const rich = _RICH_DATA.find(m =>
+          m.name_ca.toLowerCase() === r.name.toLowerCase() ||
+          m.name_es.toLowerCase() === r.name.toLowerCase()
+        );
+        if (rich) return rich;
+        return {
+          id: r.id,
+          name_es: r.name,
+          name_ca: r.name,
+          comarca_es: r.comarca,
+          comarca_ca: r.comarca,
+          provincia: r.provincia,
+          lat: r.lat,
+          lng: r.lng,
+          postal_codes: [],
+          risk_level: 'medium',
+          ajuntament: { phone: '010', urgencies_phone: '010', email: '', web: '', address: '' },
+          emergencies: { policia_local: '092', bombers: '085', mossos: '088', proteccio_civil: '012', agents_rurals: '900 050 051' },
+          vets: [],
+          sanitat_forestal: '',
+        };
+      });
+
+    return [...local, ...apiMunicipalities].slice(0, 10);
+  } catch {
+    return local;
+  }
+}
+
+// Find nearest municipality by GPS coordinates using rich data
+export function findNearestRichMunicipality(lat: number, lng: number): Municipality | null {
+  let nearest: Municipality | null = null;
+  let minDist = Infinity;
+  for (const m of _RICH_DATA) {
+    const d = Math.sqrt((m.lat - lat) ** 2 + (m.lng - lng) ** 2);
+    if (d < minDist) { minDist = d; nearest = m; }
+  }
+  return nearest;
+}
+
+// Re-export for convenience
+export { getMunicipalityFromGPS };
+export type { MunicipalityBasic };
