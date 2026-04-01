@@ -32,14 +32,14 @@ export async function getAllMunicipalities(): Promise<MunicipalityBasic[]> {
 
     const municipalities: MunicipalityBasic[] = data
       .filter((m: any) => {
-        const code = String(m.COD || '');
+        const code = String(m.Codigo || '');
         return CATALUNYA_PREFIXES.some(p => code.startsWith(p));
       })
       .map((m: any) => ({
-        id: String(m.COD),
+        id: String(m.Codigo),
         name: m.Nombre || '',
         comarca: '',
-        provincia: getProvince(String(m.COD || '')),
+        provincia: getProvince(String(m.Codigo || '')),
         lat: 0,
         lng: 0,
       }));
