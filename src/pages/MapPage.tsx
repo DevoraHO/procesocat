@@ -44,7 +44,7 @@ const MapPage = () => {
   const userAccuracyRef = useRef<L.Circle | null>(null);
   const previewMarkerRef = useRef<L.Marker | null>(null);
   const { position: gpsPosition, startTracking } = useGPSTracking();
-  const [showMapIntro, setShowMapIntro] = useState(!localStorage.getItem('map_intro_shown'));
+  const [showMapIntro, setShowMapIntro] = useState(!safeStorage.getItem('map_intro_shown'));
 
   const [reports, setReports] = useState<Report[]>([]);
 
