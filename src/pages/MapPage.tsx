@@ -213,6 +213,12 @@ const MapPage = () => {
     }
 
     setUserGPS({ lat, lng, accuracy });
+
+    // Auto-center on first GPS fix only
+    if (!firstGpsFixRef.current) {
+      firstGpsFixRef.current = true;
+      map.flyTo([lat, lng], 15, { duration: 1.2 });
+    }
   }, [gpsPosition]);
 
   // Fly to location from navigation state (e.g. from profile zones)
