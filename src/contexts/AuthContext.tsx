@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { User } from '@supabase/supabase-js';
+import { safeStorage } from '@/utils/safeStorage';
+
+const REMEMBER_ME_KEY = 'procesocat-remember-me';
 
 export interface UserProfile {
   id: string;
@@ -31,6 +34,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, name: string) => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => void;
   resetPassword: (email: string) => Promise<void>;
+  setRememberMe: (value: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,17 +44,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const mountedRef = useRef(true);
-
-  // Safety timeout — never stay loading forever
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (mountedRef.current && loading) {
-        console.warn('Auth loading timeout reached');
-        setLoading(false);
-      }
-    }, 3000);
-    return () => clearTimeout(timeout);
-  }, [loading]);
 
   useEffect(() => {
     return () => { mountedRef.current = false; };
@@ -66,7 +59,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (!error && data) return data as UserProfile;
 
-      // Profile missing — create it
       const { data: created } = await supabase
         .from('profiles')
         .upsert({
@@ -91,41 +83,70 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   useEffect(() => {
+    let alive = true;
+
+    // Hard timeout — never stay loading more than 4 seconds
+    const hardTimeout = setTimeout(() => {
+      if (alive && mountedRef.current) {
+        console.warn('Auth hard timeout reached');
+        setLoading(false);
+      }
+    }, 4000);
+
+    // If user unchecked "remember me", skip session restore
+    const rememberMe = safeStorage.getItem(REMEMBER_ME_KEY);
+
+    // Get initial session
+    supabase.auth.getSession()
+      .then(async ({ data: { session } }) => {
+        if (!alive || !mountedRef.current) return;
+
+        if (session?.user && rememberMe !== 'false') {
+          setAuthUser(session.user);
+          const p = await loadProfile(session.user);
+          if (alive && mountedRef.current) setProfile(p);
+        } else if (rememberMe === 'false' && session) {
+          // User chose not to be remembered — sign out silently
+          await supabase.auth.signOut();
+          setAuthUser(null);
+          setProfile(null);
+        }
+        if (alive && mountedRef.current) {
+          setLoading(false);
+          clearTimeout(hardTimeout);
+        }
+      })
+      .catch(() => {
+        if (alive && mountedRef.current) {
+          setLoading(false);
+          clearTimeout(hardTimeout);
+        }
+      });
+
+    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
-        if (!mountedRef.current) return;
-        setAuthUser(session?.user ?? null);
-
+        if (!alive || !mountedRef.current) return;
         if (session?.user) {
-          setTimeout(async () => {
-            if (!mountedRef.current) return;
-            const p = await loadProfile(session.user);
-            if (mountedRef.current) {
-              setProfile(p);
-              setLoading(false);
-            }
-          }, 0);
+          setAuthUser(session.user);
+          const p = await loadProfile(session.user);
+          if (alive && mountedRef.current) {
+            setProfile(p);
+            setLoading(false);
+          }
         } else {
+          setAuthUser(null);
           setProfile(null);
           setLoading(false);
         }
       }
     );
 
-    // Check existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!mountedRef.current) return;
-      setAuthUser(session?.user ?? null);
-      if (session?.user) {
-        const p = await loadProfile(session.user);
-        if (mountedRef.current) {
-          setProfile(p);
-        }
-      }
-      if (mountedRef.current) setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      alive = false;
+      subscription.unsubscribe();
+      clearTimeout(hardTimeout);
+    };
   }, [loadProfile]);
 
   const signIn = useCallback(async (email: string, password: string) => {
@@ -134,6 +155,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signOut = useCallback(async () => {
+    safeStorage.removeItem(REMEMBER_ME_KEY);
     await supabase.auth.signOut();
     setAuthUser(null);
     setProfile(null);
@@ -171,10 +193,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (error) throw error;
   }, []);
 
+  const setRememberMe = useCallback((value: boolean) => {
+    safeStorage.setItem(REMEMBER_ME_KEY, String(value));
+  }, []);
+
   const user = profile;
 
   return (
-    <AuthContext.Provider value={{ user, authUser, profile, loading, signIn, signOut, signUp, updateProfile, resetPassword }}>
+    <AuthContext.Provider value={{ user, authUser, profile, loading, signIn, signOut, signUp, updateProfile, resetPassword, setRememberMe }}>
       {children}
     </AuthContext.Provider>
   );

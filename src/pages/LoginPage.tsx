@@ -4,22 +4,25 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import LanguageToggle from '@/components/LanguageToggle';
 import { toast } from 'sonner';
 import { Mail, Eye, EyeOff, Loader2, Lock, ShieldAlert } from 'lucide-react';
 import logo from '@/assets/logoprocesocat.png';
 import { isAccountLocked, recordLoginAttempt, getLoginAttempts, logSecurityEvent, addSession, SECURITY_CONFIG } from '@/utils/security';
 import { supabase } from '@/integrations/supabase/client';
+import { safeStorage } from '@/utils/safeStorage';
 
 const LoginPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { signIn, user } = useAuth();
+  const { signIn, user, setRememberMe: setAuthRememberMe } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [emailError, setEmailError] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const [lockState, setLockState] = useState<{ locked: boolean; permanent: boolean; remainingMinutes: number }>({ locked: false, permanent: false, remainingMinutes: 0 });
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [showCaptcha, setShowCaptcha] = useState(false);
@@ -30,7 +33,9 @@ const LoginPage = () => {
 
   // Redirect if already logged in
   useEffect(() => {
-    if (user) navigate('/map');
+    if (user) {
+      navigate('/map', { replace: true });
+    }
   }, [user, navigate]);
 
   const validateEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
@@ -77,12 +82,14 @@ const LoginPage = () => {
 
     setLoading(true);
     try {
+      // Save remember me preference before login
+      setAuthRememberMe(rememberMe);
       await signIn(email, password);
       recordLoginAttempt(email, true);
       logSecurityEvent('LOGIN_SUCCESS', { email });
       addSession(navigator.userAgent);
       toast.success(t('auth.welcome', { name: email.split('@')[0] }) + ' 👋');
-      navigate('/map');
+      navigate('/map', { replace: true });
     } catch (error: any) {
       recordLoginAttempt(email, false);
       logSecurityEvent('LOGIN_FAILED', { email, attempts: getLoginAttempts(email) });
@@ -105,6 +112,7 @@ const LoginPage = () => {
   };
 
   const handleGoogleLogin = async () => {
+    setAuthRememberMe(rememberMe);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: window.location.origin + '/map' },
@@ -180,6 +188,18 @@ const LoginPage = () => {
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
+              </div>
+
+              {/* Remember me checkbox */}
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="rememberMe"
+                  checked={rememberMe}
+                  onCheckedChange={(checked) => setRememberMe(checked === true)}
+                />
+                <label htmlFor="rememberMe" className="text-sm text-muted-foreground cursor-pointer select-none">
+                  {t('auth.rememberMe')}
+                </label>
               </div>
 
               {loginError && (
