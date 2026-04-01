@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { Filter, Plus, X, ChevronLeft, ChevronRight, MapPin, Camera, Lock, Shield, Search, Trash2, RotateCcw } from 'lucide-react';
+import { Filter, Plus, X, ChevronLeft, ChevronRight, MapPin, Camera, Lock, Shield, Search, Trash2, RotateCcw, Locate } from 'lucide-react';
 import { useFreemium } from '@/hooks/useFreemium';
 import UpgradeModal from '@/components/UpgradeModal';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -44,6 +44,7 @@ const MapPage = () => {
   const userAccuracyRef = useRef<L.Circle | null>(null);
   const previewMarkerRef = useRef<L.Marker | null>(null);
   const { position: gpsPosition, startTracking } = useGPSTracking();
+  const firstGpsFixRef = useRef(false);
   const [showMapIntro, setShowMapIntro] = useState(!safeStorage.getItem('map_intro_shown'));
 
   const [reports, setReports] = useState<Report[]>([]);
@@ -162,6 +163,9 @@ const MapPage = () => {
       return;
     }
 
+    // Auto-start GPS tracking on map load
+    startTracking();
+
     if (!safeStorage.getItem('location_asked')) {
       setShowLocationModal(true);
     }
@@ -209,6 +213,12 @@ const MapPage = () => {
     }
 
     setUserGPS({ lat, lng, accuracy });
+
+    // Auto-center on first GPS fix only
+    if (!firstGpsFixRef.current) {
+      firstGpsFixRef.current = true;
+      map.flyTo([lat, lng], 15, { duration: 1.2 });
+    }
   }, [gpsPosition]);
 
   // Fly to location from navigation state (e.g. from profile zones)
@@ -1134,6 +1144,21 @@ const MapPage = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Center on my location button */}
+      {gpsPosition && !safeWalkMode && (
+        <button
+          onClick={() => {
+            if (mapRef.current && gpsPosition) {
+              mapRef.current.flyTo([gpsPosition.lat, gpsPosition.lng], 15, { duration: 1 });
+            }
+          }}
+          className="absolute bottom-36 right-4 z-[1000] w-10 h-10 rounded-full bg-card shadow-lg border border-border flex items-center justify-center hover:bg-accent transition"
+          title={t('map.centerOnMe', 'Centrar en la meva ubicació')}
+        >
+          <Locate className="h-5 w-5 text-primary" />
+        </button>
       )}
 
       {/* BOTTOM RIGHT: FAB add report */}
