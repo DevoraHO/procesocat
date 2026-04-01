@@ -87,7 +87,7 @@ const OnboardingPage = () => {
     }
 
     updateProfile(updates);
-    localStorage.setItem('onboarding_profile_done', 'true');
+    safeStorage.setItem('onboarding_profile_done', 'true');
     setShowConfetti(true);
     setStep(4);
     setTimeout(() => navigate('/map', { replace: true }), 2500);

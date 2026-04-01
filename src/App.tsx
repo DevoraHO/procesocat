@@ -129,7 +129,7 @@ function OAuthCallbackHandler() {
               .single();
 
             const isNewUser = profile && !profile.municipality_id && !profile.pet_name && (profile.points === 0 || profile.points === null);
-            const onboardingDone = localStorage.getItem('onboarding_profile_done');
+            const onboardingDone = safeStorage.getItem('onboarding_profile_done');
 
             if (isNewUser && !onboardingDone) {
               navigate('/onboarding', { replace: true });
