@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import { safeStorage } from '@/utils/safeStorage';
 import { VALIDATION_CONFIG as VC } from '@/data/mockData';
 import { useAuth } from '@/contexts/AuthContext';
 import {
