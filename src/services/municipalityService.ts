@@ -7,7 +7,9 @@ export interface MunicipalityBasic {
   lng: number;
 }
 
-let municipalitiesCache: MunicipalityBasic[] = [];
+let cache: MunicipalityBasic[] = [];
+let loading = false;
+let loaded = false;
 
 function getProvince(code: string): string {
   if (code.startsWith('08')) return 'Barcelona';
@@ -26,56 +28,75 @@ function normalize(str: string): string {
     .replace(/[\u0300-\u036f]/g, '');
 }
 
-export async function getAllMunicipalities(): Promise<MunicipalityBasic[]> {
-  if (municipalitiesCache.length > 0) {
-    return municipalitiesCache;
-  }
-
-  try {
-    const allMunicipalities: MunicipalityBasic[] = [];
-
-    for (let page = 1; page <= 16; page++) {
-      const response = await fetch(
-        `https://servicios.ine.es/wstempus/js/ES/VALORES_VARIABLE/19?page=${page}`
-      );
-      const data = await response.json();
-
-      if (!data || data.length === 0) break;
-
-      const matches = data
-        .filter((m: any) => {
-          const code = String(m.Codigo || '');
-          return CATALUNYA_PREFIXES.some(p => code.startsWith(p));
-        })
-        .map((m: any) => ({
-          id: String(m.Codigo),
-          name: m.Nombre || '',
-          comarca: '',
-          provincia: getProvince(String(m.Codigo || '')),
-          lat: 0,
-          lng: 0,
-        }));
-
-      allMunicipalities.push(...matches);
-    }
-
-    municipalitiesCache = allMunicipalities;
-    return allMunicipalities;
-  } catch (error) {
-    console.error('INE API error:', error);
-    return getFallbackMunicipalities();
-  }
+export function isMunicipalitiesLoaded(): boolean {
+  return loaded;
 }
 
+export function isMunicipalitiesLoading(): boolean {
+  return loading;
+}
+
+export async function loadAllMunicipalities(): Promise<void> {
+  if (cache.length > 0 || loading) return;
+  loading = true;
+
+  try {
+    const allData: any[] = [];
+
+    for (let page = 1; page <= 16; page++) {
+      const res = await fetch(
+        `https://servicios.ine.es/wstempus/js/ES/VALORES_VARIABLE/19?page=${page}`
+      );
+      const data = await res.json();
+      if (!data?.length) break;
+
+      const catData = data.filter((m: any) =>
+        CATALUNYA_PREFIXES.some(p =>
+          String(m.Codigo || '').startsWith(p)
+        )
+      );
+      allData.push(...catData);
+      if (data.length < 500) break;
+    }
+
+    cache = allData.map((m: any) => ({
+      id: String(m.Codigo),
+      name: m.Nombre || '',
+      comarca: '',
+      provincia: getProvince(String(m.Codigo || '')),
+      lat: 0,
+      lng: 0,
+    }));
+
+    loaded = true;
+  } catch (e) {
+    console.error('Failed to load municipalities from INE:', e);
+  }
+  loading = false;
+}
+
+export function searchMunicipalitiesLocal(query: string): MunicipalityBasic[] {
+  if (query.length < 2) return [];
+
+  const q = normalize(query);
+
+  return cache
+    .filter(m => normalize(m.name).includes(q))
+    .slice(0, 10);
+}
+
+// Keep async version for backward compat — now just wraps local search
 export async function searchMunicipalitiesAPI(
   query: string
 ): Promise<MunicipalityBasic[]> {
-  if (query.length < 2) return [];
-  const all = await getAllMunicipalities();
-  const q = normalize(query);
-  return all
-    .filter((m) => normalize(m.name).includes(q))
-    .slice(0, 10);
+  if (!loaded && !loading) {
+    await loadAllMunicipalities();
+  }
+  return searchMunicipalitiesLocal(query);
+}
+
+export function getAllCachedMunicipalities(): MunicipalityBasic[] {
+  return cache;
 }
 
 function getFallbackMunicipalities(): MunicipalityBasic[] {

@@ -1,4 +1,4 @@
-import { searchMunicipalitiesAPI, type MunicipalityBasic } from '@/services/municipalityService';
+import { searchMunicipalitiesAPI, searchMunicipalitiesLocal, isMunicipalitiesLoaded, type MunicipalityBasic } from '@/services/municipalityService';
 import { getMunicipalityFromGPS } from '@/services/geoLocationService';
 
 export interface Vet {
@@ -289,19 +289,20 @@ export function searchMunicipalities(query: string): Municipality[] {
   ).slice(0, 8);
 }
 
-// Async search via IDESCAT API with local rich data merge
+// Async search: uses preloaded INE cache + local rich data
 export async function searchMunicipalitiesAsync(query: string): Promise<Municipality[]> {
   if (!query || query.length < 2) return [];
 
   // First try local rich data
   const local = searchMunicipalities(query);
 
-  // Then try API
+  // Then search preloaded INE cache (instant if already loaded)
   try {
-    const apiResults = await searchMunicipalitiesAPI(query);
+    const apiResults = isMunicipalitiesLoaded()
+      ? searchMunicipalitiesLocal(query)
+      : await searchMunicipalitiesAPI(query);
     const localIds = new Set(local.map(m => m.id));
 
-    // Convert API results to Municipality type, merging with rich data if available
     const apiMunicipalities: Municipality[] = apiResults
       .filter(r => !localIds.has(r.id))
       .map(r => {

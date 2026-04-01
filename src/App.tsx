@@ -8,6 +8,7 @@ import { ValidationProvider } from "@/contexts/ValidationContext";
 import { supabase } from "@/integrations/supabase/client";
 import '@/i18n';
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { loadAllMunicipalities } from '@/services/municipalityService';
 import { safeStorage } from '@/utils/safeStorage';
 
 import AppLayout from "@/components/AppLayout";
@@ -49,6 +50,9 @@ const App = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
+    // Preload all Catalunya municipalities from INE API
+    loadAllMunicipalities();
+
     const timer = setTimeout(() => {
       setShowLoading(false);
       if (!safeStorage.getItem('onboarding_done')) {
