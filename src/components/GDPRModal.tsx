@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { safeStorage } from '@/utils/safeStorage';
 
 interface ConsentState {
   location: boolean;
@@ -14,7 +15,7 @@ interface ConsentState {
 
 const GDPRModal = () => {
   const { t } = useTranslation();
-  const [visible, setVisible] = useState(() => !localStorage.getItem('gdpr_shown'));
+  const [visible, setVisible] = useState(() => !safeStorage.getItem('gdpr_shown'));
   const [consent, setConsent] = useState<ConsentState>({
     location: true,
     backgroundLocation: false,
@@ -27,8 +28,8 @@ const GDPRModal = () => {
   if (!visible) return null;
 
   const save = (values: ConsentState) => {
-    localStorage.setItem('gdpr_consent', JSON.stringify(values));
-    localStorage.setItem('gdpr_shown', 'true');
+    safeStorage.setItem('gdpr_consent', JSON.stringify(values));
+    safeStorage.setItem('gdpr_shown', 'true');
     setVisible(false);
   };
 

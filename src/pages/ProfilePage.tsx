@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { safeStorage } from '@/utils/safeStorage';
 import WeeklyCharts from '@/components/WeeklyCharts';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -125,7 +126,7 @@ const ProfilePage = () => {
   const [loadingReports, setLoadingReports] = useState(true);
   const [municipalityModalOpen, setMunicipalityModalOpen] = useState(false);
   const [municipalityQuery, setMunicipalityQuery] = useState('');
-  const [selectedMunicipalityId, setSelectedMunicipalityId] = useState(user?.municipality_id || localStorage.getItem('municipality_id') || '');
+  const [selectedMunicipalityId, setSelectedMunicipalityId] = useState(user?.municipality_id || safeStorage.getItem('municipality_id') || '');
   const municipalityResults = searchMunicipalities(municipalityQuery);
   const currentMunicipality = selectedMunicipalityId ? getMunicipalityById(selectedMunicipalityId) : undefined;
 
@@ -1052,7 +1053,7 @@ const ProfilePage = () => {
                         onClick={() => {
                           setSelectedMunicipalityId(m.id);
                           updateProfile({ municipality_id: m.id });
-                          localStorage.setItem('municipality_id', m.id);
+                          safeStorage.setItem('municipality_id', m.id);
                           setMunicipalityModalOpen(false);
                           setMunicipalityQuery('');
                           toast({ title: t('profile.profileUpdated') });
@@ -1275,7 +1276,7 @@ const ProfilePage = () => {
             <CardContent className="pt-6 space-y-3">
               <h3 className="font-semibold text-foreground">{t('settingsSections.privacy')}</h3>
               <Button variant="outline" size="sm" onClick={() => toast({ title: t('profile.downloadDataToast') })}>{t('settings.downloadData')}</Button>
-              <Button variant="outline" size="sm" onClick={() => { localStorage.removeItem('gdpr_shown'); window.location.reload(); }}>{t('profile.revokeConsent')}</Button>
+              <Button variant="outline" size="sm" onClick={() => { safeStorage.removeItem('gdpr_shown'); window.location.reload(); }}>{t('profile.revokeConsent')}</Button>
               <Button variant="outline" size="sm" className="text-destructive border-destructive/30" onClick={() => setDeleteAccountOpen(true)}>{t('settings.deleteAccount')}</Button>
             </CardContent>
           </Card>

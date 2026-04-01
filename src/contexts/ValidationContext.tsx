@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import { safeStorage } from '@/utils/safeStorage';
 import { VALIDATION_CONFIG as VC } from '@/data/mockData';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -50,7 +51,7 @@ const STORAGE_KEY = 'mock_validations';
 
 function loadValidations(): ValidationRecord[] {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = safeStorage.getItem(STORAGE_KEY);
     if (stored) return JSON.parse(stored);
   } catch { /* ignore */ }
   // Initial mock validations
@@ -184,7 +185,7 @@ export const ValidationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     const updated = [...userValidations, record];
     setUserValidations(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    safeStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
 
     if (isSuspicious) {
       setFraudLog(prev => [...prev, record]);

@@ -1,4 +1,5 @@
 import DOMPurify from 'dompurify';
+import { safeStorage } from '@/utils/safeStorage';
 
 export const SECURITY_CONFIG = {
   MAX_LOGIN_ATTEMPTS: 5,
@@ -146,12 +147,12 @@ export class RateLimiter {
 export const rateLimiter = new RateLimiter();
 
 export function getLoginAttempts(email: string): number {
-  const data = JSON.parse(localStorage.getItem('login_attempts') || '{}');
+  const data = JSON.parse(safeStorage.getItem('login_attempts') || '{}');
   return data[email]?.count || 0;
 }
 
 export function recordLoginAttempt(email: string, success: boolean): void {
-  const data = JSON.parse(localStorage.getItem('login_attempts') || '{}');
+  const data = JSON.parse(safeStorage.getItem('login_attempts') || '{}');
   if (success) {
     delete data[email];
   } else {
@@ -160,7 +161,7 @@ export function recordLoginAttempt(email: string, success: boolean): void {
       lastAttempt: Date.now()
     };
   }
-  localStorage.setItem('login_attempts', JSON.stringify(data));
+  safeStorage.setItem('login_attempts', JSON.stringify(data));
 }
 
 export function isAccountLocked(email: string): {
@@ -168,7 +169,7 @@ export function isAccountLocked(email: string): {
   permanent: boolean;
   remainingMinutes: number;
 } {
-  const data = JSON.parse(localStorage.getItem('login_attempts') || '{}');
+  const data = JSON.parse(safeStorage.getItem('login_attempts') || '{}');
   const record = data[email];
   if (!record) return { locked: false, permanent: false, remainingMinutes: 0 };
 
@@ -202,7 +203,7 @@ export interface SessionInfo {
 }
 
 export function getActiveSessions(): SessionInfo[] {
-  return JSON.parse(localStorage.getItem('active_sessions') || '[]');
+  return JSON.parse(safeStorage.getItem('active_sessions') || '[]');
 }
 
 export function addSession(deviceInfo: string): string {
@@ -220,13 +221,13 @@ export function addSession(deviceInfo: string): string {
   const updatedSessions = [newSession,
     ...sessions.map(s => ({ ...s, current: false }))]
     .slice(0, SECURITY_CONFIG.MAX_DEVICES);
-  localStorage.setItem('active_sessions', JSON.stringify(updatedSessions));
+  safeStorage.setItem('active_sessions', JSON.stringify(updatedSessions));
   return sessionId;
 }
 
 export function removeSession(sessionId: string): void {
   const sessions = getActiveSessions();
-  localStorage.setItem('active_sessions',
+  safeStorage.setItem('active_sessions',
     JSON.stringify(sessions.filter(s => s.id !== sessionId)));
 }
 
@@ -239,7 +240,7 @@ export interface SecurityLog {
 }
 
 export function logSecurityEvent(type: string, details: Record<string, unknown>): void {
-  const logs: SecurityLog[] = JSON.parse(localStorage.getItem('security_logs') || '[]');
+  const logs: SecurityLog[] = JSON.parse(safeStorage.getItem('security_logs') || '[]');
   logs.unshift({
     id: Math.random().toString(36).substring(2),
     type,
@@ -247,11 +248,11 @@ export function logSecurityEvent(type: string, details: Record<string, unknown>)
     timestamp: new Date().toISOString(),
     ip: '192.168.1.1'
   });
-  localStorage.setItem('security_logs', JSON.stringify(logs.slice(0, 100)));
+  safeStorage.setItem('security_logs', JSON.stringify(logs.slice(0, 100)));
 }
 
 export function getSecurityLogs(): SecurityLog[] {
-  return JSON.parse(localStorage.getItem('security_logs') || '[]');
+  return JSON.parse(safeStorage.getItem('security_logs') || '[]');
 }
 
 export const mockSessions: SessionInfo[] = [

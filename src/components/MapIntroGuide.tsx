@@ -1,3 +1,4 @@
+import { safeStorage } from '@/utils/safeStorage';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -43,7 +44,7 @@ const MapIntroGuide = ({ onComplete }: { onComplete: () => void }) => {
 
   const handleNext = () => {
     if (isLast) {
-      localStorage.setItem('map_intro_shown', 'true');
+      safeStorage.setItem('map_intro_shown', 'true');
       onComplete();
     } else {
       setSlide(slide + 1);

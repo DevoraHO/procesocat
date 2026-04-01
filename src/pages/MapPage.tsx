@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { safeStorage } from '@/utils/safeStorage';
 import { useLocation } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -43,7 +44,7 @@ const MapPage = () => {
   const userAccuracyRef = useRef<L.Circle | null>(null);
   const previewMarkerRef = useRef<L.Marker | null>(null);
   const { position: gpsPosition, startTracking } = useGPSTracking();
-  const [showMapIntro, setShowMapIntro] = useState(!localStorage.getItem('map_intro_shown'));
+  const [showMapIntro, setShowMapIntro] = useState(!safeStorage.getItem('map_intro_shown'));
 
   const [reports, setReports] = useState<Report[]>([]);
 
@@ -73,7 +74,7 @@ const MapPage = () => {
 
     return () => { supabase.removeChannel(channel); };
   }, []);
-  const [showSeasonBanner, setShowSeasonBanner] = useState(!localStorage.getItem('annual_reset_shown'));
+  const [showSeasonBanner, setShowSeasonBanner] = useState(!safeStorage.getItem('annual_reset_shown'));
   const [nearbyDecay, setNearbyDecay] = useState<typeof reports[0] | null>(null);
   const [scoredReports, setScoredReports] = useState<ReportWithScore[]>([]);
   const [heatmapVisible, setHeatmapVisible] = useState(true);
@@ -162,7 +163,7 @@ const MapPage = () => {
     safeWalkResultLinesRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
 
-    if (!localStorage.getItem('location_asked')) {
+    if (!safeStorage.getItem('location_asked')) {
       setShowLocationModal(true);
     }
 
@@ -239,7 +240,7 @@ const MapPage = () => {
   // Long press ripple state
   const [ripple, setRipple] = useState<{ x: number; y: number } | null>(null);
   const [quickTooltip, setQuickTooltip] = useState<{ lat: number; lng: number; x: number; y: number } | null>(null);
-  const [mapHintsShown, setMapHintsShown] = useState(!!localStorage.getItem('map_hints_shown'));
+  const [mapHintsShown, setMapHintsShown] = useState(!!safeStorage.getItem('map_hints_shown'));
 
   // Handle map click for report placement OR safe walk
   useEffect(() => {
@@ -544,7 +545,7 @@ const MapPage = () => {
 
           container.querySelector('[data-action="activate-gps"]')?.addEventListener('click', () => {
             // Check if education shown
-            if (!localStorage.getItem('validation_explained')) {
+            if (!safeStorage.getItem('validation_explained')) {
               setShowEducation(true);
             } else {
               requestGPSForValidation();
@@ -610,7 +611,7 @@ const MapPage = () => {
 
   // Simulate nearby decay detection
   useEffect(() => {
-    const dismissed = localStorage.getItem('decay_dismissed');
+    const dismissed = safeStorage.getItem('decay_dismissed');
     if (dismissed && Date.now() - parseInt(dismissed) < 86400000) return;
     const decaying = reports.find(r => r.status === LIFECYCLE.DECAYING);
     if (decaying) {
@@ -632,7 +633,7 @@ const MapPage = () => {
       mapRef.current.setView([gpsPosition.lat, gpsPosition.lng], 13);
     }
     setShowLocationModal(false);
-    localStorage.setItem('location_asked', 'true');
+    safeStorage.setItem('location_asked', 'true');
     // If no position yet, also try getCurrentPosition for immediate fly
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -880,7 +881,7 @@ const MapPage = () => {
       {showSeasonBanner && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1001] bg-amber-50 border border-amber-300 rounded-xl px-4 py-2.5 shadow-lg max-w-sm w-[90%] flex items-center gap-3">
           <span className="text-sm text-amber-900">🍂 {t('map.newSeason', { year: new Date().getFullYear() })}</span>
-          <button onClick={() => { setShowSeasonBanner(false); localStorage.setItem('annual_reset_shown', 'true'); }} className="text-xs font-medium text-amber-700 whitespace-nowrap">{t('map.understood')}</button>
+          <button onClick={() => { setShowSeasonBanner(false); safeStorage.setItem('annual_reset_shown', 'true'); }} className="text-xs font-medium text-amber-700 whitespace-nowrap">{t('map.understood')}</button>
         </div>
       )}
 
@@ -916,7 +917,7 @@ const MapPage = () => {
           <span className="text-amber-900 flex-1">{t('map.nearbyDecay', { days: Math.floor(getReportAge(nearbyDecay.created_at)) })}</span>
           <button onClick={() => { setReports(prev => prev.map(r => r.id === nearbyDecay.id ? resetToActive(r) : r)); setNearbyDecay(null); toast.success(t('map.reactivated')); }} className="text-xs font-bold text-green-700">Sí</button>
           <button onClick={() => { setReports(prev => prev.filter(r => r.id !== nearbyDecay.id)); setNearbyDecay(null); toast.success(t('map.resolved')); }} className="text-xs font-bold text-red-700">No</button>
-          <button onClick={() => { setNearbyDecay(null); localStorage.setItem('decay_dismissed', Date.now().toString()); }} className="text-muted-foreground">×</button>
+          <button onClick={() => { setNearbyDecay(null); safeStorage.setItem('decay_dismissed', Date.now().toString()); }} className="text-muted-foreground">×</button>
         </div>
       )}
 
@@ -1123,7 +1124,7 @@ const MapPage = () => {
       {!mapHintsShown && !showNewReport && !safeWalkMode && (
         <div
           className="absolute inset-0 z-[1002] flex items-center justify-center bg-black/30 cursor-pointer"
-          onClick={() => { setMapHintsShown(true); localStorage.setItem('map_hints_shown', 'true'); }}
+          onClick={() => { setMapHintsShown(true); safeStorage.setItem('map_hints_shown', 'true'); }}
         >
           <div className="flex flex-col items-center gap-6 animate-fade-in">
             <div className="bg-card rounded-xl px-5 py-3 shadow-xl text-center space-y-2">
@@ -1319,7 +1320,7 @@ const MapPage = () => {
               </Button>
               <Button
                 variant="ghost"
-                onClick={() => { setShowLocationModal(false); localStorage.setItem('location_asked', 'true'); }}
+                onClick={() => { setShowLocationModal(false); safeStorage.setItem('location_asked', 'true'); }}
                 className="w-full text-muted-foreground"
               >
                 {t('map.notNow')}
@@ -1582,7 +1583,7 @@ const MapPage = () => {
             <p className="text-xs text-muted-foreground text-center mb-4">{t('validation.educationWhy')}</p>
             <Button className="w-full" onClick={() => {
               setShowEducation(false);
-              localStorage.setItem('validation_explained', 'true');
+              safeStorage.setItem('validation_explained', 'true');
               requestGPSForValidation();
             }}>
               {t('validation.understood')}

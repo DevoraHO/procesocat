@@ -1,3 +1,4 @@
+import { safeStorage } from '@/utils/safeStorage';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Phone, X, MapPin, Globe, Mail, ChevronDown, ChevronUp, Search, Navigation, Share2, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -26,7 +27,7 @@ const SOSButton = ({ alertType }: SOSButtonProps) => {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Resolve municipality
-  const municipalityId = activeMunicipalityId || user?.municipality_id || localStorage.getItem('municipality_id') || localStorage.getItem('user_municipality');
+  const municipalityId = activeMunicipalityId || user?.municipality_id || safeStorage.getItem('municipality_id') || safeStorage.getItem('user_municipality');
   const municipality: Municipality | undefined = municipalityId ? getMunicipalityById(municipalityId) : undefined;
   const petName = user?.pet_name || '';
   const mName = municipality ? (lang === 'ca' ? municipality.name_ca : municipality.name_es) : '';
@@ -62,7 +63,7 @@ const SOSButton = ({ alertType }: SOSButtonProps) => {
           const nearest = findNearestMunicipality(loc.lat, loc.lng);
           if (nearest) {
             setActiveMunicipalityId(nearest.id);
-            localStorage.setItem('user_municipality', nearest.id);
+            safeStorage.setItem('user_municipality', nearest.id);
             if (updateProfile) updateProfile({ municipality_id: nearest.id });
           }
         }
@@ -89,7 +90,7 @@ const SOSButton = ({ alertType }: SOSButtonProps) => {
 
   const selectMunicipality = (m: Municipality) => {
     setActiveMunicipalityId(m.id);
-    localStorage.setItem('user_municipality', m.id);
+    safeStorage.setItem('user_municipality', m.id);
     if (updateProfile) updateProfile({ municipality_id: m.id });
     setSearchOpen(false);
     setSearchQuery('');

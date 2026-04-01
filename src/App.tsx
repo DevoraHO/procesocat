@@ -8,6 +8,7 @@ import { ValidationProvider } from "@/contexts/ValidationContext";
 import { supabase } from "@/integrations/supabase/client";
 import '@/i18n';
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { safeStorage } from '@/utils/safeStorage';
 
 import AppLayout from "@/components/AppLayout";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -49,7 +50,7 @@ const App = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowLoading(false);
-      if (!localStorage.getItem('onboarding_done')) {
+      if (!safeStorage.getItem('onboarding_done')) {
         setShowOnboarding(true);
       }
     }, 1500);
@@ -128,7 +129,7 @@ function OAuthCallbackHandler() {
               .single();
 
             const isNewUser = profile && !profile.municipality_id && !profile.pet_name && (profile.points === 0 || profile.points === null);
-            const onboardingDone = localStorage.getItem('onboarding_profile_done');
+            const onboardingDone = safeStorage.getItem('onboarding_profile_done');
 
             if (isNewUser && !onboardingDone) {
               navigate('/onboarding', { replace: true });

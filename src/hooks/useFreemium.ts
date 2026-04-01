@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { safeStorage } from '@/utils/safeStorage';
 
 const MONTHLY_REPORT_LIMIT = 3;
 const PHOTOS_PER_REPORT = 2;
@@ -14,13 +15,13 @@ export const useFreemium = () => {
 
   const getMonthlyReportCount = useCallback((): number => {
     const key = `reports_${new Date().getFullYear()}_${new Date().getMonth()}`;
-    return parseInt(localStorage.getItem(key) || '0', 10);
+    return parseInt(safeStorage.getItem(key) || '0', 10);
   }, []);
 
   const incrementReportCount = useCallback(() => {
     const key = `reports_${new Date().getFullYear()}_${new Date().getMonth()}`;
-    const current = parseInt(localStorage.getItem(key) || '0', 10);
-    localStorage.setItem(key, String(current + 1));
+    const current = parseInt(safeStorage.getItem(key) || '0', 10);
+    safeStorage.setItem(key, String(current + 1));
   }, []);
 
   const canReport = isPremium || getMonthlyReportCount() < MONTHLY_REPORT_LIMIT;

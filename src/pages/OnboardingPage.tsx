@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { safeStorage } from '@/utils/safeStorage';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -86,7 +87,7 @@ const OnboardingPage = () => {
     }
 
     updateProfile(updates);
-    localStorage.setItem('onboarding_profile_done', 'true');
+    safeStorage.setItem('onboarding_profile_done', 'true');
     setShowConfetti(true);
     setStep(4);
     setTimeout(() => navigate('/map', { replace: true }), 2500);
