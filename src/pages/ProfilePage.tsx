@@ -1049,14 +1049,38 @@ const ProfilePage = () => {
           <Card>
             <CardContent className="pt-6 space-y-3">
               <h3 className="font-semibold text-foreground">{t('municipality.title')}</h3>
+
+              {needsMunicipalityUpdate && (
+                <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3 space-y-2">
+                  <p className="text-sm font-medium text-yellow-800">
+                    ⚠️ {lang === 'ca' ? 'El teu municipi necessita actualització' : 'Tu municipio necesita actualización'}
+                  </p>
+                  <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => {
+                    setNeedsMunicipalityUpdate(false);
+                    setSelectedMunicipalityId('');
+                    updateProfile({ municipality_id: '' });
+                    safeStorage.removeItem('municipality_id');
+                    setMunicipalityModalOpen(true);
+                  }}>
+                    <MapPin size={14} className="mr-1" /> {lang === 'ca' ? 'Actualitzar municipi' : 'Actualizar municipio'}
+                  </Button>
+                </div>
+              )}
+
               {currentMunicipality ? (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                   <p className="font-medium text-green-800">📍 {lang === 'ca' ? currentMunicipality.name_ca : currentMunicipality.name_es}</p>
                   <p className="text-xs text-green-700">{lang === 'ca' ? currentMunicipality.comarca_ca : currentMunicipality.comarca_es}</p>
                 </div>
-              ) : (
+              ) : currentMunicipalityBasic ? (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <p className="font-medium text-green-800">📍 {currentMunicipalityBasic.name}</p>
+                  <p className="text-xs text-green-700">{currentMunicipalityBasic.comarca} · {currentMunicipalityBasic.provincia}</p>
+                </div>
+              ) : !needsMunicipalityUpdate ? (
                 <p className="text-sm text-muted-foreground">{t('municipality.notConfigured')}</p>
-              )}
+              ) : null}
+
               <Button variant="outline" size="sm" onClick={() => setMunicipalityModalOpen(true)}>
                 <MapPin size={14} className="mr-1" /> {t('municipality.change')}
               </Button>
