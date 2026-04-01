@@ -52,6 +52,7 @@ create table public.profiles (
   pet_type text,
   referral_code text,
   municipality_id text,
+  app_version text default '1.0',
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
