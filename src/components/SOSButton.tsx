@@ -3,7 +3,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Phone, X, MapPin, Globe, Mail, ChevronDown, ChevronUp, Search, Navigation, Share2, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
-import { getMunicipalityById, Municipality, MUNICIPALITIES, searchMunicipalities } from '@/data/municipalData';
+import { getMunicipalityById, Municipality, searchMunicipalities, findNearestRichMunicipality } from '@/data/municipalData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
