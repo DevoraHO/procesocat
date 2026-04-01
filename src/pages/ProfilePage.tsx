@@ -275,7 +275,13 @@ const ProfilePage = () => {
   // Zone map init
   useEffect(() => {
     if (!addZoneOpen || !zoneMapRef.current || zoneMapInstanceRef.current) return;
-    const map = L.map(zoneMapRef.current).setView([41.4, 2.17], 12);
+    let map: L.Map;
+    try {
+      map = L.map(zoneMapRef.current).setView([41.4, 2.17], 12);
+    } catch (err) {
+      console.error('Zone map init failed:', err);
+      return;
+    }
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
     }).addTo(map);

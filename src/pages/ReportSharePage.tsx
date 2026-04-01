@@ -42,13 +42,17 @@ const ReportSharePage = () => {
 
   useEffect(() => {
     if (!report || !mapRef.current || leafletRef.current) return;
-    const map = L.map(mapRef.current, { zoomControl: false, attributionControl: false, dragging: false }).setView([report.lat, report.lng], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    const color = getDangerColor(report.danger_score);
-    L.circleMarker([report.lat, report.lng], { radius: 12, color, fillColor: color, fillOpacity: 0.9, weight: 3 }).addTo(map);
-    L.circle([report.lat, report.lng], { radius: 600, color, fillColor: color, fillOpacity: 0.15, weight: 0 }).addTo(map);
-    leafletRef.current = map;
-    return () => { map.remove(); leafletRef.current = null; };
+    try {
+      const map = L.map(mapRef.current, { zoomControl: false, attributionControl: false, dragging: false }).setView([report.lat, report.lng], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+      const color = getDangerColor(report.danger_score);
+      L.circleMarker([report.lat, report.lng], { radius: 12, color, fillColor: color, fillOpacity: 0.9, weight: 3 }).addTo(map);
+      L.circle([report.lat, report.lng], { radius: 600, color, fillColor: color, fillOpacity: 0.15, weight: 0 }).addTo(map);
+      leafletRef.current = map;
+    } catch (err) {
+      console.error('Share map init failed:', err);
+    }
+    return () => { if (leafletRef.current) { leafletRef.current.remove(); leafletRef.current = null; } };
   }, [report]);
 
   if (loading) {

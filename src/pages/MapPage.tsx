@@ -152,24 +152,31 @@ const MapPage = () => {
       shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
     });
 
-    const map = L.map(mapContainerRef.current).setView([41.5, 1.8], 8);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
+    try {
+      const map = L.map(mapContainerRef.current).setView([41.5, 1.8], 8);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
 
-    markersLayerRef.current = L.layerGroup().addTo(map);
-    heatmapLayerRef.current = L.layerGroup().addTo(map);
-    safeWalkMarkersRef.current = L.layerGroup().addTo(map);
-    safeWalkResultLinesRef.current = L.layerGroup().addTo(map);
-    mapRef.current = map;
+      markersLayerRef.current = L.layerGroup().addTo(map);
+      heatmapLayerRef.current = L.layerGroup().addTo(map);
+      safeWalkMarkersRef.current = L.layerGroup().addTo(map);
+      safeWalkResultLinesRef.current = L.layerGroup().addTo(map);
+      mapRef.current = map;
+    } catch (err) {
+      console.error('Map init failed:', err);
+      return;
+    }
 
     if (!safeStorage.getItem('location_asked')) {
       setShowLocationModal(true);
     }
 
     return () => {
-      map.remove();
-      mapRef.current = null;
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
     };
   }, []);
 
@@ -1650,14 +1657,20 @@ const MiniLocationMap = ({ initialCoords, alertType, onCoordsChange, static: isS
   useEffect(() => {
     if (!containerRef.current || miniMapRef.current) return;
     const center: [number, number] = initialCoords || [41.54, 2.21];
-    const map = L.map(containerRef.current, {
-      zoomControl: false,
-      attributionControl: false,
-      dragging: !isStatic,
-      scrollWheelZoom: !isStatic,
-      doubleClickZoom: false,
-      touchZoom: !isStatic,
-    }).setView(center, initialCoords ? 16 : 12);
+    let map: L.Map;
+    try {
+      map = L.map(containerRef.current, {
+        zoomControl: false,
+        attributionControl: false,
+        dragging: !isStatic,
+        scrollWheelZoom: !isStatic,
+        doubleClickZoom: false,
+        touchZoom: !isStatic,
+      }).setView(center, initialCoords ? 16 : 12);
+    } catch (err) {
+      console.error('MiniMap init failed:', err);
+      return;
+    }
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
@@ -1667,7 +1680,6 @@ const MiniLocationMap = ({ initialCoords, alertType, onCoordsChange, static: isS
         onCoordsChange([c.lat, c.lng]);
       };
       map.on('move', updateCenter);
-      // Set initial coords
       if (initialCoords) onCoordsChange(initialCoords);
       else {
         const c = map.getCenter();

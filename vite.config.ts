@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => ({
     dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime"],
   },
   build: {
-    target: 'es2015',
+    target: 'es2019',
     outDir: 'dist',
     sourcemap: false,
     rollupOptions: {
