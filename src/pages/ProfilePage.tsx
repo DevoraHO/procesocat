@@ -9,6 +9,7 @@ import { mockBadges, mockDangerEvolution, ALERT_TYPES } from '@/data/mockData';
 import { supabase as sb } from '@/integrations/supabase/client';
 import { fetchSavedZones, createSavedZone, deleteSavedZone, fetchUserBadges, fetchRanking, fetchUserReports } from '@/lib/supabase-queries';
 import { searchMunicipalities, getMunicipalityById, Municipality } from '@/data/municipalData';
+import { searchMunicipalitiesLocal, isMunicipalitiesLoaded, getAllCachedMunicipalities, type MunicipalityBasic } from '@/services/municipalityService';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -127,8 +128,31 @@ const ProfilePage = () => {
   const [municipalityModalOpen, setMunicipalityModalOpen] = useState(false);
   const [municipalityQuery, setMunicipalityQuery] = useState('');
   const [selectedMunicipalityId, setSelectedMunicipalityId] = useState(user?.municipality_id || safeStorage.getItem('municipality_id') || '');
-  const municipalityResults = searchMunicipalities(municipalityQuery);
+  const [needsMunicipalityUpdate, setNeedsMunicipalityUpdate] = useState(false);
+
+  // Use new geocatalunya service for search
+  const municipalityResults = useMemo(() => {
+    if (municipalityQuery.length < 2) return [];
+    return searchMunicipalitiesLocal(municipalityQuery);
+  }, [municipalityQuery]);
+
+  // Check if current municipality_id exists in new system
+  useEffect(() => {
+    if (!selectedMunicipalityId || !isMunicipalitiesLoaded()) return;
+    const allMunis = getAllCachedMunicipalities();
+    const found = allMunis.some(m => m.id === selectedMunicipalityId);
+    // Also check rich data
+    const richFound = getMunicipalityById(selectedMunicipalityId);
+    if (!found && !richFound) {
+      setNeedsMunicipalityUpdate(true);
+    }
+  }, [selectedMunicipalityId]);
+
   const currentMunicipality = selectedMunicipalityId ? getMunicipalityById(selectedMunicipalityId) : undefined;
+  const currentMunicipalityBasic = useMemo(() => {
+    if (!selectedMunicipalityId || !isMunicipalitiesLoaded()) return undefined;
+    return getAllCachedMunicipalities().find(m => m.id === selectedMunicipalityId);
+  }, [selectedMunicipalityId]);
 
   // Security state
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
@@ -1025,14 +1049,38 @@ const ProfilePage = () => {
           <Card>
             <CardContent className="pt-6 space-y-3">
               <h3 className="font-semibold text-foreground">{t('municipality.title')}</h3>
+
+              {needsMunicipalityUpdate && (
+                <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3 space-y-2">
+                  <p className="text-sm font-medium text-yellow-800">
+                    ⚠️ {lang === 'ca' ? 'El teu municipi necessita actualització' : 'Tu municipio necesita actualización'}
+                  </p>
+                  <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => {
+                    setNeedsMunicipalityUpdate(false);
+                    setSelectedMunicipalityId('');
+                    updateProfile({ municipality_id: '' });
+                    safeStorage.removeItem('municipality_id');
+                    setMunicipalityModalOpen(true);
+                  }}>
+                    <MapPin size={14} className="mr-1" /> {lang === 'ca' ? 'Actualitzar municipi' : 'Actualizar municipio'}
+                  </Button>
+                </div>
+              )}
+
               {currentMunicipality ? (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                   <p className="font-medium text-green-800">📍 {lang === 'ca' ? currentMunicipality.name_ca : currentMunicipality.name_es}</p>
                   <p className="text-xs text-green-700">{lang === 'ca' ? currentMunicipality.comarca_ca : currentMunicipality.comarca_es}</p>
                 </div>
-              ) : (
+              ) : currentMunicipalityBasic ? (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <p className="font-medium text-green-800">📍 {currentMunicipalityBasic.name}</p>
+                  <p className="text-xs text-green-700">{currentMunicipalityBasic.comarca} · {currentMunicipalityBasic.provincia}</p>
+                </div>
+              ) : !needsMunicipalityUpdate ? (
                 <p className="text-sm text-muted-foreground">{t('municipality.notConfigured')}</p>
-              )}
+              ) : null}
+
               <Button variant="outline" size="sm" onClick={() => setMunicipalityModalOpen(true)}>
                 <MapPin size={14} className="mr-1" /> {t('municipality.change')}
               </Button>
@@ -1051,13 +1099,14 @@ const ProfilePage = () => {
               </div>
               {municipalityResults.length > 0 && (
                 <div className="border rounded-lg max-h-48 overflow-y-auto">
-                  {municipalityResults.map(m => {
+                  {municipalityResults.map((m: MunicipalityBasic) => {
                     const isSelected = m.id === selectedMunicipalityId;
                     return (
                       <button
                         key={m.id}
                         onClick={() => {
                           setSelectedMunicipalityId(m.id);
+                          setNeedsMunicipalityUpdate(false);
                           updateProfile({ municipality_id: m.id });
                           safeStorage.setItem('municipality_id', m.id);
                           setMunicipalityModalOpen(false);
@@ -1067,14 +1116,19 @@ const ProfilePage = () => {
                         className={`w-full text-left px-3 py-2 hover:bg-muted/50 flex items-center justify-between border-b last:border-b-0 ${isSelected ? 'bg-primary/10' : ''}`}
                       >
                         <div>
-                          <p className="text-sm font-medium text-foreground">{lang === 'ca' ? m.name_ca : m.name_es}</p>
-                          <p className="text-xs text-muted-foreground">{lang === 'ca' ? m.comarca_ca : m.comarca_es}</p>
+                          <p className="text-sm font-medium text-foreground">{m.name}</p>
+                          <p className="text-xs text-muted-foreground">{m.comarca} · {m.provincia}</p>
                         </div>
                         {isSelected && <span className="text-xs text-primary font-bold">✓ {t('municipality.selected')}</span>}
                       </button>
                     );
                   })}
                 </div>
+              )}
+              {municipalityQuery.length >= 2 && municipalityResults.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-2">
+                  {lang === 'ca' ? "No s'ha trobat cap municipi" : 'No se ha encontrado ningún municipio'}
+                </p>
               )}
             </DialogContent>
           </Dialog>
