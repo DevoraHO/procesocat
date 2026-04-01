@@ -283,7 +283,7 @@ const RankingPage = () => {
             <Button className="w-full" onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(whatsappMsg)}`, '_blank')}>
               📱 {lang === 'ca' ? 'Compartir a WhatsApp' : 'Compartir en WhatsApp'}
             </Button>
-            <Button variant="outline" className="w-full" onClick={() => { navigator.clipboard.writeText('procesocat.es'); toast({ title: lang === 'ca' ? 'Enllaç copiat!' : '¡Enlace copiado!' }); }}>
+            <Button variant="outline" className="w-full" onClick={() => { try { navigator.clipboard.writeText('procesocat.es'); } catch {} toast({ title: lang === 'ca' ? 'Enllaç copiat!' : '¡Enlace copiado!' }); }}>
               <Copy size={14} /> {lang === 'ca' ? 'Copiar enllaç' : 'Copiar enlace'}
             </Button>
             <Button variant="ghost" className="w-full" onClick={() => setShareOpen(false)}>

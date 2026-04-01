@@ -89,6 +89,8 @@
     @apply border-border;
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-font-smoothing: antialiased;
   }
 
   html, body {

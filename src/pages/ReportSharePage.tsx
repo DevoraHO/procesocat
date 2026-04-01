@@ -101,7 +101,7 @@ const ReportSharePage = () => {
   };
 
   const copyLink = () => {
-    navigator.clipboard.writeText(`${window.location.origin}/r/${report.id}`);
+    try { navigator.clipboard.writeText(`${window.location.origin}/r/${report.id}`); } catch {}
     toast.success(t('publicReport.linkCopied'));
   };
 

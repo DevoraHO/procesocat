@@ -115,7 +115,7 @@ const LoginPage = () => {
     setAuthRememberMe(rememberMe);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin + '/map' },
+      options: { redirectTo: window.location.origin + '/map', skipBrowserRedirect: false },
     });
     if (error) {
       toast.error(error.message);
