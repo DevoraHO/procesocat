@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { safeStorage } from '@/utils/safeStorage';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
