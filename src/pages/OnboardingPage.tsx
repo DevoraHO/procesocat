@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { safeStorage } from '@/utils/safeStorage';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -7,10 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { MUNICIPALITIES } from '@/data/municipalData';
+import { searchMunicipalitiesAsync, getMunicipalityFromGPS, findNearestRichMunicipality, type Municipality } from '@/data/municipalData';
 import Confetti from '@/components/Confetti';
 import logo from '@/assets/logoprocesocat.png';
 import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 const RISK_COLORS: Record<string, string> = {
   very_high: '#ef4444',
@@ -31,37 +32,62 @@ const OnboardingPage = () => {
   const [petName, setPetName] = useState('');
   const [hasChildren, setHasChildren] = useState(false);
   const [municipalitySearch, setMunicipalitySearch] = useState('');
-  const [selectedMunicipality, setSelectedMunicipality] = useState<typeof MUNICIPALITIES[0] | null>(null);
+  const [selectedMunicipality, setSelectedMunicipality] = useState<Municipality | null>(null);
   const [saving, setSaving] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [searchResults, setSearchResults] = useState<Municipality[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [gpsDetecting, setGpsDetecting] = useState(false);
 
-  const filteredMunicipalities = useMemo(() => {
-    if (!municipalitySearch || municipalitySearch.length < 2) return [];
-    const q = municipalitySearch.toLowerCase();
-    return MUNICIPALITIES.filter(m =>
-      m.name_ca.toLowerCase().includes(q) ||
-      m.name_es.toLowerCase().includes(q) ||
-      m.comarca_ca.toLowerCase().includes(q)
-    ).slice(0, 6);
-  }, [municipalitySearch]);
+  // Debounced async municipality search
+  useEffect(() => {
+    if (!municipalitySearch || municipalitySearch.length < 2 || selectedMunicipality) {
+      setSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      const results = await searchMunicipalitiesAsync(municipalitySearch);
+      setSearchResults(results);
+      setSearching(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [municipalitySearch, selectedMunicipality]);
 
-  const detectLocation = () => {
+  const detectLocation = useCallback(() => {
     if (!navigator.geolocation) return;
+    setGpsDetecting(true);
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
         const { latitude, longitude } = pos.coords;
-        let nearest = MUNICIPALITIES[0];
-        let minDist = Infinity;
-        MUNICIPALITIES.forEach(m => {
-          const d = Math.sqrt((m.lat - latitude) ** 2 + (m.lng - longitude) ** 2);
-          if (d < minDist) { minDist = d; nearest = m; }
-        });
-        setSelectedMunicipality(nearest);
-        setMunicipalitySearch(lang === 'ca' ? nearest.name_ca : nearest.name_es);
+        // Try ICGC reverse geocoding first
+        const cityName = await getMunicipalityFromGPS(latitude, longitude);
+        if (cityName) {
+          const results = await searchMunicipalitiesAsync(cityName);
+          if (results.length > 0) {
+            setSelectedMunicipality(results[0]);
+            setMunicipalitySearch(lang === 'ca' ? results[0].name_ca : results[0].name_es);
+            toast.success(`📍 ${lang === 'ca' ? 'Detectat' : 'Detectado'}: ${results[0].name_ca}`);
+            setGpsDetecting(false);
+            return;
+          }
+        }
+        // Fallback to nearest rich municipality
+        const nearest = findNearestRichMunicipality(latitude, longitude);
+        if (nearest) {
+          setSelectedMunicipality(nearest);
+          setMunicipalitySearch(lang === 'ca' ? nearest.name_ca : nearest.name_es);
+          toast.success(`📍 ${lang === 'ca' ? 'Detectat' : 'Detectado'}: ${nearest.name_ca}`);
+        }
+        setGpsDetecting(false);
       },
-      () => toast.error(lang === 'ca' ? 'No s\'ha pogut detectar la ubicació' : 'No se pudo detectar la ubicación')
+      () => {
+        toast.error(lang === 'ca' ? "No s'ha pogut detectar la ubicació" : 'No se pudo detectar la ubicación');
+        setGpsDetecting(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
     );
-  };
+  }, [lang]);
 
   const finish = async () => {
     if (!authUser) return;
@@ -214,7 +240,7 @@ const OnboardingPage = () => {
         {lang === 'ca' ? 'On passeges normalment?' : '¿Dónde paseas normalmente?'}
       </h1>
       <p className="text-sm text-muted-foreground mb-6 max-w-xs">
-        {lang === 'ca' ? 'Personalitzarem alertes i contactes d\'emergència' : 'Personalizaremos alertas y contactos de emergencia'}
+        {lang === 'ca' ? "Personalitzarem alertes i contactes d'emergència" : 'Personalizaremos alertas y contactos de emergencia'}
       </p>
       <div className="relative w-full max-w-xs">
         <Input
@@ -223,9 +249,15 @@ const OnboardingPage = () => {
           placeholder={lang === 'ca' ? 'Cerca el teu municipi...' : 'Busca tu municipio...'}
           className="text-center"
         />
-        {filteredMunicipalities.length > 0 && !selectedMunicipality && (
+        {searching && (
+          <div className="absolute top-full mt-1 w-full bg-popover border border-border rounded-lg shadow-lg z-10 p-3 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {lang === 'ca' ? 'Cercant...' : 'Buscando...'}
+          </div>
+        )}
+        {!searching && searchResults.length > 0 && !selectedMunicipality && (
           <div className="absolute top-full mt-1 w-full bg-popover border border-border rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
-            {filteredMunicipalities.map(m => (
+            {searchResults.map(m => (
               <button
                 key={m.id}
                 onClick={() => {
@@ -240,12 +272,22 @@ const OnboardingPage = () => {
             ))}
           </div>
         )}
+        {!searching && searchResults.length === 0 && municipalitySearch.length >= 2 && !selectedMunicipality && (
+          <div className="absolute top-full mt-1 w-full bg-popover border border-border rounded-lg shadow-lg z-10 p-3 text-sm text-muted-foreground text-center">
+            {lang === 'ca' ? "No s'ha trobat cap municipi" : 'No se encontró ningún municipio'}
+          </div>
+        )}
       </div>
       <button
         onClick={detectLocation}
+        disabled={gpsDetecting}
         className="mt-3 text-sm text-primary font-medium flex items-center gap-1"
       >
-        📍 {lang === 'ca' ? 'Detectar ubicació' : 'Detectar ubicación'}
+        {gpsDetecting ? (
+          <><Loader2 className="h-3 w-3 animate-spin" /> {lang === 'ca' ? 'Detectant...' : 'Detectando...'}</>
+        ) : (
+          <>📍 {lang === 'ca' ? 'Detectar ubicació' : 'Detectar ubicación'}</>
+        )}
       </button>
       {selectedMunicipality && (
         <div className="mt-4 p-4 rounded-xl border border-primary/30 bg-primary/5 max-w-xs w-full">
