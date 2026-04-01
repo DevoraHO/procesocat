@@ -226,7 +226,7 @@ export function addSession(deviceInfo: string): string {
 
 export function removeSession(sessionId: string): void {
   const sessions = getActiveSessions();
-  localStorage.setItem('active_sessions',
+  safeStorage.setItem('active_sessions',
     JSON.stringify(sessions.filter(s => s.id !== sessionId)));
 }
 
