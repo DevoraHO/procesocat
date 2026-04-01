@@ -50,7 +50,7 @@ const App = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowLoading(false);
-      if (!localStorage.getItem('onboarding_done')) {
+      if (!safeStorage.getItem('onboarding_done')) {
         setShowOnboarding(true);
       }
     }, 1500);
