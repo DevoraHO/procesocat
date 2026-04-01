@@ -9,6 +9,7 @@ import { mockBadges, mockDangerEvolution, ALERT_TYPES } from '@/data/mockData';
 import { supabase as sb } from '@/integrations/supabase/client';
 import { fetchSavedZones, createSavedZone, deleteSavedZone, fetchUserBadges, fetchRanking, fetchUserReports } from '@/lib/supabase-queries';
 import { searchMunicipalities, getMunicipalityById, Municipality } from '@/data/municipalData';
+import { searchMunicipalitiesLocal, isMunicipalitiesLoaded, getAllCachedMunicipalities, type MunicipalityBasic } from '@/services/municipalityService';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
