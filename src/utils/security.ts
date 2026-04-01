@@ -168,7 +168,7 @@ export function isAccountLocked(email: string): {
   permanent: boolean;
   remainingMinutes: number;
 } {
-  const data = JSON.parse(localStorage.getItem('login_attempts') || '{}');
+  const data = JSON.parse(safeStorage.getItem('login_attempts') || '{}');
   const record = data[email];
   if (!record) return { locked: false, permanent: false, remainingMinutes: 0 };
 
