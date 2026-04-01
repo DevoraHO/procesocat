@@ -5,8 +5,9 @@ interface State { hasError: boolean; }
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, State> {
   state: State = { hasError: false };
   static getDerivedStateFromError() { return { hasError: true }; }
-  componentDidCatch(error: Error) {
-    console.error('ErrorBoundary caught:', error);
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('ErrorBoundary caught:', error, errorInfo);
+    // No auto-reload — only manual reload via button
   }
   render() {
     if (this.state.hasError) {

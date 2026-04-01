@@ -152,16 +152,21 @@ const MapPage = () => {
       shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
     });
 
-    const map = L.map(mapContainerRef.current).setView([41.5, 1.8], 8);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
+    try {
+      const map = L.map(mapContainerRef.current).setView([41.5, 1.8], 8);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
 
-    markersLayerRef.current = L.layerGroup().addTo(map);
-    heatmapLayerRef.current = L.layerGroup().addTo(map);
-    safeWalkMarkersRef.current = L.layerGroup().addTo(map);
-    safeWalkResultLinesRef.current = L.layerGroup().addTo(map);
-    mapRef.current = map;
+      markersLayerRef.current = L.layerGroup().addTo(map);
+      heatmapLayerRef.current = L.layerGroup().addTo(map);
+      safeWalkMarkersRef.current = L.layerGroup().addTo(map);
+      safeWalkResultLinesRef.current = L.layerGroup().addTo(map);
+      mapRef.current = map;
+    } catch (err) {
+      console.error('Map init failed:', err);
+      return;
+    }
 
     if (!safeStorage.getItem('location_asked')) {
       setShowLocationModal(true);
