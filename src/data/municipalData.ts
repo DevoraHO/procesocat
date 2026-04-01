@@ -1,4 +1,4 @@
-import { searchMunicipalitiesAPI, type MunicipalityBasic } from '@/services/municipalityService';
+import { searchMunicipalitiesAPI, searchMunicipalitiesLocal, isMunicipalitiesLoaded, type MunicipalityBasic } from '@/services/municipalityService';
 import { getMunicipalityFromGPS } from '@/services/geoLocationService';
 
 export interface Vet {
