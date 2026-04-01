@@ -1,3 +1,4 @@
+import { safeStorage } from '@/utils/safeStorage';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Phone, X, MapPin, Globe, Mail, ChevronDown, ChevronUp, Search, Navigation, Share2, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
