@@ -128,8 +128,31 @@ const ProfilePage = () => {
   const [municipalityModalOpen, setMunicipalityModalOpen] = useState(false);
   const [municipalityQuery, setMunicipalityQuery] = useState('');
   const [selectedMunicipalityId, setSelectedMunicipalityId] = useState(user?.municipality_id || safeStorage.getItem('municipality_id') || '');
-  const municipalityResults = searchMunicipalities(municipalityQuery);
+  const [needsMunicipalityUpdate, setNeedsMunicipalityUpdate] = useState(false);
+
+  // Use new geocatalunya service for search
+  const municipalityResults = useMemo(() => {
+    if (municipalityQuery.length < 2) return [];
+    return searchMunicipalitiesLocal(municipalityQuery);
+  }, [municipalityQuery]);
+
+  // Check if current municipality_id exists in new system
+  useEffect(() => {
+    if (!selectedMunicipalityId || !isMunicipalitiesLoaded()) return;
+    const allMunis = getAllCachedMunicipalities();
+    const found = allMunis.some(m => m.id === selectedMunicipalityId);
+    // Also check rich data
+    const richFound = getMunicipalityById(selectedMunicipalityId);
+    if (!found && !richFound) {
+      setNeedsMunicipalityUpdate(true);
+    }
+  }, [selectedMunicipalityId]);
+
   const currentMunicipality = selectedMunicipalityId ? getMunicipalityById(selectedMunicipalityId) : undefined;
+  const currentMunicipalityBasic = useMemo(() => {
+    if (!selectedMunicipalityId || !isMunicipalitiesLoaded()) return undefined;
+    return getAllCachedMunicipalities().find(m => m.id === selectedMunicipalityId);
+  }, [selectedMunicipalityId]);
 
   // Security state
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
