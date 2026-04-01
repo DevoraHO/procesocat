@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import LanguageToggle from '@/components/LanguageToggle';
-import { searchMunicipalities, Municipality } from '@/data/municipalData';
+import { searchMunicipalities, searchMunicipalitiesAsync, Municipality } from '@/data/municipalData';
 import { MapPin, Search, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 

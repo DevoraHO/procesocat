@@ -444,7 +444,7 @@ const SOSButton = ({ alertType }: SOSButtonProps) => {
               <Navigation size={14} className="mr-2" /> {t('municipality.useLocation')}
             </Button>
             <div className="space-y-1">
-              {(searchQuery.length >= 2 ? searchResults : MUNICIPALITIES.slice(0, 8)).map((m) => (
+              {(searchQuery.length >= 2 ? searchResults : searchMunicipalities('a')).map((m) => (
                 <button key={m.id} onClick={() => selectMunicipality(m)} className="w-full text-left p-3 rounded-lg hover:bg-accent flex items-center justify-between border">
                   <div>
                     <p className="text-sm font-medium">{lang === 'ca' ? m.name_ca : m.name_es}</p>
