@@ -146,12 +146,12 @@ export class RateLimiter {
 export const rateLimiter = new RateLimiter();
 
 export function getLoginAttempts(email: string): number {
-  const data = JSON.parse(localStorage.getItem('login_attempts') || '{}');
+  const data = JSON.parse(safeStorage.getItem('login_attempts') || '{}');
   return data[email]?.count || 0;
 }
 
 export function recordLoginAttempt(email: string, success: boolean): void {
-  const data = JSON.parse(localStorage.getItem('login_attempts') || '{}');
+  const data = JSON.parse(safeStorage.getItem('login_attempts') || '{}');
   if (success) {
     delete data[email];
   } else {
@@ -160,7 +160,7 @@ export function recordLoginAttempt(email: string, success: boolean): void {
       lastAttempt: Date.now()
     };
   }
-  localStorage.setItem('login_attempts', JSON.stringify(data));
+  safeStorage.setItem('login_attempts', JSON.stringify(data));
 }
 
 export function isAccountLocked(email: string): {
