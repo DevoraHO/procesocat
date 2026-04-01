@@ -1,5 +1,3 @@
-const INE_URL = 'https://servicios.ine.es/wstempus/js/ES/VALORES_VARIABLE/19?page=1';
-
 export interface MunicipalityBasic {
   id: string;
   name: string;
@@ -21,42 +19,52 @@ function getProvince(code: string): string {
 
 const CATALUNYA_PREFIXES = ['08', '17', '25', '43'];
 
+function normalize(str: string): string {
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
 export async function getAllMunicipalities(): Promise<MunicipalityBasic[]> {
   if (municipalitiesCache.length > 0) {
     return municipalitiesCache;
   }
 
   try {
-    const response = await fetch(INE_URL);
-    const data = await response.json();
+    const allMunicipalities: MunicipalityBasic[] = [];
 
-    const municipalities: MunicipalityBasic[] = data
-      .filter((m: any) => {
-        const code = String(m.Codigo || '');
-        return CATALUNYA_PREFIXES.some(p => code.startsWith(p));
-      })
-      .map((m: any) => ({
-        id: String(m.Codigo),
-        name: m.Nombre || '',
-        comarca: '',
-        provincia: getProvince(String(m.Codigo || '')),
-        lat: 0,
-        lng: 0,
-      }));
+    for (let page = 1; page <= 16; page++) {
+      const response = await fetch(
+        `https://servicios.ine.es/wstempus/js/ES/VALORES_VARIABLE/19?page=${page}`
+      );
+      const data = await response.json();
 
-    municipalitiesCache = municipalities;
-    return municipalities;
+      if (!data || data.length === 0) break;
+
+      const matches = data
+        .filter((m: any) => {
+          const code = String(m.Codigo || '');
+          return CATALUNYA_PREFIXES.some(p => code.startsWith(p));
+        })
+        .map((m: any) => ({
+          id: String(m.Codigo),
+          name: m.Nombre || '',
+          comarca: '',
+          provincia: getProvince(String(m.Codigo || '')),
+          lat: 0,
+          lng: 0,
+        }));
+
+      allMunicipalities.push(...matches);
+    }
+
+    municipalitiesCache = allMunicipalities;
+    return allMunicipalities;
   } catch (error) {
     console.error('INE API error:', error);
     return getFallbackMunicipalities();
   }
-}
-
-function normalize(str: string): string {
-  return str
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
 }
 
 export async function searchMunicipalitiesAPI(
