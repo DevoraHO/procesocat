@@ -58,21 +58,15 @@ const MapPage = () => {
     };
     load();
 
-    // Real-time subscription for new reports
-    const channel = supabase
-      .channel('reports-realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reports' }, (payload) => {
-        const newReport = payload.new as Report;
-        setReports(prev => updateLifecycle([newReport, ...prev] as any));
-        toast.info('📍 ' + (newReport.description?.slice(0, 50) || 'Nuevo reporte'));
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'reports' }, (payload) => {
-        const updated = payload.new as Report;
-        setReports(prev => updateLifecycle(prev.map(r => r.id === updated.id ? updated : r) as any));
-      })
-      .subscribe();
+    // Poll for updates every 30 seconds instead of realtime
+    const interval = setInterval(async () => {
+      const data = await fetchReports();
+      if (data.length > 0) {
+        setReports(updateLifecycle(data as any));
+      }
+    }, 30000);
 
-    return () => { supabase.removeChannel(channel); };
+    return () => { clearInterval(interval); };
   }, []);
   const [showSeasonBanner, setShowSeasonBanner] = useState(!safeStorage.getItem('annual_reset_shown'));
   const [nearbyDecay, setNearbyDecay] = useState<typeof reports[0] | null>(null);
