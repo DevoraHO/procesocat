@@ -36,7 +36,7 @@ const VIDEOS = [
 
 const OFFICIAL_RESOURCES = [
   { name: 'Generalitat de Catalunya — Sanitat Forestal', url: 'https://agricultura.gencat.cat', domain: 'gencat.cat' },
-  { name_es: 'Agents Rurals Catalunya', name_ca: 'Agents Rurals Catalunya', url: 'tel:900050051', domain: '900 050 051 (gratuït/gratuito)' },
+  { name_es: 'Agents Rurals Catalunya', name_ca: 'Agents Rurals Catalunya', url: '', phone: '900050051', domain: '900 050 051 (gratuït/gratuito)' },
   { name: 'Col·legi de Veterinaris de Barcelona', url: 'https://www.covb.cat', domain: 'covb.cat' },
   { name_es: 'Cruz Roja España — Primeros auxilios', name_ca: 'Creu Roja Espanya — Primers auxilis', url: 'https://www.cruzroja.es', domain: 'cruzroja.es' },
 ];
