@@ -36,7 +36,7 @@ const VIDEOS = [
 
 const OFFICIAL_RESOURCES = [
   { name: 'Generalitat de Catalunya — Sanitat Forestal', url: 'https://agricultura.gencat.cat', domain: 'gencat.cat' },
-  { name_es: 'Agents Rurals Catalunya', name_ca: 'Agents Rurals Catalunya', url: 'tel:900050051', domain: '900 050 051 (gratuït/gratuito)' },
+  { name_es: 'Agents Rurals Catalunya', name_ca: 'Agents Rurals Catalunya', url: '', phone: '900050051', domain: '900 050 051 (gratuït/gratuito)' },
   { name: 'Col·legi de Veterinaris de Barcelona', url: 'https://www.covb.cat', domain: 'covb.cat' },
   { name_es: 'Cruz Roja España — Primeros auxilios', name_ca: 'Creu Roja Espanya — Primers auxilis', url: 'https://www.cruzroja.es', domain: 'cruzroja.es' },
 ];
@@ -115,7 +115,7 @@ const InfoPage = () => {
                 <p>3. {t('info.childA3')}</p>
               </div>
               <div className="flex gap-2">
-                <Button variant="destructive" className="flex-1" onClick={() => window.location.href = 'tel:112'}>🆘 {t('info.call112')}</Button>
+                <Button variant="destructive" className="flex-1" onClick={() => { window.location.href = 'tel:112'; }}>🆘 {t('info.call112')}</Button>
                 <Button variant="outline" className="flex-1 text-xs" onClick={() => window.open('https://www.google.com/maps/search/urgencias+cerca', '_blank')}>{t('info.nearbyER')}</Button>
               </div>
             </CardContent>
@@ -201,7 +201,7 @@ const InfoPage = () => {
                   <Button size="sm" className="mt-2" onClick={goReport}>+ {t('info.reportNest')}</Button>
                 )}
                 {step.phone && (
-                  <Button variant="outline" size="sm" className="mt-2" onClick={() => window.location.href = 'tel:900050051'}>📞 {t('info.callAgents')}</Button>
+                  <Button variant="outline" size="sm" className="mt-2" onClick={() => { window.location.href = 'tel:900050051'; }}>📞 {t('info.callAgents')}</Button>
                 )}
               </div>
             </div>
@@ -255,20 +255,33 @@ const InfoPage = () => {
       <section className="space-y-3">
         <h2 className="text-lg font-bold text-foreground">🔗 {t('info.officialResources')}</h2>
         <div className="space-y-2">
-          {OFFICIAL_RESOURCES.map((r, i) => (
-            <a
-              key={i}
-              href={r.url}
-              target={r.url.startsWith('tel:') ? '_self' : '_blank'}
-              rel="noopener noreferrer"
-              className="flex items-center justify-between p-3 bg-muted/30 border border-border rounded-xl hover:bg-muted/50 transition"
-            >
-              <span className="text-sm font-medium text-foreground">
-                {(r as any).name || (lang === 'ca' ? (r as any).name_ca : (r as any).name_es)}
-              </span>
-              <span className="text-xs text-primary">{r.domain}</span>
-            </a>
-          ))}
+          {OFFICIAL_RESOURCES.map((r, i) => {
+            const label = (r as any).name || (lang === 'ca' ? (r as any).name_ca : (r as any).name_es);
+            if ((r as any).phone) {
+              return (
+                <button
+                  key={i}
+                  onClick={() => { window.location.href = `tel:${(r as any).phone}`; }}
+                  className="flex items-center justify-between p-3 bg-muted/30 border border-border rounded-xl hover:bg-muted/50 transition w-full text-left"
+                >
+                  <span className="text-sm font-medium text-foreground">{label}</span>
+                  <span className="text-xs text-primary">{r.domain}</span>
+                </button>
+              );
+            }
+            return (
+              <a
+                key={i}
+                href={r.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-3 bg-muted/30 border border-border rounded-xl hover:bg-muted/50 transition"
+              >
+                <span className="text-sm font-medium text-foreground">{label}</span>
+                <span className="text-xs text-primary">{r.domain}</span>
+              </a>
+            );
+          })}
         </div>
       </section>
 
