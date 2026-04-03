@@ -115,7 +115,7 @@ const InfoPage = () => {
                 <p>3. {t('info.childA3')}</p>
               </div>
               <div className="flex gap-2">
-                <Button variant="destructive" className="flex-1" onClick={() => window.location.href = 'tel:112'}>🆘 {t('info.call112')}</Button>
+                <Button variant="destructive" className="flex-1" onClick={() => { window.location.href = 'tel:112'; }}>🆘 {t('info.call112')}</Button>
                 <Button variant="outline" className="flex-1 text-xs" onClick={() => window.open('https://www.google.com/maps/search/urgencias+cerca', '_blank')}>{t('info.nearbyER')}</Button>
               </div>
             </CardContent>
