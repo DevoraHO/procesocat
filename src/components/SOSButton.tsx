@@ -94,18 +94,15 @@ const SOSButton = ({ alertType }: SOSButtonProps) => {
   const startLongPress = () => {
     let count = 3;
     setCountdown(count);
-    try { navigator.vibrate?.([200]); } catch {}
     timerRef.current = setInterval(() => {
       count--;
       if (count <= 0) {
         clearInterval(timerRef.current!);
         setCountdown(null);
         try { navigator.vibrate?.([400]); } catch {}
-        // Only trigger call via explicit programmatic navigation, never auto
         window.location.href = 'tel:112';
       } else {
         setCountdown(count);
-        try { navigator.vibrate?.([100]); } catch {}
       }
     }, 1000);
   };
