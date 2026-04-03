@@ -281,8 +281,7 @@ const InfoPage = () => {
                 <span className="text-xs text-primary">{r.domain}</span>
               </a>
             );
-          }
-          ))}
+          })}
         </div>
       </section>
 
