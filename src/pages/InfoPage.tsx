@@ -201,7 +201,7 @@ const InfoPage = () => {
                   <Button size="sm" className="mt-2" onClick={goReport}>+ {t('info.reportNest')}</Button>
                 )}
                 {step.phone && (
-                  <Button variant="outline" size="sm" className="mt-2" onClick={() => window.location.href = 'tel:900050051'}>📞 {t('info.callAgents')}</Button>
+                  <Button variant="outline" size="sm" className="mt-2" onClick={() => { window.location.href = 'tel:900050051'; }}>📞 {t('info.callAgents')}</Button>
                 )}
               </div>
             </div>
