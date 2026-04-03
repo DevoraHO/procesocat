@@ -255,19 +255,33 @@ const InfoPage = () => {
       <section className="space-y-3">
         <h2 className="text-lg font-bold text-foreground">🔗 {t('info.officialResources')}</h2>
         <div className="space-y-2">
-          {OFFICIAL_RESOURCES.map((r, i) => (
-            <a
-              key={i}
-              href={r.url}
-              target={r.url.startsWith('tel:') ? '_self' : '_blank'}
-              rel="noopener noreferrer"
-              className="flex items-center justify-between p-3 bg-muted/30 border border-border rounded-xl hover:bg-muted/50 transition"
-            >
-              <span className="text-sm font-medium text-foreground">
-                {(r as any).name || (lang === 'ca' ? (r as any).name_ca : (r as any).name_es)}
-              </span>
-              <span className="text-xs text-primary">{r.domain}</span>
-            </a>
+          {OFFICIAL_RESOURCES.map((r, i) => {
+            const label = (r as any).name || (lang === 'ca' ? (r as any).name_ca : (r as any).name_es);
+            if ((r as any).phone) {
+              return (
+                <button
+                  key={i}
+                  onClick={() => { window.location.href = `tel:${(r as any).phone}`; }}
+                  className="flex items-center justify-between p-3 bg-muted/30 border border-border rounded-xl hover:bg-muted/50 transition w-full text-left"
+                >
+                  <span className="text-sm font-medium text-foreground">{label}</span>
+                  <span className="text-xs text-primary">{r.domain}</span>
+                </button>
+              );
+            }
+            return (
+              <a
+                key={i}
+                href={r.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-3 bg-muted/30 border border-border rounded-xl hover:bg-muted/50 transition"
+              >
+                <span className="text-sm font-medium text-foreground">{label}</span>
+                <span className="text-xs text-primary">{r.domain}</span>
+              </a>
+            );
+          }
           ))}
         </div>
       </section>
