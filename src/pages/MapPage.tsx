@@ -619,6 +619,83 @@ const MapPage = () => {
     }
   }, [heatmapVisible]);
 
+  // Load iNaturalist data on first activation
+  useEffect(() => {
+    if (layerView === 'alerts') return;
+    if (inatLoadedRef.current) return;
+    inatLoadedRef.current = true;
+    setInatLoading(true);
+    fetchProcessionaryObservations()
+      .then((obs) => setInatData(obs))
+      .finally(() => setInatLoading(false));
+  }, [layerView]);
+
+  // Render iNaturalist markers + manage alerts layer visibility
+  useEffect(() => {
+    const map = mapRef.current;
+    const inatLayer = inatLayerRef.current;
+    const alertsLayer = markersLayerRef.current;
+    const heatLayer = heatmapLayerRef.current;
+    if (!map || !inatLayer || !alertsLayer) return;
+
+    // Alerts layer visibility
+    const showAlerts = layerView === 'alerts' || layerView === 'both';
+    if (showAlerts) {
+      if (!map.hasLayer(alertsLayer)) map.addLayer(alertsLayer);
+      if (heatLayer && heatmapVisible && !map.hasLayer(heatLayer)) map.addLayer(heatLayer);
+    } else {
+      if (map.hasLayer(alertsLayer)) map.removeLayer(alertsLayer);
+      if (heatLayer && map.hasLayer(heatLayer)) map.removeLayer(heatLayer);
+    }
+
+    // iNat layer visibility + content
+    const showInat = layerView === 'inat' || layerView === 'both';
+    inatLayer.clearLayers();
+    if (showInat) {
+      inatData.forEach((obs) => {
+        const isResearch = obs.quality_grade === 'research';
+        const marker = L.circleMarker([obs.lat, obs.lng], {
+          radius: 8,
+          color: '#5D2E0C',
+          weight: 1,
+          fillColor: '#8B4513',
+          fillOpacity: 0.7,
+          opacity: 0.9,
+        });
+        const dateFmt = obs.observed_on
+          ? obs.observed_on.split('-').reverse().join('/')
+          : '—';
+        const desc = obs.description
+          ? (obs.description.length > 100 ? obs.description.slice(0, 100) + '…' : obs.description)
+          : '';
+        const badge = isResearch
+          ? `<span style="background:#16a34a;color:white;padding:2px 6px;border-radius:9999px;font-size:10px;font-weight:600">✅ Grau recerca</span>`
+          : `<span style="background:#eab308;color:#1f2937;padding:2px 6px;border-radius:9999px;font-size:10px;font-weight:600">👁️ Necessita ID</span>`;
+        marker.bindPopup(`
+          <div style="min-width:220px;font-family:inherit">
+            <div style="font-size:13px;font-weight:700;margin-bottom:6px">🔬 Observació oficial verificada</div>
+            <div style="margin-bottom:8px">${badge}</div>
+            <div style="font-size:12px;line-height:1.5">
+              <div>📍 ${obs.place_guess}</div>
+              <div>📅 ${dateFmt}</div>
+              ${desc ? `<div style="margin-top:4px;color:#475569">📝 ${desc}</div>` : ''}
+            </div>
+            <div style="margin-top:8px;padding-top:8px;border-top:1px solid #e5e7eb;font-size:10px;color:#64748b">
+              Font: iNaturalist · Dades obertes
+            </div>
+            <a href="https://www.inaturalist.org/observations/${obs.id}" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:6px;font-size:11px;color:#2563eb;text-decoration:underline">🔗 Veure a iNaturalist</a>
+          </div>
+        `);
+        inatLayer.addLayer(marker);
+      });
+      if (!map.hasLayer(inatLayer)) map.addLayer(inatLayer);
+    } else {
+      if (map.hasLayer(inatLayer)) map.removeLayer(inatLayer);
+    }
+  }, [layerView, inatData, heatmapVisible]);
+
+
+
   // Recalculate every 5 min
   useEffect(() => {
     const interval = setInterval(() => {
