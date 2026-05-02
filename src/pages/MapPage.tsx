@@ -75,6 +75,10 @@ const MapPage = () => {
   const [nearbyDecay, setNearbyDecay] = useState<typeof reports[0] | null>(null);
   const [scoredReports, setScoredReports] = useState<ReportWithScore[]>([]);
   const [heatmapVisible, setHeatmapVisible] = useState(true);
+  const [layerView, setLayerView] = useState<'alerts' | 'inat' | 'both'>('alerts');
+  const [inatData, setInatData] = useState<InatObservation[]>([]);
+  const [inatLoading, setInatLoading] = useState(false);
+  const inatLoadedRef = useRef(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [showNewReport, setShowNewReport] = useState(false);
   const [reportStep, setReportStep] = useState(1);
