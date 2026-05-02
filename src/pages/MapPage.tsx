@@ -25,6 +25,7 @@ import { useGPSTracking } from '@/hooks/useGPSTracking';
 import { awardPoints, POINTS } from '@/utils/points';
 import SOSButton from '@/components/SOSButton';
 import MapIntroGuide from '@/components/MapIntroGuide';
+import { fetchProcessionaryObservations, type InatObservation } from '@/services/inaturalistService';
 
 interface ReportWithScore {
   report: Report & { last_activity_at?: string };
@@ -40,6 +41,7 @@ const MapPage = () => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const heatmapLayerRef = useRef<L.LayerGroup | null>(null);
+  const inatLayerRef = useRef<L.LayerGroup | null>(null);
   const userMarkerRef = useRef<L.CircleMarker | null>(null);
   const userAccuracyRef = useRef<L.Circle | null>(null);
   const previewMarkerRef = useRef<L.Marker | null>(null);
@@ -73,6 +75,10 @@ const MapPage = () => {
   const [nearbyDecay, setNearbyDecay] = useState<typeof reports[0] | null>(null);
   const [scoredReports, setScoredReports] = useState<ReportWithScore[]>([]);
   const [heatmapVisible, setHeatmapVisible] = useState(true);
+  const [layerView, setLayerView] = useState<'alerts' | 'inat' | 'both'>('alerts');
+  const [inatData, setInatData] = useState<InatObservation[]>([]);
+  const [inatLoading, setInatLoading] = useState(false);
+  const inatLoadedRef = useRef(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [showNewReport, setShowNewReport] = useState(false);
   const [reportStep, setReportStep] = useState(1);
@@ -155,6 +161,7 @@ const MapPage = () => {
 
       markersLayerRef.current = L.layerGroup().addTo(map);
       heatmapLayerRef.current = L.layerGroup().addTo(map);
+      inatLayerRef.current = L.layerGroup();
       safeWalkMarkersRef.current = L.layerGroup().addTo(map);
       safeWalkResultLinesRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
@@ -612,6 +619,83 @@ const MapPage = () => {
     }
   }, [heatmapVisible]);
 
+  // Load iNaturalist data on first activation
+  useEffect(() => {
+    if (layerView === 'alerts') return;
+    if (inatLoadedRef.current) return;
+    inatLoadedRef.current = true;
+    setInatLoading(true);
+    fetchProcessionaryObservations()
+      .then((obs) => setInatData(obs))
+      .finally(() => setInatLoading(false));
+  }, [layerView]);
+
+  // Render iNaturalist markers + manage alerts layer visibility
+  useEffect(() => {
+    const map = mapRef.current;
+    const inatLayer = inatLayerRef.current;
+    const alertsLayer = markersLayerRef.current;
+    const heatLayer = heatmapLayerRef.current;
+    if (!map || !inatLayer || !alertsLayer) return;
+
+    // Alerts layer visibility
+    const showAlerts = layerView === 'alerts' || layerView === 'both';
+    if (showAlerts) {
+      if (!map.hasLayer(alertsLayer)) map.addLayer(alertsLayer);
+      if (heatLayer && heatmapVisible && !map.hasLayer(heatLayer)) map.addLayer(heatLayer);
+    } else {
+      if (map.hasLayer(alertsLayer)) map.removeLayer(alertsLayer);
+      if (heatLayer && map.hasLayer(heatLayer)) map.removeLayer(heatLayer);
+    }
+
+    // iNat layer visibility + content
+    const showInat = layerView === 'inat' || layerView === 'both';
+    inatLayer.clearLayers();
+    if (showInat) {
+      inatData.forEach((obs) => {
+        const isResearch = obs.quality_grade === 'research';
+        const marker = L.circleMarker([obs.lat, obs.lng], {
+          radius: 8,
+          color: '#5D2E0C',
+          weight: 1,
+          fillColor: '#8B4513',
+          fillOpacity: 0.7,
+          opacity: 0.9,
+        });
+        const dateFmt = obs.observed_on
+          ? obs.observed_on.split('-').reverse().join('/')
+          : '—';
+        const desc = obs.description
+          ? (obs.description.length > 100 ? obs.description.slice(0, 100) + '…' : obs.description)
+          : '';
+        const badge = isResearch
+          ? `<span style="background:#16a34a;color:white;padding:2px 6px;border-radius:9999px;font-size:10px;font-weight:600">✅ Grau recerca</span>`
+          : `<span style="background:#eab308;color:#1f2937;padding:2px 6px;border-radius:9999px;font-size:10px;font-weight:600">👁️ Necessita ID</span>`;
+        marker.bindPopup(`
+          <div style="min-width:220px;font-family:inherit">
+            <div style="font-size:13px;font-weight:700;margin-bottom:6px">🔬 Observació oficial verificada</div>
+            <div style="margin-bottom:8px">${badge}</div>
+            <div style="font-size:12px;line-height:1.5">
+              <div>📍 ${obs.place_guess}</div>
+              <div>📅 ${dateFmt}</div>
+              ${desc ? `<div style="margin-top:4px;color:#475569">📝 ${desc}</div>` : ''}
+            </div>
+            <div style="margin-top:8px;padding-top:8px;border-top:1px solid #e5e7eb;font-size:10px;color:#64748b">
+              Font: iNaturalist · Dades obertes
+            </div>
+            <a href="https://www.inaturalist.org/observations/${obs.id}" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:6px;font-size:11px;color:#2563eb;text-decoration:underline">🔗 Veure a iNaturalist</a>
+          </div>
+        `);
+        inatLayer.addLayer(marker);
+      });
+      if (!map.hasLayer(inatLayer)) map.addLayer(inatLayer);
+    } else {
+      if (map.hasLayer(inatLayer)) map.removeLayer(inatLayer);
+    }
+  }, [layerView, inatData, heatmapVisible]);
+
+
+
   // Recalculate every 5 min
   useEffect(() => {
     const interval = setInterval(() => {
@@ -1013,8 +1097,31 @@ const MapPage = () => {
         </div>
       )}
 
-      {/* TOP RIGHT: Heatmap toggle + safe walk */}
-      <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-2">
+      {/* TOP RIGHT: Layer view toggle + heatmap + safe walk */}
+      <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-2 items-end">
+        <div className="inline-flex bg-card/95 backdrop-blur-sm shadow-lg rounded-xl p-1 text-xs font-medium">
+          <button
+            onClick={() => setLayerView('alerts')}
+            className={`px-2.5 py-1.5 rounded-lg transition-colors ${layerView === 'alerts' ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
+          >
+            📍 Alertes
+          </button>
+          <button
+            onClick={() => setLayerView('inat')}
+            className={`px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1 ${layerView === 'inat' ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
+          >
+            🔬 Dades oficials
+            {inatLoading && layerView === 'inat' && (
+              <span className="h-3 w-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            )}
+          </button>
+          <button
+            onClick={() => setLayerView('both')}
+            className={`px-2.5 py-1.5 rounded-lg transition-colors ${layerView === 'both' ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
+          >
+            📍+🔬 Tot
+          </button>
+        </div>
         <button
           onClick={() => setHeatmapVisible(v => !v)}
           className={`px-3 py-2 rounded-xl text-sm font-medium shadow-lg backdrop-blur-sm transition-colors ${
@@ -1042,6 +1149,13 @@ const MapPage = () => {
           </TooltipContent>
         </Tooltip>
       </div>
+
+      {/* iNaturalist attribution */}
+      {(layerView === 'inat' || layerView === 'both') && (
+        <div className="absolute bottom-1 left-2 z-[1000] text-[9px] text-muted-foreground/80 bg-card/60 backdrop-blur-sm px-1.5 py-0.5 rounded pointer-events-none">
+          Dades: iNaturalist · CC BY
+        </div>
+      )}
 
       {/* Analyze route button */}
       {safeWalkMode && safeWalkPoints.length >= 2 && !safeWalkResult && !safeWalkAnalyzing && (
@@ -1101,6 +1215,16 @@ const MapPage = () => {
               </div>
             ))}
           </>
+        )}
+        {(layerView === 'inat' || layerView === 'both') && (
+          <div className="mt-2 pt-2 border-t border-border/60 space-y-0.5">
+            <div className="flex items-center gap-1.5">
+              <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: '#8B4513', border: '1px solid #5D2E0C' }} />
+              <span className="text-[10px] text-foreground">Observació iNaturalist</span>
+            </div>
+            <div className="text-[9px] text-muted-foreground">✅ Grau recerca (validat)</div>
+            <div className="text-[9px] text-muted-foreground">👁️ Necessita identificació</div>
+          </div>
         )}
       </div>
 
