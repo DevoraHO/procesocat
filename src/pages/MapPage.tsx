@@ -161,6 +161,7 @@ const MapPage = () => {
 
       markersLayerRef.current = L.layerGroup().addTo(map);
       heatmapLayerRef.current = L.layerGroup().addTo(map);
+      inatLayerRef.current = L.layerGroup();
       safeWalkMarkersRef.current = L.layerGroup().addTo(map);
       safeWalkResultLinesRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
