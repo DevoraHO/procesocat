@@ -25,6 +25,7 @@ import { useGPSTracking } from '@/hooks/useGPSTracking';
 import { awardPoints, POINTS } from '@/utils/points';
 import SOSButton from '@/components/SOSButton';
 import MapIntroGuide from '@/components/MapIntroGuide';
+import { fetchProcessionaryObservations, type InatObservation } from '@/services/inaturalistService';
 
 interface ReportWithScore {
   report: Report & { last_activity_at?: string };
