@@ -1097,8 +1097,31 @@ const MapPage = () => {
         </div>
       )}
 
-      {/* TOP RIGHT: Heatmap toggle + safe walk */}
-      <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-2">
+      {/* TOP RIGHT: Layer view toggle + heatmap + safe walk */}
+      <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-2 items-end">
+        <div className="inline-flex bg-card/95 backdrop-blur-sm shadow-lg rounded-xl p-1 text-xs font-medium">
+          <button
+            onClick={() => setLayerView('alerts')}
+            className={`px-2.5 py-1.5 rounded-lg transition-colors ${layerView === 'alerts' ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
+          >
+            📍 Alertes
+          </button>
+          <button
+            onClick={() => setLayerView('inat')}
+            className={`px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1 ${layerView === 'inat' ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
+          >
+            🔬 Dades oficials
+            {inatLoading && layerView === 'inat' && (
+              <span className="h-3 w-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            )}
+          </button>
+          <button
+            onClick={() => setLayerView('both')}
+            className={`px-2.5 py-1.5 rounded-lg transition-colors ${layerView === 'both' ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-accent'}`}
+          >
+            📍+🔬 Tot
+          </button>
+        </div>
         <button
           onClick={() => setHeatmapVisible(v => !v)}
           className={`px-3 py-2 rounded-xl text-sm font-medium shadow-lg backdrop-blur-sm transition-colors ${
@@ -1126,6 +1149,13 @@ const MapPage = () => {
           </TooltipContent>
         </Tooltip>
       </div>
+
+      {/* iNaturalist attribution */}
+      {(layerView === 'inat' || layerView === 'both') && (
+        <div className="absolute bottom-1 left-2 z-[1000] text-[9px] text-muted-foreground/80 bg-card/60 backdrop-blur-sm px-1.5 py-0.5 rounded pointer-events-none">
+          Dades: iNaturalist · CC BY
+        </div>
+      )}
 
       {/* Analyze route button */}
       {safeWalkMode && safeWalkPoints.length >= 2 && !safeWalkResult && !safeWalkAnalyzing && (
