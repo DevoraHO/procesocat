@@ -1216,6 +1216,16 @@ const MapPage = () => {
             ))}
           </>
         )}
+        {(layerView === 'inat' || layerView === 'both') && (
+          <div className="mt-2 pt-2 border-t border-border/60 space-y-0.5">
+            <div className="flex items-center gap-1.5">
+              <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: '#8B4513', border: '1px solid #5D2E0C' }} />
+              <span className="text-[10px] text-foreground">Observació iNaturalist</span>
+            </div>
+            <div className="text-[9px] text-muted-foreground">✅ Grau recerca (validat)</div>
+            <div className="text-[9px] text-muted-foreground">👁️ Necessita identificació</div>
+          </div>
+        )}
       </div>
 
       {/* Ripple animation during long press */}
